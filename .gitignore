@@ -1,12 +1,35 @@
-# Python
+# Virtual Environment
+fresh_venv/
+venv/
+ENV/
+env/
+.env
+
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
-venv/
-.env
+.pytest_cache/
 
-# Project specific
-data/raw/
-data/processed/
-recipe_agent.db
-node_modules/
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Local data
+data/
+logs/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Generated files
+*.pdf
+templates/pdf/
