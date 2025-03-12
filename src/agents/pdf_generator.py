@@ -1,299 +1,359 @@
 # src/agents/pdf_generator.py
 import os
-import json
 import logging
-import qrcode
-from io import BytesIO
-import requests
+import time
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Optional
 from fpdf import FPDF
+import tempfile
+import requests
+from urllib.parse import urlparse
 from PIL import Image
+import io
 
+# Set up logging
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-class RecipePDF(FPDF):
-    """Custom PDF class for recipe cards"""
-    
-    def __init__(self):
-        super().__init__()
-        self.set_auto_page_break(auto=True, margin=15)
-        self.add_font('DejaVu', '', 'src/utils/fonts/DejaVuSans.ttf', uni=True)
-        self.add_font('DejaVu', 'B', 'src/utils/fonts/DejaVuSans-Bold.ttf', uni=True)
-        self.add_font('DejaVu', 'I', 'src/utils/fonts/DejaVuSans-Oblique.ttf', uni=True)
-    
-    def header(self):
-        # No header for recipe cards
-        pass
-    
-    def footer(self):
-        # Add page number
-        self.set_y(-15)
-        self.set_font('DejaVu', 'I', 8)
-        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
-    
-    def chapter_title(self, title):
-        self.set_font('DejaVu', 'B', 14)
-        self.set_fill_color(200, 220, 255)
-        self.cell(0, 10, title, 0, 1, 'L', 1)
-        self.ln(4)
-    
-    def chapter_body(self, body):
-        self.set_font('DejaVu', '', 11)
-        self.multi_cell(0, 5, body)
-        self.ln()
+# Create handler if not already configured
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-class PDFGeneratorAgent:
-    """Agent for generating PDF recipe cards"""
+class PDFGenerator:
+    """
+    PDF Generator Agent for creating recipe PDF cards
+    """
     
-    def __init__(self):
-        self.generated_count = 0
-        self.last_generated = None
-        self._load_stats()
+    def __init__(self, output_dir='pdfs'):
+        """
+        Initialize PDF Generator Agent
         
-        # Create fonts directory if it doesn't exist
-        os.makedirs("src/utils/fonts", exist_ok=True)
+        Args:
+            output_dir (str): Directory to save PDFs
+        """
+        self.output_dir = output_dir
         
-        # Download DejaVu fonts if they don't exist
-        self._ensure_fonts()
-    
-    def _ensure_fonts(self):
-        """Ensure that required fonts are available"""
-        font_urls = {
-            "DejaVuSans.ttf": "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf",
-            "DejaVuSans-Bold.ttf": "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf",
-            "DejaVuSans-Oblique.ttf": "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Oblique.ttf"
-        }
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
         
-        for font_name, url in font_urls.items():
-            font_path = f"src/utils/fonts/{font_name}"
-            if not os.path.exists(font_path):
-                try:
-                    logger.info(f"Downloading font: {font_name}")
-                    response = requests.get(url)
-                    with open(font_path, "wb") as f:
-                        f.write(response.content)
-                except Exception as e:
-                    logger.error(f"Error downloading font {font_name}: {str(e)}")
+        # Define design settings
+        self.text_color = (51, 51, 51)  # Dark gray
+        self.accent_color = (235, 87, 87)  # Coral red
+        self.bg_color = (255, 255, 255)  # White
+        self.font_family = 'Helvetica'
     
-    def _load_stats(self):
-        """Load generator statistics"""
+    def generate_pdf(self, recipe_data: Dict) -> str:
+        """
+        Generate a PDF recipe card
+        
+        Args:
+            recipe_data (dict): Structured recipe data
+            
+        Returns:
+            str: Path to generated PDF file
+        """
         try:
-            if os.path.exists("data/processed/generator_stats.json"):
-                with open("data/processed/generator_stats.json", "r") as f:
-                    stats = json.load(f)
-                    self.generated_count = stats.get("generated_count", 0)
-                    self.last_generated = stats.get("last_generated")
-        except Exception as e:
-            logger.error(f"Error loading generator stats: {str(e)}")
-    
-    def _save_stats(self):
-        """Save generator statistics"""
-        try:
-            os.makedirs("data/processed", exist_ok=True)
-            with open("data/processed/generator_stats.json", "w") as f:
-                stats = {
-                    "generated_count": self.generated_count,
-                    "last_generated": self.last_generated
-                }
-                json.dump(stats, f)
-        except Exception as e:
-            logger.error(f"Error saving generator stats: {str(e)}")
-    
-    async def generate_pdf(self, recipe_data: Dict) -> str:
-        """Generate a PDF recipe card from recipe data"""
-        try:
-            # Create PDF document
-            pdf = RecipePDF()
+            logger.info(f"Generating PDF for recipe: {recipe_data.get('title', 'Untitled Recipe')}")
+            
+            # Create PDF object
+            pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            
+            # Add a page
             pdf.add_page()
             
-            # Add title
-            pdf.set_font('DejaVu', 'B', 16)
-            pdf.cell(0, 10, recipe_data.get("title", "Recipe Card"), 0, 1, 'C')
-            pdf.ln(5)
+            # Set font
+            pdf.set_font(self.font_family, '', 12)
+            pdf.set_text_color(*self.text_color)
             
-            # Add thumbnail if available
-            if "thumbnail_url" in recipe_data and recipe_data["thumbnail_url"]:
-                try:
-                    response = requests.get(recipe_data["thumbnail_url"])
-                    img = Image.open(BytesIO(response.content))
-                    
-                    # Resize image if needed
-                    max_width = 180
-                    width, height = img.size
-                    if width > max_width:
-                        ratio = max_width / width
-                        new_height = int(height * ratio)
-                        img = img.resize((max_width, new_height))
-                    
-                    # Save temporary image file
-                    temp_img_path = "data/processed/temp_thumbnail.jpg"
-                    img.save(temp_img_path)
-                    
-                    # Add to PDF
-                    image_width = min(180, width)
-                    pdf.image(temp_img_path, x=(210-image_width)/2, y=pdf.get_y(), w=image_width)
-                    pdf.ln(5)
-                    
-                    # Remove temporary file
-                    os.remove(temp_img_path)
-                except Exception as e:
-                    logger.error(f"Error adding thumbnail: {str(e)}")
+            # Add title
+            pdf.set_font(self.font_family, 'B', 24)
+            pdf.set_text_color(*self.accent_color)
+            title = recipe_data.get('title', 'Untitled Recipe')
+            pdf.cell(0, 15, title, ln=True, align='C')
+            pdf.ln(5)
             
             # Add description if available
-            if "description" in recipe_data and recipe_data["description"]:
-                pdf.set_font('DejaVu', 'I', 11)
-                pdf.multi_cell(0, 5, recipe_data["description"])
+            description = recipe_data.get('description')
+            if description:
+                pdf.set_font(self.font_family, 'I', 12)
+                pdf.set_text_color(*self.text_color)
+                pdf.multi_cell(0, 6, description)
                 pdf.ln(5)
             
-            # Add recipe info table (time, servings, difficulty)
-            info_items = []
+            # Add recipe image if available
+            image_urls = recipe_data.get('image_urls', [])
+            if image_urls and len(image_urls) > 0:
+                try:
+                    image_url = image_urls[0]
+                    self._add_image_from_url(pdf, image_url)
+                    pdf.ln(5)
+                except Exception as e:
+                    logger.warning(f"Failed to add image to PDF: {str(e)}")
             
-            if "prep_time" in recipe_data and recipe_data["prep_time"]:
-                info_items.append(f"Prep: {recipe_data['prep_time']}")
+            # Add recipe info section
+            self._add_recipe_info(pdf, recipe_data)
+            pdf.ln(10)
             
-            if "cook_time" in recipe_data and recipe_data["cook_time"]:
-                info_items.append(f"Cook: {recipe_data['cook_time']}")
+            # Add ingredients section
+            pdf.set_font(self.font_family, 'B', 16)
+            pdf.set_text_color(*self.accent_color)
+            pdf.cell(0, 10, 'Ingredients', ln=True)
+            pdf.ln(2)
             
-            if "total_time" in recipe_data and recipe_data["total_time"]:
-                info_items.append(f"Total: {recipe_data['total_time']}")
-            
-            if "servings" in recipe_data and recipe_data["servings"]:
-                info_items.append(f"Serves: {recipe_data['servings']}")
-            
-            if "difficulty" in recipe_data and recipe_data["difficulty"]:
-                info_items.append(f"Difficulty: {recipe_data['difficulty']}")
-            
-            if info_items:
-                pdf.set_font('DejaVu', '', 10)
-                pdf.set_fill_color(240, 240, 240)
-                
-                # Calculate cell width based on number of items
-                cell_width = 180 / min(len(info_items), 3)
-                
-                # Print info items in rows with up to 3 items per row
-                for i in range(0, len(info_items), 3):
-                    row_items = info_items[i:i+3]
-                    for item in row_items:
-                        pdf.cell(cell_width, 8, item, 1, 0, 'C', 1)
-                    pdf.ln()
-                
-                pdf.ln(5)
-            
-            # Add dietary info if available
-            if "dietary_info" in recipe_data and recipe_data["dietary_info"]:
-                dietary_info = ", ".join(recipe_data["dietary_info"])
-                pdf.set_font('DejaVu', 'I', 10)
-                pdf.cell(0, 6, f"Dietary: {dietary_info}", 0, 1, 'L')
-                pdf.ln(2)
-            
-            # Add ingredients
-            pdf.chapter_title("Ingredients")
-            
-            ingredients = recipe_data.get("ingredients", [])
+            ingredients = recipe_data.get('ingredients', [])
             if ingredients:
-                for ingredient in ingredients:
-                    # Format ingredient line
-                    if isinstance(ingredient, dict):
-                        # Format as quantity + unit + name
-                        quantity = ingredient.get("quantity", "")
-                        unit = ingredient.get("unit", "")
-                        name = ingredient.get("name", "")
-                        
-                        # Format the ingredient text
-                        if quantity and unit:
-                            ingredient_text = f"{quantity} {unit} {name}".strip()
-                        elif quantity:
-                            ingredient_text = f"{quantity} {name}".strip()
-                        else:
-                            ingredient_text = name
-                    else:
-                        # If ingredient is just a string
-                        ingredient_text = str(ingredient)
-                    
-                    # Add to PDF
-                    pdf.set_font('DejaVu', '', 10)
-                    pdf.cell(5, 5, "•", 0, 0, 'R')
-                    pdf.cell(0, 5, ingredient_text, 0, 1, 'L')
+                self._add_ingredients(pdf, ingredients)
             else:
-                pdf.set_font('DejaVu', 'I', 10)
-                pdf.cell(0, 5, "No ingredients listed", 0, 1, 'L')
+                pdf.set_font(self.font_family, '', 12)
+                pdf.set_text_color(*self.text_color)
+                pdf.cell(0, 10, 'No ingredients listed', ln=True)
             
-            pdf.ln(5)
+            pdf.ln(10)
             
-            # Add instructions
-            pdf.chapter_title("Instructions")
+            # Add instructions section
+            pdf.set_font(self.font_family, 'B', 16)
+            pdf.set_text_color(*self.accent_color)
+            pdf.cell(0, 10, 'Instructions', ln=True)
+            pdf.ln(2)
             
-            instructions = recipe_data.get("instructions", [])
+            instructions = recipe_data.get('instructions', [])
             if instructions:
-                for i, instruction in enumerate(instructions, 1):
-                    pdf.set_font('DejaVu', 'B', 10)
-                    pdf.cell(8, 5, f"{i}.", 0, 0, 'L')
-                    
-                    pdf.set_font('DejaVu', '', 10)
-                    pdf.multi_cell(172, 5, instruction)
-                    pdf.ln(2)
+                self._add_instructions(pdf, instructions)
             else:
-                pdf.set_font('DejaVu', 'I', 10)
-                pdf.cell(0, 5, "No instructions listed", 0, 1, 'L')
+                pdf.set_font(self.font_family, '', 12)
+                pdf.set_text_color(*self.text_color)
+                pdf.cell(0, 10, 'No instructions listed', ln=True)
             
-            # Add source information and QR code
-            if "source" in recipe_data and "url" in recipe_data["source"]:
-                pdf.ln(10)
-                
-                # Add separator line
-                pdf.line(10, pdf.get_y(), 200, pdf.get_y())
-                pdf.ln(5)
-                
-                source_url = recipe_data["source"]["url"]
-                
-                # Generate QR code
-                qr = qrcode.QRCode(
-                    version=1,
-                    error_correction=qrcode.constants.ERROR_CORRECT_L,
-                    box_size=10,
-                    border=4,
-                )
-                qr.add_data(source_url)
-                qr.make(fit=True)
-                
-                qr_img = qr.make_image(fill_color="black", back_color="white")
-                qr_path = "data/processed/temp_qr.png"
-                qr_img.save(qr_path)
-                
-                # Add QR code
-                pdf.image(qr_path, x=170, y=pdf.get_y(), w=20)
-                
-                # Add source text
-                pdf.set_font('DejaVu', 'I', 8)
-                pdf.cell(160, 5, "Original Recipe:", 0, 1, 'L')
-                pdf.cell(160, 5, source_url, 0, 1, 'L')
-                
-                # Remove temporary QR file
-                os.remove(qr_path)
+            # Add footer with source
+            self._add_footer(pdf, recipe_data)
             
-            # Save PDF file
-            os.makedirs("data/processed/pdfs", exist_ok=True)
+            # Save the PDF
+            filename = self._get_filename(recipe_data)
+            filepath = os.path.join(self.output_dir, filename)
+            pdf.output(filepath)
             
-            # Generate filename from recipe title
-            title_slug = recipe_data.get("title", "recipe").lower()
-            title_slug = "".join(c if c.isalnum() else "_" for c in title_slug)
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            pdf_filename = f"data/processed/pdfs/{title_slug}_{timestamp}.pdf"
+            logger.info(f"PDF generated successfully: {filepath}")
+            return filepath
             
-            pdf.output(pdf_filename)
-            
-            # Update stats
-            self.generated_count += 1
-            self.last_generated = datetime.now().isoformat()
-            self._save_stats()
-            
-            logger.info(f"Generated PDF: {pdf_filename}")
-            return pdf_filename
         except Exception as e:
-            logger.error(f"Error generating PDF: {str(e)}")
-            return ""
+            logger.error(f"Failed to generate PDF: {str(e)}")
+            return None
     
-    def get_generated_count(self) -> int:
-        """Get the number of PDFs generated"""
-        return self.generated_count
+    def _add_image_from_url(self, pdf, image_url):
+        """
+        Add an image from URL to the PDF
+        
+        Args:
+            pdf (FPDF): PDF object
+            image_url (str): URL of the image
+        """
+        try:
+            # Download image
+            response = requests.get(image_url, stream=True)
+            response.raise_for_status()
+            
+            # Create temporary file for the image
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
+                # Save image to temporary file
+                temp_file.write(response.content)
+                temp_file_path = temp_file.name
+            
+            # Resize image if needed
+            try:
+                # Open the image
+                image = Image.open(temp_file_path)
+                
+                # Get original dimensions
+                width, height = image.size
+                
+                # Calculate new dimensions to fit PDF width (180mm) while maintaining aspect ratio
+                max_width = 180
+                new_width = min(width, max_width)
+                new_height = int(height * (new_width / width))
+                
+                # Resize image
+                resized_image = image.resize((new_width * 3, new_height * 3))  # × 3 for better quality
+                
+                # Save resized image
+                resized_image.save(temp_file_path)
+            except Exception as e:
+                logger.warning(f"Failed to resize image: {str(e)}")
+            
+            # Add image to PDF
+            pdf.image(temp_file_path, x=10, w=190)
+            
+            # Clean up temporary file
+            os.unlink(temp_file_path)
+            
+        except Exception as e:
+            logger.warning(f"Failed to add image from URL: {str(e)}")
+    
+    def _add_recipe_info(self, pdf, recipe_data):
+        """
+        Add recipe information (prep time, servings, etc.)
+        
+        Args:
+            pdf (FPDF): PDF object
+            recipe_data (dict): Recipe data
+        """
+        pdf.set_font(self.font_family, 'B', 12)
+        pdf.set_text_color(*self.text_color)
+        
+        # Create info grid
+        info_items = []
+        
+        if recipe_data.get('prep_time'):
+            info_items.append(('Prep Time', recipe_data['prep_time']))
+        
+        if recipe_data.get('cook_time'):
+            info_items.append(('Cook Time', recipe_data['cook_time']))
+        
+        if recipe_data.get('total_time'):
+            info_items.append(('Total Time', recipe_data['total_time']))
+        
+        if recipe_data.get('servings'):
+            info_items.append(('Servings', recipe_data['servings']))
+        
+        if recipe_data.get('difficulty'):
+            info_items.append(('Difficulty', recipe_data['difficulty'].capitalize()))
+        
+        # Display dietary info if available
+        dietary_info = recipe_data.get('dietary_info', [])
+        if dietary_info:
+            info_items.append(('Dietary', ', '.join(dietary_info)))
+        
+        # Draw info grid (2 columns)
+        if info_items:
+            # Calculate column width
+            col_width = 95
+            
+            # Create rows
+            for i in range(0, len(info_items), 2):
+                # First item
+                pdf.set_font(self.font_family, 'B', 10)
+                pdf.cell(30, 6, info_items[i][0] + ':', 0)
+                
+                pdf.set_font(self.font_family, '', 10)
+                pdf.cell(col_width - 30, 6, info_items[i][1], 0)
+                
+                # Second item (if available)
+                if i + 1 < len(info_items):
+                    pdf.set_font(self.font_family, 'B', 10)
+                    pdf.cell(30, 6, info_items[i + 1][0] + ':', 0)
+                    
+                    pdf.set_font(self.font_family, '', 10)
+                    pdf.cell(col_width - 30, 6, info_items[i + 1][1], 0)
+                
+                pdf.ln(6)
+    
+    def _add_ingredients(self, pdf, ingredients):
+        """
+        Add ingredients list to PDF
+        
+        Args:
+            pdf (FPDF): PDF object
+            ingredients (list): List of ingredients
+        """
+        pdf.set_font(self.font_family, '', 12)
+        pdf.set_text_color(*self.text_color)
+        
+        for ingredient in ingredients:
+            if isinstance(ingredient, dict):
+                # Extract ingredient components
+                quantity = ingredient.get('quantity', '')
+                unit = ingredient.get('unit', '')
+                name = ingredient.get('name', '')
+                
+                # Format ingredient text
+                if quantity and unit:
+                    ingredient_text = f"• {quantity} {unit} {name}"
+                elif quantity:
+                    ingredient_text = f"• {quantity} {name}"
+                else:
+                    ingredient_text = f"• {name}"
+            else:
+                # Handle string ingredients
+                ingredient_text = f"• {ingredient}"
+            
+            # Add to PDF
+            pdf.multi_cell(0, 6, ingredient_text)
+    
+    def _add_instructions(self, pdf, instructions):
+        """
+        Add instructions to PDF
+        
+        Args:
+            pdf (FPDF): PDF object
+            instructions (list): List of instruction steps
+        """
+        pdf.set_font(self.font_family, '', 12)
+        pdf.set_text_color(*self.text_color)
+        
+        for i, step in enumerate(instructions, 1):
+            # Format step number
+            pdf.set_font(self.font_family, 'B', 12)
+            step_number = f"{i}. "
+            pdf.cell(10, 6, step_number)
+            
+            # Format step text
+            pdf.set_font(self.font_family, '', 12)
+            # Account for step number width
+            pdf.multi_cell(0, 6, step)
+            pdf.ln(2)
+    
+    def _add_footer(self, pdf, recipe_data):
+        """
+        Add footer with source information
+        
+        Args:
+            pdf (FPDF): PDF object
+            recipe_data (dict): Recipe data
+        """
+        # Move to bottom of page
+        pdf.set_y(-30)
+        
+        # Add source information
+        pdf.set_font(self.font_family, 'I', 9)
+        pdf.set_text_color(128, 128, 128)  # Gray
+        
+        # Get source information
+        source = recipe_data.get('source', {})
+        platform = source.get('platform', 'Unknown')
+        url = source.get('url', '')
+        
+        if platform and url:
+            source_text = f"Source: {platform} - {url}"
+        elif platform:
+            source_text = f"Source: {platform}"
+        else:
+            source_text = "Generated by Fetch Bites"
+        
+        pdf.cell(0, 5, source_text, 0, 1, 'C')
+        
+        # Add generation timestamp
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        pdf.cell(0, 5, f"Generated on {timestamp}", 0, 1, 'C')
+    
+    def _get_filename(self, recipe_data):
+        """
+        Generate a filename for the PDF
+        
+        Args:
+            recipe_data (dict): Recipe data
+            
+        Returns:
+            str: Filename
+        """
+        # Clean title for filename
+        title = recipe_data.get('title', 'Untitled Recipe')
+        clean_title = ''.join(c if c.isalnum() or c.isspace() else '_' for c in title)
+        clean_title = clean_title.replace(' ', '_')
+        
+        # Add timestamp to ensure uniqueness
+        timestamp = int(time.time())
+        
+        return f"{clean_title}_{timestamp}.pdf"

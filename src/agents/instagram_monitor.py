@@ -1,340 +1,1456 @@
 # src/agents/instagram_monitor.py
 import os
 import time
-import logging
 import json
 import re
-import asyncio
-from datetime import datetime
-from typing import Dict, List, Optional, Union
+import logging
+import random
+from typing import Dict, List, Optional
+
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
-import requests
-from anthropic import Anthropic
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 
+# Set up logging
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-class InstagramMonitorAgent:
-    """Agent for monitoring Instagram accounts and identifying recipe posts"""
+# Create handler if not already configured
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+class InstagramMonitor:
+    """
+    Instagram Monitor Agent for extracting content from Instagram posts
+    """
     
-    def __init__(self):
-        self.anthropic = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-        self.accounts: Dict[str, Dict] = {}
-        self.processed_posts: Dict[str, datetime] = {}
-        self.account_count = 0
-        self._setup_browser()
-        self._load_saved_state()
+    def __init__(self, options=None):
+        """
+        Initialize Instagram monitor agent
         
-    def _setup_browser(self):
-        """Set up headless browser for Instagram scraping"""
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        Args:
+            options (dict, optional): Configuration options
+        """
+        # Default options
+        self.options = {
+            'headless': False,
+            'use_cookies': True,
+            'screenshot_dir': 'screenshots',
+            'timeout': 30,
+            'wait_time': 5,
+            'max_retries': 3
+        }
         
-        # Initialize the Chrome WebDriver
-        self.driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()),
-            options=chrome_options
-        )
-        logger.info("Browser setup complete")
-    
-    def _load_saved_state(self):
-        """Load previously monitored accounts and processed posts"""
+        # Update with provided options
+        if options:
+            self.options.update(options)
+        
+        # Load credentials from environment
+        self.username = os.getenv('INSTAGRAM_USERNAME')
+        self.password = os.getenv('INSTAGRAM_PASSWORD')
+        
+        if not self.username or not self.password:
+            raise ValueError("Instagram credentials not found in environment variables")
+        
+        # Create screenshot directory
+        self.screenshot_dir = self.options['screenshot_dir']
+        os.makedirs(self.screenshot_dir, exist_ok=True)
+        
+        # Initialize WebDriver to None - will be created when needed
+        self.driver = None
+        self.logged_in = False
+        self.cookies_loaded = False
+
+    def _setup_webdriver(self):
+        """
+        Set up Selenium WebDriver with appropriate options
+        
+        Returns:
+            WebDriver: Configured WebDriver instance
+        """
         try:
-            if os.path.exists("data/processed/monitor_state.json"):
-                with open("data/processed/monitor_state.json", "r") as f:
-                    state = json.load(f)
-                    self.accounts = state.get("accounts", {})
-                    self.processed_posts = {
-                        k: datetime.fromisoformat(v) 
-                        for k, v in state.get("processed_posts", {}).items()
-                    }
-                    self.account_count = len(self.accounts)
-                    logger.info(f"Loaded state with {self.account_count} accounts and {len(self.processed_posts)} processed posts")
-        except Exception as e:
-            logger.error(f"Error loading saved state: {str(e)}")
-            self.accounts = {}
-            self.processed_posts = {}
-            self.account_count = 0
-    
-    def _save_state(self):
-        """Save current monitoring state"""
-        try:
-            os.makedirs("data/processed", exist_ok=True)
-            with open("data/processed/monitor_state.json", "w") as f:
-                state = {
-                    "accounts": self.accounts,
-                    "processed_posts": {
-                        k: v.isoformat() 
-                        for k, v in self.processed_posts.items()
-                    }
-                }
-                json.dump(state, f)
-            logger.info("Saved monitoring state")
-        except Exception as e:
-            logger.error(f"Error saving state: {str(e)}")
-    
-    async def login_to_instagram(self):
-        """Log in to Instagram using credentials from environment variables"""
-        try:
-            self.driver.get("https://www.instagram.com/accounts/login/")
-            time.sleep(2)  # Wait for page to load
+            options = webdriver.ChromeOptions()
             
-            # Accept cookies if the dialog appears
+            # Add anti-detection measures
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--start-maximized")
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            options.add_experimental_option("useAutomationExtension", False)
+            
+            # Set headless mode if configured
+            if self.options['headless']:
+                options.add_argument("--headless")
+                options.add_argument("--window-size=1920,1080")
+            
+            # Create the WebDriver
+            driver = webdriver.Chrome(options=options)
+            
+            # Set additional preferences to appear more human-like
+            driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                "source": """
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => false,
+                    });
+                """
+            })
+            
+            # Set page load timeout
+            driver.set_page_load_timeout(self.options['timeout'])
+            
+            logger.info("WebDriver set up successfully")
+            return driver
+            
+        except Exception as e:
+            logger.error(f"Failed to set up WebDriver: {str(e)}")
+            raise
+
+    def login(self, driver=None):
+        """
+        Login to Instagram
+        
+        Args:
+            driver (WebDriver, optional): Existing WebDriver instance
+            
+        Returns:
+            bool: True if login successful, False otherwise
+        """
+        # Use provided driver or create one
+        if not driver:
+            if not self.driver:
+                self.driver = self._setup_webdriver()
+            driver = self.driver
+        
+        if self.logged_in:
+            logger.info("Already logged in to Instagram")
+            return True
+        
+        try:
+            logger.info("Logging in to Instagram...")
+            
+            # Navigate to Instagram
+            driver.get("https://www.instagram.com/")
+            
+            # Try to load cookies if enabled
+            if self.options['use_cookies'] and not self.cookies_loaded:
+                if self._load_cookies(driver):
+                    # Test if cookies worked by checking for login state
+                    if self._check_login_state(driver):
+                        logger.info("Successfully logged in with cookies")
+                        self.logged_in = True
+                        self.cookies_loaded = True
+                        return True
+                    else:
+                        logger.info("Cookie login failed, proceeding with manual login")
+                else:
+                    logger.info("No valid cookies found, proceeding with manual login")
+            
+            # Handle cookie consent dialog if present
+            self._handle_cookie_dialog(driver)
+            
+            # Wait for login page to load
             try:
-                cookie_button = WebDriverWait(self.driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Accept')]"))
+                WebDriverWait(driver, 10).until(
+                    EC.presence_of_element_located((By.NAME, "username"))
                 )
-                cookie_button.click()
-                time.sleep(1)
-            except:
-                logger.info("No cookie consent dialog found")
+            except TimeoutException:
+                logger.warning("Username field not found with standard selector, trying JavaScript approach")
+                
+                # Take screenshot for debugging
+                screenshot_path = os.path.join(self.screenshot_dir, "login_page.png")
+                driver.save_screenshot(screenshot_path)
+                
+                # Use JavaScript to find and interact with login form
+                login_script = """
+                const usernameField = document.querySelector('input[name="username"]') || 
+                                      document.querySelector('input[autocomplete="username"]');
+                
+                const passwordField = document.querySelector('input[name="password"]') || 
+                                      document.querySelector('input[type="password"]');
+                                      
+                if (!usernameField || !passwordField) {
+                    return false;
+                }
+                
+                usernameField.value = arguments[0];
+                passwordField.value = arguments[1];
+                
+                // Find and click login button
+                const loginButton = Array.from(document.querySelectorAll('button')).find(
+                    button => button.textContent.includes('Log In') || 
+                             button.textContent.includes('Log in') || 
+                             button.type === 'submit'
+                );
+                
+                if (loginButton) {
+                    loginButton.click();
+                    return true;
+                }
+                
+                return false;
+                """
+                
+                login_successful = driver.execute_script(login_script, self.username, self.password)
+                
+                if not login_successful:
+                    logger.error("Could not find login form elements")
+                    return False
             
-            # Enter username
-            username_input = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.NAME, "username"))
-            )
-            username_input.send_keys(os.getenv("INSTAGRAM_USERNAME"))
-            
-            # Enter password
-            password_input = self.driver.find_element(By.NAME, "password")
-            password_input.send_keys(os.getenv("INSTAGRAM_PASSWORD"))
-            
-            # Click login button
-            login_button = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']"))
-            )
-            login_button.click()
+            # If we get here, we're using the standard approach
+            try:
+                # Enter username and password
+                username_input = driver.find_element(By.NAME, "username")
+                password_input = driver.find_element(By.NAME, "password")
+                
+                # Clear fields and enter credentials
+                username_input.clear()
+                username_input.send_keys(self.username)
+                
+                password_input.clear()
+                password_input.send_keys(self.password)
+                
+                # Click login button
+                login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+                login_button.click()
+            except Exception as e:
+                logger.error(f"Error interacting with login form: {str(e)}")
+                return False
             
             # Wait for login to complete
             time.sleep(5)
             
-            # Check if login was successful
-            if "login" in self.driver.current_url:
-                logger.error("Login to Instagram failed")
-                return False
+            # Handle "Save Login Info" dialog
+            self._handle_save_login_dialog(driver)
             
-            logger.info("Successfully logged in to Instagram")
-            return True
-        except Exception as e:
-            logger.error(f"Error during Instagram login: {str(e)}")
-            return False
-    
-    async def add_account_to_monitor(self, username: str) -> bool:
-        """Add an Instagram account to the monitoring list"""
-        try:
-            if username in self.accounts:
-                logger.info(f"Account {username} is already being monitored")
+            # Handle "Turn on Notifications" dialog
+            self._handle_notifications_dialog(driver)
+            
+            # Verify login was successful
+            if self._check_login_state(driver):
+                logger.info("Successfully logged in to Instagram")
+                self.logged_in = True
+                
+                # Save cookies for future use
+                if self.options['use_cookies']:
+                    self._save_cookies(driver)
+                
                 return True
-            
-            # Visit the account page to validate it exists
-            self.driver.get(f"https://www.instagram.com/{username}/")
-            time.sleep(3)
-            
-            # Check if account exists
-            if "Page Not Found" in self.driver.title:
-                logger.error(f"Account {username} not found")
+            else:
+                logger.error("Login verification failed")
+                
+                # Take screenshot for debugging
+                screenshot_path = os.path.join(self.screenshot_dir, "login_failed.png")
+                driver.save_screenshot(screenshot_path)
+                
                 return False
-            
-            # Add account to monitoring list
-            self.accounts[username] = {
-                "added": datetime.now().isoformat(),
-                "last_checked": None,
-                "recipe_posts_found": 0
-            }
-            self.account_count += 1
-            
-            # Save updated state
-            self._save_state()
-            
-            logger.info(f"Added account {username} to monitoring list")
-            return True
+        
         except Exception as e:
-            logger.error(f"Error adding account {username}: {str(e)}")
+            logger.error(f"Login failed: {str(e)}")
+            
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "login_error.png")
+            driver.save_screenshot(screenshot_path)
+            
             return False
-    
-    async def check_for_new_posts(self, username: str, limit: int = 5) -> List[str]:
-        """Check an account for new posts and return URLs of potential recipe posts"""
+
+    def _check_login_state(self, driver):
+        """
+        Check if we're logged in
+        
+        Args:
+            driver (WebDriver): WebDriver instance
+            
+        Returns:
+            bool: True if logged in, False otherwise
+        """
         try:
-            logger.info(f"Checking for new posts from {username}")
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "login_verification.png")
+            driver.save_screenshot(screenshot_path)
             
-            # Visit account page
-            self.driver.get(f"https://www.instagram.com/{username}/")
-            time.sleep(3)
+            # Try multiple approaches to verify login
             
-            # Find all post links
-            post_links = []
-            elements = self.driver.find_elements(By.XPATH, "//a[contains(@href, '/p/')]")
-            for element in elements[:limit]:
-                href = element.get_attribute("href")
-                if href and href not in self.processed_posts:
-                    post_links.append(href)
+            # 1. Check for typical elements that appear after successful login
+            login_indicators = [
+                (By.CSS_SELECTOR, "svg[aria-label='Home']"),
+                (By.CSS_SELECTOR, "svg[aria-label='Direct']"),
+                (By.CSS_SELECTOR, "a[href='/direct/inbox/']"),
+                (By.CSS_SELECTOR, "a[href='/explore/']")
+            ]
             
-            # Update last checked time
-            if username in self.accounts:
-                self.accounts[username]["last_checked"] = datetime.now().isoformat()
-                self._save_state()
+            for selector_type, selector in login_indicators:
+                try:
+                    # Short timeout for each check
+                    WebDriverWait(driver, 3).until(
+                        EC.presence_of_element_located((selector_type, selector))
+                    )
+                    return True
+                except:
+                    continue
             
-            logger.info(f"Found {len(post_links)} new posts from {username}")
-            return post_links
+            # 2. Check URL
+            if "instagram.com/accounts/login" not in driver.current_url:
+                # 3. Check for login button (it shouldn't be present if logged in)
+                try:
+                    login_button = driver.find_element(By.XPATH, "//button[@type='submit']")
+                    login_text = login_button.text.lower()
+                    
+                    # If login button contains "log in" text, we're not logged in
+                    if "log in" in login_text or "login" in login_text:
+                        return False
+                except:
+                    # No login button found, might be logged in
+                    pass
+                
+                # 4. Look for content that would only be present when logged in
+                try:
+                    body_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+                    if "log out" in body_text or "logout" in body_text:
+                        return True
+                    
+                    if ("suggested for you" in body_text or 
+                        "following" in body_text or 
+                        "activity feed" in body_text):
+                        return True
+                except:
+                    pass
+            
+            # Default to not logged in if none of the checks passed
+            return False
+        
         except Exception as e:
-            logger.error(f"Error checking posts for {username}: {str(e)}")
-            return []
-    
-    async def is_recipe_post(self, post_url: str) -> bool:
-        """Determine if a post is a recipe using Claude API"""
+            logger.error(f"Error checking login state: {str(e)}")
+            return False
+
+    def _handle_cookie_dialog(self, driver):
+        """
+        Handle cookie consent dialog if it appears
+        
+        Args:
+            driver (WebDriver): WebDriver instance
+        """
         try:
-            # Extract post content
-            content = await self.extract_post_content(post_url)
-            if not content:
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "before_cookie_dialog.png")
+            driver.save_screenshot(screenshot_path)
+            
+            # Check if cookie dialog exists by looking for text
+            body_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+            
+            if "cookie" in body_text or "cookies" in body_text:
+                logger.info("Cookie consent dialog detected")
+                
+                # Try clicking the accept button using different methods
+                try:
+                    # Method 1: Find button by text
+                    accept_script = """
+                    const buttons = Array.from(document.querySelectorAll('button'));
+                    const acceptButton = buttons.find(button => 
+                        button.textContent.includes('Accept') || 
+                        button.textContent.includes('Allow') ||
+                        button.textContent.includes('Agree')
+                    );
+                    
+                    if (acceptButton) {
+                        acceptButton.click();
+                        return true;
+                    }
+                    return false;
+                    """
+                    
+                    accepted = driver.execute_script(accept_script)
+                    
+                    if accepted:
+                        logger.info("Clicked accept button on cookie dialog")
+                        time.sleep(1)
+                    else:
+                        # Method 2: Try standard selectors
+                        cookie_buttons = [
+                            (By.XPATH, "//button[contains(text(), 'Accept')]"),
+                            (By.XPATH, "//button[contains(text(), 'Allow')]"),
+                            (By.XPATH, "//button[contains(text(), 'Agree')]"),
+                            (By.CSS_SELECTOR, "button.primary"),
+                            (By.CSS_SELECTOR, "button.accept")
+                        ]
+                        
+                        for selector_type, selector in cookie_buttons:
+                            try:
+                                button = driver.find_element(selector_type, selector)
+                                button.click()
+                                logger.info(f"Clicked cookie dialog button with {selector}")
+                                time.sleep(1)
+                                break
+                            except:
+                                continue
+                
+                except Exception as e:
+                    logger.warning(f"Error handling cookie dialog: {str(e)}")
+                
+                logger.info("Attempted to dismiss cookie dialog")
+                
+                # Take screenshot after cookie dialog
+                screenshot_path = os.path.join(self.screenshot_dir, "after_cookie_dialog.png")
+                driver.save_screenshot(screenshot_path)
+        
+        except Exception as e:
+            logger.warning(f"Error checking for cookie dialog: {str(e)}")
+
+    def _handle_save_login_dialog(self, driver):
+        """
+        Handle "Save Login Info" dialog if it appears
+        
+        Args:
+            driver (WebDriver): WebDriver instance
+        """
+        try:
+            # Wait for the dialog to potentially appear
+            time.sleep(2)
+            
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "save_login_dialog.png")
+            driver.save_screenshot(screenshot_path)
+            
+            # Check if dialog exists by looking for text
+            body_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+            
+            if "save login info" in body_text or "save your login info" in body_text:
+                logger.info("Save Login Info dialog detected")
+                
+                # Try clicking the Not Now button
+                try:
+                    # Method 1: Find button by text
+                    not_now_script = """
+                    const buttons = Array.from(document.querySelectorAll('button'));
+                    const notNowButton = buttons.find(button => 
+                        button.textContent.includes('Not Now') || 
+                        button.textContent.includes('Not now') ||
+                        button.textContent.includes('Cancel') ||
+                        button.textContent.includes('Later')
+                    );
+                    
+                    if (notNowButton) {
+                        notNowButton.click();
+                        return true;
+                    }
+                    return false;
+                    """
+                    
+                    clicked = driver.execute_script(not_now_script)
+                    
+                    if clicked:
+                        logger.info("Clicked Not Now button on Save Login Info dialog")
+                        time.sleep(1)
+                    else:
+                        # Method 2: Try standard selectors
+                        not_now_buttons = [
+                            (By.XPATH, "//button[contains(text(), 'Not Now')]"),
+                            (By.XPATH, "//button[contains(text(), 'Not now')]"),
+                            (By.XPATH, "//button[contains(text(), 'Cancel')]"),
+                            (By.XPATH, "//button[contains(text(), 'Later')]")
+                        ]
+                        
+                        for selector_type, selector in not_now_buttons:
+                            try:
+                                button = driver.find_element(selector_type, selector)
+                                button.click()
+                                logger.info(f"Clicked Save Login Info dialog button with {selector}")
+                                time.sleep(1)
+                                break
+                            except:
+                                continue
+                
+                except Exception as e:
+                    logger.warning(f"Error handling Save Login Info dialog: {str(e)}")
+        
+        except Exception as e:
+            logger.warning(f"Error checking for Save Login Info dialog: {str(e)}")
+
+    def _handle_notifications_dialog(self, driver):
+        """
+        Handle turn on notifications dialog if it appears
+        
+        Args:
+            driver (WebDriver): WebDriver instance
+        """
+        try:
+            # Wait for the dialog to potentially appear
+            time.sleep(2)
+            
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "notifications_dialog.png")
+            driver.save_screenshot(screenshot_path)
+            
+            # Check if dialog exists by looking for text
+            body_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+            
+            if "turn on notifications" in body_text or "enable notifications" in body_text:
+                logger.info("Notifications dialog detected")
+                
+                # Try clicking the Not Now button
+                try:
+                    # Method 1: Find button by text
+                    not_now_script = """
+                    const buttons = Array.from(document.querySelectorAll('button'));
+                    const notNowButton = buttons.find(button => 
+                        button.textContent.includes('Not Now') || 
+                        button.textContent.includes('Not now') ||
+                        button.textContent.includes('Cancel') ||
+                        button.textContent.includes('Later')
+                    );
+                    
+                    if (notNowButton) {
+                        notNowButton.click();
+                        return true;
+                    }
+                    return false;
+                    """
+                    
+                    clicked = driver.execute_script(not_now_script)
+                    
+                    if clicked:
+                        logger.info("Clicked Not Now button on notifications dialog")
+                        time.sleep(1)
+                    else:
+                        # Method 2: Try standard selectors
+                        not_now_buttons = [
+                            (By.XPATH, "//button[contains(text(), 'Not Now')]"),
+                            (By.XPATH, "//button[contains(text(), 'Not now')]"),
+                            (By.XPATH, "//button[contains(text(), 'Cancel')]"),
+                            (By.XPATH, "//button[contains(text(), 'Later')]")
+                        ]
+                        
+                        for selector_type, selector in not_now_buttons:
+                            try:
+                                button = driver.find_element(selector_type, selector)
+                                button.click()
+                                logger.info(f"Clicked notifications dialog button with {selector}")
+                                time.sleep(1)
+                                break
+                            except:
+                                continue
+                
+                except Exception as e:
+                    logger.warning(f"Error handling notifications dialog: {str(e)}")
+        
+        except Exception as e:
+            logger.warning(f"Error checking for notifications dialog: {str(e)}")
+
+    def _save_cookies(self, driver):
+        """
+        Save cookies for future use
+        
+        Args:
+            driver (WebDriver): WebDriver instance
+        """
+        try:
+            # Create cookies directory if it doesn't exist
+            os.makedirs('cookies', exist_ok=True)
+            
+            # Get cookies
+            cookies = driver.get_cookies()
+            
+            # Save cookies to file
+            with open('cookies/instagram_cookies.json', 'w') as f:
+                json.dump(cookies, f)
+            
+            logger.info("Cookies saved successfully")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error saving cookies: {str(e)}")
+            return False
+
+    def _load_cookies(self, driver):
+        """
+        Load cookies from file
+        
+        Args:
+            driver (WebDriver): WebDriver instance
+            
+        Returns:
+            bool: True if cookies loaded successfully, False otherwise
+        """
+        try:
+            # Check if cookie file exists
+            if not os.path.exists('cookies/instagram_cookies.json'):
                 return False
             
-            # Combine caption and other metadata for analysis
-            text_to_analyze = f"""
-            Post Caption: {content.get('caption', '')}
-            Hashtags: {', '.join(content.get('hashtags', []))}
+            # Load cookies from file
+            with open('cookies/instagram_cookies.json', 'r') as f:
+                cookies = json.load(f)
+            
+            # Ensure we're on Instagram domain before setting cookies
+            current_url = driver.current_url
+            if "instagram.com" not in current_url:
+                driver.get("https://www.instagram.com/")
+                time.sleep(2)
+            
+            # Add cookies to browser
+            for cookie in cookies:
+                # Handle cookies without expiry
+                if 'expiry' in cookie:
+                    # Some drivers have issues with cookies' expiry format
+                    try:
+                        # Convert to int if it's float
+                        cookie['expiry'] = int(cookie['expiry'])
+                    except:
+                        # Remove expiry if it causes problems
+                        del cookie['expiry']
+                
+                try:
+                    driver.add_cookie(cookie)
+                except Exception as e:
+                    logger.debug(f"Could not add cookie {cookie.get('name')}: {str(e)}")
+            
+            # Refresh the page
+            driver.refresh()
+            time.sleep(3)
+            
+            logger.info("Cookies loaded successfully")
+            return True
+        
+        except Exception as e:
+            logger.error(f"Error loading cookies: {str(e)}")
+            return False
+
+    def extract_post_content(self, post_url, max_retries=3):
+        """
+        Extract content from an Instagram post
+        
+        Args:
+            post_url (str): URL of the Instagram post
+            max_retries (int): Maximum number of retries for extraction
+            
+        Returns:
+            dict: Post content with caption, username, etc. or None if failed
+        """
+        driver = None
+        try:
+            # Set up WebDriver if not already done
+            if not self.driver:
+                driver = self._setup_webdriver()
+                self.login(driver)
+            else:
+                driver = self.driver
+                
+            logger.info(f"Extracting content from {post_url}...")
+            
+            # Implement retry logic
+            for attempt in range(max_retries):
+                try:
+                    # Navigate to the post with longer timeout
+                    driver.get(post_url)
+                    
+                    # Take screenshot for debugging
+                    screenshot_path = os.path.join(self.screenshot_dir, f"post_load_attempt_{attempt}.png")
+                    driver.save_screenshot(screenshot_path)
+                    
+                    # Longer initial wait for post loading
+                    WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.TAG_NAME, "article"))
+                    )
+                    
+                    # Wait for specific elements that indicate content has loaded
+                    selectors_to_try = [
+                        (By.CSS_SELECTOR, "article div"),
+                        (By.CSS_SELECTOR, "div[data-testid='post-content']"),
+                        (By.CSS_SELECTOR, "div.C4VMK"),  # Classic caption selector
+                        (By.CSS_SELECTOR, "div._a9zs"),  # Another caption selector
+                        (By.CSS_SELECTOR, "h1"),         # Sometimes captions are in headings
+                        (By.CSS_SELECTOR, "article span"),
+                        (By.TAG_NAME, "article")
+                    ]
+                    
+                    # Use multiple wait strategies
+                    for selector_type, selector in selectors_to_try:
+                        try:
+                            # Short timeout for each selector
+                            WebDriverWait(driver, 5).until(
+                                EC.presence_of_element_located((selector_type, selector))
+                            )
+                            logger.info(f"Found content with selector: {selector}")
+                            break
+                        except:
+                            continue
+                    
+                    # Add longer wait after finding elements
+                    time.sleep(3)
+                    
+                    # Take another screenshot after waiting
+                    screenshot_path = os.path.join(self.screenshot_dir, f"post_loaded_{attempt}.png")
+                    driver.save_screenshot(screenshot_path)
+                    
+                    # Extract content using JavaScript for more flexibility
+                    content = self._extract_with_javascript(driver)
+                    
+                    # If JavaScript extraction failed, try multiple selector-based approaches
+                    if not content or not content.get('caption'):
+                        logger.info("JavaScript extraction failed, trying selector-based extraction")
+                        content = self._extract_with_selectors(driver)
+                    
+                    # If we still don't have content, try scrolling and extracting again
+                    if not content or not content.get('caption'):
+                        logger.info("Scrolling page and trying extraction again")
+                        # Scroll down to load more content
+                        driver.execute_script("window.scrollTo(0, 1000)")
+                        time.sleep(2)
+                        
+                        # Try JavaScript extraction again
+                        content = self._extract_with_javascript(driver)
+                        
+                        # If still no content, try selectors again
+                        if not content or not content.get('caption'):
+                            content = self._extract_with_selectors(driver)
+                    
+                    # If we have content, break out of the retry loop
+                    if content and content.get('caption'):
+                        logger.info(f"Successfully extracted post content ({len(content['caption'])} chars)")
+                        return content
+                    
+                    # If we get here, we need to retry
+                    logger.warning(f"Attempt {attempt+1}/{max_retries} failed to extract content")
+                    time.sleep(2)  # Wait before retry
+                    
+                except TimeoutException:
+                    logger.warning(f"Timeout on attempt {attempt+1}/{max_retries}")
+                    time.sleep(2)  # Wait before retry
+                    continue
+                except Exception as e:
+                    logger.warning(f"Error on attempt {attempt+1}/{max_retries}: {str(e)}")
+                    time.sleep(2)  # Wait before retry
+                    continue
+            
+            # If we get here, all retries failed
+            logger.error("Post content did not load within timeout after all retries")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to extract post content: {str(e)}")
+            return None
+        finally:
+            # Only close the driver if we created it in this method
+            if driver and driver != self.driver:
+                driver.quit()
+
+    def _extract_with_javascript(self, driver):
+        """
+        Extract post content using JavaScript execution
+        
+        Args:
+            driver: WebDriver instance
+            
+        Returns:
+            dict: Post content or None if failed
+        """
+        try:
+            # Use JavaScript to extract content more flexibly
+            script = """
+            function extractPostContent() {
+                let result = {
+                    caption: null,
+                    username: null,
+                    timestamp: null,
+                    hashtags: []
+                };
+                
+                // Try multiple ways to get the caption
+                
+                // 1. Look for article element and find text content
+                const article = document.querySelector('article');
+                if (article) {
+                    // Find all text nodes with significant content
+                    const textElements = article.querySelectorAll('h1, h2, p, span, div');
+                    
+                    for (const el of textElements) {
+                        const text = el.textContent.trim();
+                        if (text.length > 50) {
+                            // This might be the caption
+                            result.caption = text;
+                            break;
+                        }
+                    }
+                    
+                    // Look for username
+                    const usernameElements = article.querySelectorAll('a');
+                    for (const el of usernameElements) {
+                        if (el.href && el.href.includes('/')) {
+                            const possibleUsername = el.href.split('/').filter(s => s).pop();
+                            if (possibleUsername && possibleUsername.length > 0 && possibleUsername.length < 30) {
+                                result.username = possibleUsername;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Extract hashtags from caption
+                    if (result.caption) {
+                        const hashtagRegex = /#([a-zA-Z0-9_]+)/g;
+                        let match;
+                        while ((match = hashtagRegex.exec(result.caption)) !== null) {
+                            result.hashtags.push(match[1]);
+                        }
+                    }
+                }
+                
+                // If we couldn't find caption, get all text and look for longest section
+                if (!result.caption) {
+                    let allText = '';
+                    const textElements = document.querySelectorAll('h1, h2, p, span, div');
+                    
+                    // Find the longest text element
+                    let longestText = '';
+                    for (const el of textElements) {
+                        const text = el.textContent.trim();
+                        if (text.length > longestText.length) {
+                            longestText = text;
+                        }
+                        
+                        // Append to all text if substantial
+                        if (text.length > 20) {
+                            allText += text + '\\n';
+                        }
+                    }
+                    
+                    // Use the longest text if it's substantial
+                    if (longestText.length > 50) {
+                        result.caption = longestText;
+                    } else if (allText.length > 50) {
+                        // Otherwise use all collected text
+                        result.caption = allText;
+                    }
+                }
+                
+                return result;
+            }
+            
+            return extractPostContent();
             """
             
-            # Use Claude to classify if this is a recipe post
-            response = self.anthropic.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=150,
-                temperature=0,
-                system="You are a specialist in identifying recipe posts. Respond with 'YES' if the Instagram post contains a recipe (ingredients and/or cooking instructions), or 'NO' if it does not. Only respond with YES or NO.",
-                messages=[
-                    {"role": "user", "content": text_to_analyze}
-                ]
-            )
-            
-            result = response.content[0].text.strip().upper()
-            is_recipe = result == "YES"
-            
-            # Update processed posts
-            self.processed_posts[post_url] = datetime.now()
-            self._save_state()
-            
-            logger.info(f"Post {post_url} classified as recipe: {is_recipe}")
-            return is_recipe
-        except Exception as e:
-            logger.error(f"Error classifying post {post_url}: {str(e)}")
-            return False
-    
-    async def extract_post_content(self, post_url: str) -> Dict:
-        """Extract content from an Instagram post"""
-        try:
-            logger.info(f"Extracting content from {post_url}")
-            
-            # Visit the post page
-            self.driver.get(post_url)
-            time.sleep(3)
-            
-            # Extract caption
-            caption_element = None
-            try:
-                caption_element = WebDriverWait(self.driver, 5).until(
-                    EC.presence_of_element_located((By.CSS_SELECTOR, "div._a9zs"))
-                )
-            except:
-                logger.warning(f"No caption found for {post_url}")
-            
-            caption = caption_element.text if caption_element else ""
-            
-            # Extract hashtags from caption
-            hashtags = re.findall(r'#\w+', caption)
-            
-            # Extract image URL or video thumbnail
-            media_url = None
-            try:
-                # Try to find image
-                img_element = self.driver.find_element(By.XPATH, "//div[@role='button']/img")
-                media_url = img_element.get_attribute("src")
-            except:
-                try:
-                    # Try to find video thumbnail
-                    video_element = self.driver.find_element(By.TAG_NAME, "video")
-                    media_url = video_element.get_attribute("poster")
-                except:
-                    logger.warning(f"No media found for {post_url}")
-            
-            # Extract post date
-            post_date = None
-            try:
-                time_element = self.driver.find_element(By.TAG_NAME, "time")
-                post_date = time_element.get_attribute("datetime")
-            except:
-                logger.warning(f"No date found for {post_url}")
-            
-            # Collect all data
-            content = {
-                "url": post_url,
-                "caption": caption,
-                "hashtags": hashtags,
-                "media_url": media_url,
-                "post_date": post_date,
-                "extracted_at": datetime.now().isoformat()
-            }
-            
-            # Save raw data
-            os.makedirs("data/raw", exist_ok=True)
-            post_id = post_url.split("/")[-2]
-            with open(f"data/raw/{post_id}.json", "w") as f:
-                json.dump(content, f)
-            
-            logger.info(f"Successfully extracted content from {post_url}")
+            content = driver.execute_script(script)
             return content
         except Exception as e:
-            logger.error(f"Error extracting content from {post_url}: {str(e)}")
-            return {}
-    
-    async def start_monitoring(self, interval: int = 3600):
-        """Start monitoring accounts for new recipe posts"""
-        logger.info("Starting Instagram monitoring process")
-        while True:
-            try:
-                # Log in to Instagram if needed
-                if "instagram.com/accounts/login" in self.driver.current_url:
-                    await self.login_to_instagram()
-                
-                # Check each account for new posts
-                for username in self.accounts:
-                    new_post_urls = await self.check_for_new_posts(username)
-                    
-                    # Check if each post is a recipe
-                    for post_url in new_post_urls:
-                        if await self.is_recipe_post(post_url):
-                            self.accounts[username]["recipe_posts_found"] += 1
-                            
-                            # Here you would trigger the recipe extraction pipeline
-                            # This will be implemented in the recipe_extractor.py file
-                            logger.info(f"Recipe post found: {post_url}")
-                            
-                # Save updated state
-                self._save_state()
-                
-                # Wait for the next check
-                logger.info(f"Monitoring cycle complete. Waiting {interval} seconds for next cycle.")
-                await asyncio.sleep(interval)
-            except Exception as e:
-                logger.error(f"Error in monitoring cycle: {str(e)}")
-                await asyncio.sleep(60)  # Wait a bit before retrying
-    
-    def get_account_count(self) -> int:
-        """Get the number of accounts being monitored"""
-        return self.account_count
-    
-    def __del__(self):
-        """Clean up resources"""
+            logger.error(f"JavaScript extraction failed: {str(e)}")
+            return None
+
+    def _extract_with_selectors(self, driver):
+        """
+        Extract post content using various CSS selectors
+        
+        Args:
+            driver: WebDriver instance
+            
+        Returns:
+            dict: Post content or None if failed
+        """
+        content = {
+            'caption': None,
+            'username': None,
+            'timestamp': None,
+            'hashtags': []
+        }
+        
         try:
-            self.driver.quit()
-        except:
-            pass
+            # Try multiple approaches to get caption
+            caption_selectors = [
+                "div[data-testid='post-caption']", 
+                "span[data-testid='post-caption']",
+                "div.C4VMK span",  # Classic caption selector
+                "div._a9zs",       # Another caption selector
+                "h1",              # Sometimes captions are in headings
+                "article span",
+                "article div"
+            ]
+            
+            for selector in caption_selectors:
+                try:
+                    elements = driver.find_elements(By.CSS_SELECTOR, selector)
+                    for element in elements:
+                        text = element.text
+                        if text and len(text) > 50:
+                            content['caption'] = text
+                            break
+                    if content['caption']:
+                        break
+                except:
+                    continue
+            
+            # Try to get username
+            username_selectors = [
+                "a.ZIAjV",
+                "a.notranslate",
+                "a[tabindex='0']",
+                "header a"
+            ]
+            
+            for selector in username_selectors:
+                try:
+                    username_element = driver.find_element(By.CSS_SELECTOR, selector)
+                    if username_element:
+                        # Extract username from element
+                        href = username_element.get_attribute("href")
+                        if href and "/" in href:
+                            content['username'] = href.split("/")[-2]
+                        else:
+                            content['username'] = username_element.text
+                        break
+                except:
+                    continue
+            
+            # Extract hashtags from caption
+            if content['caption']:
+                hashtag_regex = r'#(\w+)'
+                hashtags = re.findall(hashtag_regex, content['caption'])
+                content['hashtags'] = hashtags
+            
+            return content
+        except Exception as e:
+            logger.error(f"Selector-based extraction failed: {str(e)}")
+            return None
+    
+    def extract_recipes_from_account(self, account_username, post_limit=10):
+        """
+        Extract recipes from a specific Instagram account
+        
+        Args:
+            account_username (str): Instagram account username
+            post_limit (int): Maximum number of posts to analyze
+            
+        Returns:
+            list: List of extracted recipes
+        """
+        driver = None
+        try:
+            # Set up WebDriver if not already done
+            if not self.driver:
+                driver = self._setup_webdriver()
+                self.login(driver)
+            else:
+                driver = self.driver
+            
+            logger.info(f"Extracting recipes from account: {account_username}")
+            
+            # Navigate to the account page
+            account_url = f"https://www.instagram.com/{account_username}/"
+            driver.get(account_url)
+            
+            # Wait for the page to load
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "article"))
+            )
+            
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, f"account_page_{account_username}.png")
+            driver.save_screenshot(screenshot_path)
+            
+            # Extract post URLs
+            post_urls = []
+            scroll_count = 0
+            max_scrolls = 5
+            
+            while len(post_urls) < post_limit and scroll_count < max_scrolls:
+                # Extract post URLs from current view
+                new_urls = driver.execute_script("""
+                    const links = Array.from(document.querySelectorAll('a'));
+                    return links
+                        .filter(link => link.href.includes('/p/') || link.href.includes('/reel/'))
+                        .map(link => link.href);
+                """)
+                
+                # Add new unique URLs to our list
+                for url in new_urls:
+                    if url not in post_urls:
+                        post_urls.append(url)
+                
+                # Log progress
+                logger.info(f"Found {len(post_urls)} posts so far")
+                
+                # If we have enough posts, break
+                if len(post_urls) >= post_limit:
+                    break
+                
+                # Scroll down to load more posts
+                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2)
+                scroll_count += 1
+            
+            # Limit to requested number
+            post_urls = post_urls[:post_limit]
+            
+            # Process each post
+            recipes = []
+            for url in post_urls:
+                try:
+                    content = self.extract_post_content(url)
+                    if content and content.get('caption'):
+                        # Add post URL to content
+                        content['url'] = url
+                        recipes.append(content)
+                except Exception as e:
+                    logger.error(f"Error extracting content from {url}: {str(e)}")
+                    continue
+            
+            logger.info(f"Extracted {len(recipes)} potential recipes from {account_username}")
+            return recipes
+        
+        except Exception as e:
+            logger.error(f"Failed to extract recipes from account: {str(e)}")
+            return []
+        finally:
+            # Only close the driver if we created it in this method
+            if driver and driver != self.driver:
+                driver.quit()
+
+    def is_recipe_post(self, post_url):
+        """
+        Check if a post is likely a recipe post based on content analysis
+        
+        Args:
+            post_url (str): URL of the Instagram post
+            
+        Returns:
+            bool: True if post is likely a recipe, False otherwise
+        """
+        try:
+            # Extract content from post
+            content = self.extract_post_content(post_url)
+            
+            if not content or not content.get('caption'):
+                return False
+                
+            # Keywords that suggest a recipe post
+            recipe_keywords = [
+                'recipe', 'ingredients', 'instructions', 
+                'cook', 'bake', 'roast', 'fry', 'grill', 'boil',
+                'tbsp', 'tsp', 'cup', 'cups', 'oz', 'pound', 'lb',
+                'minute', 'hour', 'heat', 'oven', 'stove', 'simmer',
+                'mix', 'stir', 'whisk', 'blend', 'combine'
+            ]
+            
+            # Check caption for recipe keywords
+            caption = content['caption'].lower()
+            keyword_count = sum(1 for keyword in recipe_keywords if keyword in caption)
+            
+            # Check hashtags for recipe-related tags
+            recipe_hashtags = ['recipe', 'cooking', 'baking', 'homemade', 'foodie', 'chef', 'cook', 'baker']
+            hashtag_matches = sum(1 for tag in content['hashtags'] if any(kw in tag.lower() for kw in recipe_hashtags))
+            
+            # Recipe structure indicators
+            has_ingredient_list = bool(re.search(r'ingredients?:', caption, re.IGNORECASE))
+            has_instruction_list = bool(re.search(r'(instructions?|directions?|steps?|method):', caption, re.IGNORECASE))
+            has_numbered_steps = bool(re.search(r'([1-9][0-9]?\.|[1-9][0-9]?\))', caption))
+            has_measurements = bool(re.search(r'([0-9]+\s*(cup|tbsp|tsp|oz|g|kg|ml|l))', caption, re.IGNORECASE))
+            
+            # Score the post based on recipe indicators
+            recipe_score = keyword_count + (hashtag_matches * 2)
+            if has_ingredient_list: recipe_score += 5
+            if has_instruction_list: recipe_score += 5
+            if has_numbered_steps: recipe_score += 3
+            if has_measurements: recipe_score += 4
+            
+            # Log the recipe score
+            logger.info(f"Recipe score for post: {recipe_score}")
+            
+            # Return True if score exceeds threshold
+            return recipe_score >= 5
+            
+        except Exception as e:
+            logger.error(f"Error checking if post is recipe: {str(e)}")
+            return False
+    
+    def find_recipe_posts(self, account_username=None, limit=10):
+        """
+        Find posts that contain recipes
+        
+        Args:
+            account_username (str, optional): Username to search for recipes
+            limit (int): Maximum number of posts to analyze
+            
+        Returns:
+            list: List of recipe post URLs
+        """
+        try:
+            # Get post URLs either from account or feed
+            if account_username:
+                # Extract posts from specific account
+                all_posts = self.extract_recipes_from_account(account_username, limit=limit*2)
+                post_urls = [post['url'] for post in all_posts if 'url' in post]
+            else:
+                # Extract posts from feed
+                post_urls = self.extract_post_urls_from_feed(limit=limit*2)
+            
+            # Filter to find recipe posts
+            recipe_posts = []
+            for url in post_urls[:limit*2]:
+                try:
+                    if self.is_recipe_post(url):
+                        recipe_posts.append(url)
+                        logger.info(f"Found recipe post: {url}")
+                        
+                        # If we have enough recipes, break
+                        if len(recipe_posts) >= limit:
+                            break
+                except Exception as e:
+                    logger.warning(f"Error processing {url}: {str(e)}")
+                    continue
+            
+            logger.info(f"Found {len(recipe_posts)} recipe posts")
+            return recipe_posts
+        
+        except Exception as e:
+            logger.error(f"Error finding recipe posts: {str(e)}")
+            return []
+    
+    def extract_post_urls_from_feed(self, limit=10):
+        """
+        Extract post URLs from the Instagram feed
+        
+        Args:
+            limit (int): Maximum number of posts to extract
+            
+        Returns:
+            list: List of post URLs
+        """
+        try:
+            if not self.driver:
+                self.driver = self._setup_webdriver()
+                
+            if not self.logged_in:
+                self.login()
+                
+            logger.info("Extracting post URLs from feed...")
+            
+            # Navigate to the Instagram homepage
+            self.driver.get("https://www.instagram.com/")
+            
+            # Wait for feed to load
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "article"))
+            )
+            
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "feed.png")
+            self.driver.save_screenshot(screenshot_path)
+            
+            post_urls = []
+            scroll_count = 0
+            max_scrolls = 5
+            
+            while len(post_urls) < limit and scroll_count < max_scrolls:
+                # Extract post URLs with JavaScript
+                new_urls = self.driver.execute_script("""
+                    const links = Array.from(document.querySelectorAll('a'));
+                    return links
+                        .filter(link => 
+                            link.href.includes('/p/') || 
+                            link.href.includes('/reel/')
+                        )
+                        .map(link => link.href);
+                """)
+                
+                # Add new unique URLs
+                for url in new_urls:
+                    if url not in post_urls:
+                        post_urls.append(url)
+                
+                logger.info(f"Found {len(post_urls)} posts so far")
+                
+                # If we have enough posts, break
+                if len(post_urls) >= limit:
+                    break
+                    
+                # Scroll down to load more
+                self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                time.sleep(2)
+                scroll_count += 1
+            
+            # Limit to requested number
+            post_urls = post_urls[:limit]
+            
+            logger.info(f"Extracted {len(post_urls)} post URLs from feed")
+            return post_urls
+        
+        except Exception as e:
+            logger.error(f"Failed to extract posts from feed: {str(e)}")
+            return []
+    
+    def extract_full_post_data(self, post_url):
+        """
+        Extract comprehensive data from an Instagram post
+        
+        Args:
+            post_url (str): URL of the Instagram post
+            
+        Returns:
+            dict: Full post data including content, type, images, etc.
+        """
+        try:
+            # Extract basic content
+            content = self.extract_post_content(post_url)
+            
+            if not content:
+                return None
+                
+            # Determine post type
+            post_type = self.get_post_type(post_url)
+            
+            # Extract image URLs
+            image_urls = self.extract_image_urls(post_url)
+            
+            # Combine all data
+            full_data = {
+                **content,
+                'url': post_url,
+                'post_type': post_type,
+                'image_urls': image_urls,
+                'is_recipe': self.is_recipe_post(post_url),
+                'extracted_at': time.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            return full_data
+            
+        except Exception as e:
+            logger.error(f"Error extracting full post data: {str(e)}")
+            return None
+    
+    def get_post_type(self, post_url):
+        """
+        Determine the type of Instagram post (image, carousel, video, reel)
+        
+        Args:
+            post_url (str): URL of the Instagram post
+            
+        Returns:
+            str: Post type ('image', 'carousel', 'video', 'reel', or 'unknown')
+        """
+        try:
+            # Load the post if not already using this driver
+            current_url = self.driver.current_url
+            if post_url not in current_url:
+                self.driver.get(post_url)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "article"))
+                )
+            
+            # Give more time for content to load
+            time.sleep(2)
+            
+            # Use JavaScript to detect post type
+            post_type = self.driver.execute_script("""
+                // Look for indicators of carousel posts
+                const hasCarouselIndicators = document.querySelector('div[role="button"][tabindex="0"][aria-label="Next"]') !== null;
+                
+                // Look for video elements
+                const hasVideo = document.querySelector('video') !== null;
+                
+                // Look for play button
+                const hasPlayButton = document.querySelector('button[aria-label*="Play"]') !== null;
+                
+                // Check URL for reel indicator
+                const isReel = window.location.href.includes('/reel/');
+                
+                if (isReel) {
+                    return 'reel';
+                } else if (hasCarouselIndicators) {
+                    return 'carousel';
+                } else if (hasVideo || hasPlayButton) {
+                    return 'video';
+                } else {
+                    return 'image';
+                }
+            """)
+            
+            logger.info(f"Detected post type: {post_type}")
+            return post_type
+        
+        except Exception as e:
+            logger.error(f"Error determining post type: {str(e)}")
+            return 'unknown'
+    
+    def extract_image_urls(self, post_url):
+        """
+        Extract image URLs from an Instagram post
+        
+        Args:
+            post_url (str): URL of the Instagram post
+            
+        Returns:
+            list: List of image URLs
+        """
+        try:
+            # Load the post if not already using this driver
+            current_url = self.driver.current_url
+            if post_url not in current_url:
+                self.driver.get(post_url)
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.TAG_NAME, "article"))
+                )
+            
+            # Take screenshot for debugging
+            screenshot_path = os.path.join(self.screenshot_dir, "image_extraction.png")
+            self.driver.save_screenshot(screenshot_path)
+            
+            # Determine post type
+            post_type = self.get_post_type(post_url)
+            
+            # Extract images based on post type
+            if post_type == 'carousel':
+                # Extract all images in carousel
+                image_urls = []
+                
+                # First get the current image
+                current_image = self.driver.execute_script("""
+                    const images = document.querySelectorAll('img[srcset]');
+                    for (const img of images) {
+                        // Skip small images like profile pictures
+                        if (img.naturalWidth > 300) {
+                            return img.src;
+                        }
+                    }
+                    return null;
+                """)
+                
+                if current_image:
+                    image_urls.append(current_image)
+                
+                # Try to navigate through carousel to get all images
+                has_next = True
+                while has_next:
+                    # Click next button
+                    has_next = self.driver.execute_script("""
+                        const nextButton = document.querySelector('div[role="button"][tabindex="0"][aria-label="Next"]');
+                        if (nextButton) {
+                            nextButton.click();
+                            return true;
+                        }
+                        return false;
+                    """)
+                    
+                    if has_next:
+                        # Wait for next image to load
+                        time.sleep(1)
+                        
+                        # Get the current image
+                        current_image = self.driver.execute_script("""
+                            const images = document.querySelectorAll('img[srcset]');
+                            for (const img of images) {
+                                // Skip small images like profile pictures
+                                if (img.naturalWidth > 300) {
+                                    return img.src;
+                                }
+                            }
+                            return null;
+                        """)
+                        
+                        if current_image and current_image not in image_urls:
+                            image_urls.append(current_image)
+                
+                return image_urls
+                
+            else:
+                # Single image, video thumbnail, or reel thumbnail
+                image_url = self.driver.execute_script("""
+                    const images = document.querySelectorAll('img[srcset]');
+                    for (const img of images) {
+                        // Skip small images like profile pictures
+                        if (img.naturalWidth > 300) {
+                            return img.src;
+                        }
+                    }
+                    return null;
+                """)
+                
+                return [image_url] if image_url else []
+                
+        except Exception as e:
+            logger.error(f"Error extracting image URLs: {str(e)}")
+            return []
+    
+    def close(self):
+        """Close the WebDriver and clean up resources"""
+        if self.driver:
+            try:
+                self.driver.quit()
+                logger.info("WebDriver closed")
+            except Exception as e:
+                logger.error(f"Error closing WebDriver: {str(e)}")
+            finally:
+                self.driver = None
+                self.logged_in = False
+
+# Example usage if run directly
+if __name__ == "__main__":
+    import argparse
+    
+    # Set up argument parser
+    parser = argparse.ArgumentParser(description='Instagram Monitor Agent')
+    parser.add_argument('--post', type=str, help='Instagram post URL to extract')
+    parser.add_argument('--account', type=str, help='Instagram account to extract recipes from')
+    parser.add_argument('--monitor', type=str, help='Comma-separated list of accounts to monitor')
+    parser.add_argument('--interval', type=int, default=3600, help='Monitoring interval in seconds')
+    parser.add_argument('--limit', type=int, default=5, help='Number of posts to extract')
+    parser.add_argument('--headless', action='store_true', help='Run in headless mode')
+    
+    args = parser.parse_args()
+    
+    # Create Instagram monitor agent
+    instagram = InstagramMonitor({
+        'headless': args.headless,
+        'screenshot_dir': 'screenshots',
+        'timeout': 45,
+        'wait_time': 10,
+        'max_retries': 3
+    })
+    
+    try:
+        if args.post:
+            # Extract content from a single post
+            content = instagram.extract_post_content(args.post)
+            if content:
+                # Save content to file
+                with open('post_content.json', 'w') as f:
+                    json.dump(content, f, indent=2)
+                print(f"Content extracted and saved to post_content.json")
+            else:
+                print(f"Failed to extract content from {args.post}")
+                
+        elif args.account:
+            # Extract recipes from an account
+            recipes = instagram.extract_recipes_from_account(args.account, post_limit=args.limit)
+            if recipes:
+                # Save recipes to file
+                with open(f'recipes_{args.account}.json', 'w') as f:
+                    json.dump(recipes, f, indent=2)
+                print(f"Extracted {len(recipes)} recipes and saved to recipes_{args.account}.json")
+            else:
+                print(f"Failed to extract recipes from {args.account}")
+                
+        elif args.monitor:
+            # Monitor accounts for new recipe posts
+            accounts = args.monitor.split(',')
+            
+            # Define callback function
+            def on_recipe_found(post_data):
+                # Save post data to file
+                filepath = instagram.save_post_data_to_file(post_data, 'recipes')
+                print(f"New recipe found: {post_data['url']}")
+                
+                # Download images
+                for img_url in post_data['image_urls']:
+                    instagram.download_image(img_url, 'recipe_images')
+            
+            # Start monitoring
+            instagram.monitor_accounts(accounts, interval=args.interval, callback=on_recipe_found)
+            
+        else:
+            # No action specified
+            print("No action specified. Use --post, --account, or --monitor")
+            
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        # Close the Instagram agent
+        instagram.close()
