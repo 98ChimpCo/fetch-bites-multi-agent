@@ -1,0 +1,45 @@
+{
+  "title": "2 Ingredient Onion Ring Chips (Low Carb)",
+  "description": "These low carb onion ring chips are made with only 2 primary ingredients! They&#39;re perfect for those onion ring cravings.",
+  "ingredients": [
+    {
+      "quantity": "2",
+      "unit": "small",
+      "name": "white onions, (sliced 1/4 inch thick rounds)"
+    },
+    {
+      "quantity": "7",
+      "unit": "oz",
+      "name": "shredded parmesan cheese"
+    },
+    {
+      "quantity": "1/2",
+      "unit": "tbs",
+      "name": "olive oil"
+    },
+    {
+      "quantity": "",
+      "unit": "salt",
+      "name": ", garlic powder + paprika, (to taste)"
+    },
+    {
+      "quantity": "",
+      "unit": "serve",
+      "name": "with  Lazy Tzatziki"
+    }
+  ],
+  "instructions": [
+    "Preheat oven to 400\u2109. Line an 12x17 inch rimmed baking sheet with parchment paper.",
+    "Sprinkle the baking sheet with the cheese so that there is a thin even layer of cheese. Next, line up the onion ring slices so that they are not overlapping but right next to one another. Brush tops of onion rings with olive oil. Then season the tops with salt, garlic powder and paprika. Bake for 18 minutes or until golden brown. Allow to cool for 5-10 minutes and then break apart to serve."
+  ],
+  "prep_time": "5 min",
+  "cook_time": "18 min",
+  "total_time": "23 min",
+  "servings": "4",
+  "dietary_info": [],
+  "difficulty": "easy",
+  "source": {
+    "platform": "Website",
+    "url": "https://hungryhappens.net/2-ingredient-onion-ring-chips-low-carb/"
+  }
+}

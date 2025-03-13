@@ -36,12 +36,13 @@ class RecipeExtractor:
         if self.api_key:
             self.client = anthropic.Anthropic(api_key=self.api_key)
     
-    def extract_recipe(self, text: str) -> Optional[Dict]:
+    def extract_recipe(self, text: str, force: bool = False) -> Optional[Dict]:
         """
         Extract structured recipe data from text
         
         Args:
             text (str): Text to extract recipe from
+            force (bool, optional): Force extraction even if content is minimal
             
         Returns:
             dict: Structured recipe data or None if extraction fails
@@ -49,11 +50,11 @@ class RecipeExtractor:
         try:
             logger.info("Extracting recipe from text...")
             
-            # Check if text is too short to be a recipe
-            if len(text.split()) < 20:
+            # Check if text is too short to be a recipe, unless force=True
+            if len(text.split()) < 20 and not force:
                 logger.warning("Text too short to extract recipe")
                 return None
-                
+                    
             # Use Claude API if available, otherwise use regex-based extraction
             if self.client:
                 return self._extract_with_claude(text)
@@ -124,7 +125,7 @@ If you cannot extract a complete recipe, return as much information as possible.
 
             # Call Claude API
             message = self.client.messages.create(
-                model="claude-3-sonnet-20240229",
+                model="claude-3-7-sonnet-20250219",  # Updated model name
                 max_tokens=4000,
                 temperature=0,
                 system="You are a helpful assistant that extracts recipe data from text and returns it in JSON format.",
@@ -296,6 +297,294 @@ If you cannot extract a complete recipe, return as much information as possible.
         if num_ingredients <= 5 and num_steps <= 5:
             return "easy"
         elif num_ingredients > 12 or num_steps > 12:
+            return "hard"
+        else:
+            return "medium"
+        
+    def extract_recipe_from_url(self, url):
+        """
+        Extract recipe from a website URL
+        
+        Args:
+            url (str): URL of the recipe website
+            
+        Returns:
+            dict: Structured recipe data or None if extraction fails
+        """
+        try:
+            logger.info(f"Extracting recipe from URL: {url}")
+            
+            # Use requests to get the page content
+            import requests
+            from bs4 import BeautifulSoup
+            
+            # Random user agent to avoid blocking
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            # Parse HTML
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Look for structured recipe data (JSON-LD)
+            recipe_data = None
+            for script in soup.find_all('script', {'type': 'application/ld+json'}):
+                try:
+                    json_data = json.loads(script.string)
+                    
+                    # Check if it's a recipe
+                    if isinstance(json_data, dict) and '@type' in json_data:
+                        if json_data['@type'] == 'Recipe':
+                            recipe_data = json_data
+                            break
+                    
+                    # Check for graph structure
+                    if isinstance(json_data, dict) and '@graph' in json_data:
+                        for item in json_data['@graph']:
+                            if isinstance(item, dict) and '@type' in item and item['@type'] == 'Recipe':
+                                recipe_data = item
+                                break
+                except:
+                    continue
+            
+            # If we found structured recipe data
+            if recipe_data:
+                # Extract recipe components
+                title = recipe_data.get('name', 'Untitled Recipe')
+                description = recipe_data.get('description', '')
+                
+                # Extract ingredients
+                ingredients = []
+                raw_ingredients = recipe_data.get('recipeIngredient', [])
+                if isinstance(raw_ingredients, list):
+                    for ingredient in raw_ingredients:
+                        # Try to parse the ingredient
+                        parts = self._parse_ingredient(ingredient)
+                        ingredients.append(parts)
+                
+                # Extract instructions
+                instructions = []
+                raw_instructions = recipe_data.get('recipeInstructions', [])
+                if isinstance(raw_instructions, list):
+                    for instruction in raw_instructions:
+                        if isinstance(instruction, dict) and 'text' in instruction:
+                            instructions.append(instruction['text'])
+                        elif isinstance(instruction, str):
+                            instructions.append(instruction)
+                
+                # Extract times
+                prep_time = self._extract_time(recipe_data.get('prepTime', ''))
+                cook_time = self._extract_time(recipe_data.get('cookTime', ''))
+                total_time = self._extract_time(recipe_data.get('totalTime', ''))
+                
+                # Extract yield/servings
+                servings = ''
+                recipe_yield = recipe_data.get('recipeYield', '')
+                if isinstance(recipe_yield, list) and len(recipe_yield) > 0:
+                    servings = recipe_yield[0]
+                elif isinstance(recipe_yield, str):
+                    servings = recipe_yield
+                
+                # Construct recipe data
+                structured_recipe = {
+                    'title': title,
+                    'description': description,
+                    'ingredients': ingredients,
+                    'instructions': instructions,
+                    'prep_time': prep_time,
+                    'cook_time': cook_time,
+                    'total_time': total_time,
+                    'servings': servings,
+                    'dietary_info': [],
+                    'difficulty': self._estimate_difficulty(ingredients, instructions),
+                    'source': {
+                        'platform': 'Website',
+                        'url': url
+                    }
+                }
+                
+                logger.info(f"Successfully extracted recipe from URL: {title}")
+                return structured_recipe
+            
+            # If no structured data, try to extract recipe from HTML
+            return self._extract_recipe_from_html(soup, url)
+            
+        except Exception as e:
+            logger.error(f"Failed to extract recipe from URL: {str(e)}")
+            return None
+
+    def _parse_ingredient(self, ingredient_text):
+        """
+        Parse an ingredient string into components
+        
+        Args:
+            ingredient_text (str): Raw ingredient text
+            
+        Returns:
+            dict: Parsed ingredient with quantity, unit, and name
+        """
+        # Simple regex parsing
+        import re
+        
+        # Try to match quantity, unit, and name
+        match = re.match(r'([\d\s./]+)?\s*([a-zA-Z]+)?\s*(.*)', ingredient_text.strip())
+        
+        if match:
+            quantity, unit, name = match.groups()
+            return {
+                'quantity': quantity.strip() if quantity else '',
+                'unit': unit.strip() if unit else '',
+                'name': name.strip()
+            }
+        else:
+            # If no match, just return the text as the name
+            return {
+                'quantity': '',
+                'unit': '',
+                'name': ingredient_text.strip()
+            }
+
+    def _extract_time(self, time_string):
+        """
+        Extract time from ISO duration format
+        
+        Args:
+            time_string (str): ISO duration string
+            
+        Returns:
+            str: Formatted time string
+        """
+        if not time_string:
+            return ''
+        
+        # Handle ISO duration format like PT1H30M
+        if time_string.startswith('PT'):
+            import re
+            
+            hours = re.search(r'(\d+)H', time_string)
+            minutes = re.search(r'(\d+)M', time_string)
+            
+            if hours and minutes:
+                return f"{hours.group(1)} hr {minutes.group(1)} min"
+            elif hours:
+                return f"{hours.group(1)} hr"
+            elif minutes:
+                return f"{minutes.group(1)} min"
+        
+        return time_string
+
+    def _extract_recipe_from_html(self, soup, url):
+        """
+        Extract recipe from HTML when no structured data is available
+        
+        Args:
+            soup (BeautifulSoup): Parsed HTML
+            url (str): Source URL
+            
+        Returns:
+            dict: Structured recipe data or None if extraction fails
+        """
+        # Extract title (common patterns)
+        title_candidates = [
+            soup.find('h1'),
+            soup.find('h2', class_=lambda c: c and ('recipe' in c.lower() if c else False)),
+            soup.find('div', class_=lambda c: c and ('recipe-title' in c.lower() if c else False))
+        ]
+        
+        title = ''
+        for candidate in title_candidates:
+            if candidate and candidate.text.strip():
+                title = candidate.text.strip()
+                break
+        
+        if not title:
+            title = 'Recipe from ' + url.split('/')[2]  # Use domain as fallback
+        
+        # Find ingredient lists
+        ingredients = []
+        ingredient_containers = [
+            soup.find('ul', class_=lambda c: c and ('ingredient' in c.lower() if c else False)),
+            soup.find('div', class_=lambda c: c and ('ingredient' in c.lower() if c else False))
+        ]
+        
+        for container in ingredient_containers:
+            if container:
+                ingredient_items = container.find_all('li')
+                if not ingredient_items:
+                    ingredient_items = container.find_all(['p', 'div'])
+                
+                for item in ingredient_items:
+                    text = item.text.strip()
+                    if text and len(text) > 2:  # Skip empty or very short items
+                        ingredients.append(self._parse_ingredient(text))
+        
+        # Find instructions
+        instructions = []
+        instruction_containers = [
+            soup.find('ol', class_=lambda c: c and ('instruction' in c.lower() if c else False)),
+            soup.find('div', class_=lambda c: c and ('instruction' in c.lower() if c else False))
+        ]
+        
+        for container in instruction_containers:
+            if container:
+                instruction_items = container.find_all('li')
+                if not instruction_items:
+                    instruction_items = container.find_all(['p', 'div'])
+                
+                for item in instruction_items:
+                    text = item.text.strip()
+                    if text and len(text) > 10:  # Skip very short instructions
+                        instructions.append(text)
+        
+        # If we couldn't find proper ingredients or instructions
+        if not ingredients and not instructions:
+            logger.warning(f"Couldn't extract recipe components from HTML: {url}")
+            return None
+        
+        # Construct recipe data
+        recipe = {
+            'title': title,
+            'description': '',
+            'ingredients': ingredients,
+            'instructions': instructions,
+            'prep_time': '',
+            'cook_time': '',
+            'total_time': '',
+            'servings': '',
+            'dietary_info': [],
+            'difficulty': self._estimate_difficulty(ingredients, instructions),
+            'source': {
+                'platform': 'Website',
+                'url': url
+            }
+        }
+        
+        logger.info(f"Extracted recipe from HTML: {title}")
+        return recipe
+
+    def _estimate_difficulty(self, ingredients, instructions):
+        """
+        Estimate recipe difficulty based on ingredients and instructions
+        
+        Args:
+            ingredients (list): Recipe ingredients
+            instructions (list): Recipe instructions
+            
+        Returns:
+            str: Difficulty level (easy, medium, hard)
+        """
+        ingredient_count = len(ingredients)
+        instruction_count = len(instructions)
+        
+        instruction_length = sum(len(instruction) for instruction in instructions) if instructions else 0
+        avg_instruction_length = instruction_length / instruction_count if instruction_count > 0 else 0
+        
+        if ingredient_count <= 5 and instruction_count <= 3:
+            return "easy"
+        elif ingredient_count >= 12 or instruction_count >= 10 or avg_instruction_length > 200:
             return "hard"
         else:
             return "medium"

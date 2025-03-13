@@ -17,7 +17,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Create handler if not already configured
+# Only add handler if none exist to prevent duplicates
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -619,7 +619,7 @@ class InstagramMonitor:
 
     def extract_post_content(self, post_url, max_retries=3):
         """
-        Extract content from an Instagram post
+        Extract content from an Instagram post with enhanced URL and recipe detection
         
         Args:
             post_url (str): URL of the Instagram post
@@ -639,7 +639,7 @@ class InstagramMonitor:
                 
             logger.info(f"Extracting content from {post_url}...")
             
-            # Implement retry logic
+            # Implement retry logic with longer timeouts
             for attempt in range(max_retries):
                 try:
                     # Navigate to the post with longer timeout
@@ -649,83 +649,59 @@ class InstagramMonitor:
                     screenshot_path = os.path.join(self.screenshot_dir, f"post_load_attempt_{attempt}.png")
                     driver.save_screenshot(screenshot_path)
                     
-                    # Longer initial wait for post loading
-                    WebDriverWait(driver, 10).until(
-                        EC.presence_of_element_located((By.TAG_NAME, "article"))
-                    )
-                    
-                    # Wait for specific elements that indicate content has loaded
-                    selectors_to_try = [
-                        (By.CSS_SELECTOR, "article div"),
-                        (By.CSS_SELECTOR, "div[data-testid='post-content']"),
-                        (By.CSS_SELECTOR, "div.C4VMK"),  # Classic caption selector
-                        (By.CSS_SELECTOR, "div._a9zs"),  # Another caption selector
-                        (By.CSS_SELECTOR, "h1"),         # Sometimes captions are in headings
-                        (By.CSS_SELECTOR, "article span"),
-                        (By.TAG_NAME, "article")
-                    ]
-                    
-                    # Use multiple wait strategies
-                    for selector_type, selector in selectors_to_try:
-                        try:
-                            # Short timeout for each selector
-                            WebDriverWait(driver, 5).until(
-                                EC.presence_of_element_located((selector_type, selector))
-                            )
-                            logger.info(f"Found content with selector: {selector}")
-                            break
-                        except:
+                    # Instead of waiting for specific elements, wait for the page to stabilize
+                    # This is a more general approach that works even if the specific elements we expect aren't there
+                    try:
+                        # Wait for page to have loaded enough content to be useful
+                        # This checks if a main element like body has a substantial amount of content
+                        WebDriverWait(driver, 20).until(
+                            lambda d: len(d.find_element(By.TAG_NAME, "body").text) > 100
+                        )
+                        
+                        # Add a short sleep to allow dynamic content to finish loading
+                        time.sleep(5)
+                    except TimeoutException:
+                        logger.warning(f"Page content loading timeout on attempt {attempt+1}/{max_retries}")
+                        if attempt == max_retries - 1:
+                            # On last attempt, try to extract what we can anyway
+                            pass
+                        else:
+                            # On earlier attempts, retry
                             continue
-                    
-                    # Add longer wait after finding elements
-                    time.sleep(3)
                     
                     # Take another screenshot after waiting
                     screenshot_path = os.path.join(self.screenshot_dir, f"post_loaded_{attempt}.png")
                     driver.save_screenshot(screenshot_path)
                     
-                    # Extract content using JavaScript for more flexibility
-                    content = self._extract_with_javascript(driver)
+                    # Use a more comprehensive approach that extracts ALL text content
+                    # rather than looking for specific elements
+                    content = self._extract_comprehensive(driver)
                     
-                    # If JavaScript extraction failed, try multiple selector-based approaches
-                    if not content or not content.get('caption'):
-                        logger.info("JavaScript extraction failed, trying selector-based extraction")
-                        content = self._extract_with_selectors(driver)
-                    
-                    # If we still don't have content, try scrolling and extracting again
-                    if not content or not content.get('caption'):
-                        logger.info("Scrolling page and trying extraction again")
-                        # Scroll down to load more content
-                        driver.execute_script("window.scrollTo(0, 1000)")
-                        time.sleep(2)
+                    # Add debugging info about what we found
+                    if content:
+                        caption_length = len(content.get('caption', '')) if content.get('caption') else 0
+                        url_count = len(content.get('urls', [])) if content.get('urls') else 0
+                        logger.info(f"Extracted caption ({caption_length} chars) and {url_count} URLs")
                         
-                        # Try JavaScript extraction again
-                        content = self._extract_with_javascript(driver)
-                        
-                        # If still no content, try selectors again
-                        if not content or not content.get('caption'):
-                            content = self._extract_with_selectors(driver)
-                    
-                    # If we have content, break out of the retry loop
-                    if content and content.get('caption'):
-                        logger.info(f"Successfully extracted post content ({len(content['caption'])} chars)")
-                        return content
+                        # If we have content with either a substantial caption or URLs, consider it successful
+                        if (caption_length > 50 or url_count > 0):
+                            return content
                     
                     # If we get here, we need to retry
-                    logger.warning(f"Attempt {attempt+1}/{max_retries} failed to extract content")
-                    time.sleep(2)  # Wait before retry
+                    logger.warning(f"Attempt {attempt+1}/{max_retries} failed to extract useful content")
+                    time.sleep(3)  # Wait before retry
                     
                 except TimeoutException:
                     logger.warning(f"Timeout on attempt {attempt+1}/{max_retries}")
-                    time.sleep(2)  # Wait before retry
+                    time.sleep(3)  # Wait before retry
                     continue
                 except Exception as e:
                     logger.warning(f"Error on attempt {attempt+1}/{max_retries}: {str(e)}")
-                    time.sleep(2)  # Wait before retry
+                    time.sleep(3)  # Wait before retry
                     continue
             
             # If we get here, all retries failed
-            logger.error("Post content did not load within timeout after all retries")
+            logger.error("Post content extraction failed after all retries")
             return None
             
         except Exception as e:
@@ -735,6 +711,111 @@ class InstagramMonitor:
             # Only close the driver if we created it in this method
             if driver and driver != self.driver:
                 driver.quit()
+
+    def _extract_comprehensive(self, driver):
+        """
+        Extract ALL text content and URLs from a post using JavaScript
+        
+        Args:
+            driver: WebDriver instance
+            
+        Returns:
+            dict: Post content including caption, username, urls, etc.
+        """
+        try:
+            # Use JavaScript to extract as much information as possible
+            script = """
+            function extractEverything() {
+                let result = {
+                    caption: null,
+                    username: null,
+                    timestamp: null,
+                    hashtags: [],
+                    urls: [],           // New: extract all URLs
+                    recipe_indicators: false // New: detect if content looks like a recipe
+                };
+                
+                // Get all text from the page
+                let allPageText = document.body.innerText;
+                
+                // Store all page text as a fallback caption
+                result.caption = allPageText;
+                
+                // Look for more specific caption content
+                // Try multiple approaches to find a more focused caption
+                
+                // 1. Look for article element (common container for post content)
+                const article = document.querySelector('article');
+                if (article) {
+                    // Get substantial text blocks
+                    const textElements = article.querySelectorAll('h1, h2, p, span, div');
+                    
+                    // Look for longest substantial text element that might be the caption
+                    let bestCaption = '';
+                    for (const el of textElements) {
+                        const text = el.textContent.trim();
+                        // Keep the longest substantial text block
+                        if (text.length > 50 && text.length > bestCaption.length) {
+                            bestCaption = text;
+                        }
+                    }
+                    
+                    if (bestCaption.length > 50) {
+                        result.caption = bestCaption;
+                    }
+                    
+                    // Look for username
+                    const usernameElements = article.querySelectorAll('a');
+                    for (const el of usernameElements) {
+                        if (el.href && el.href.includes('/')) {
+                            const possibleUsername = el.href.split('/').filter(s => s).pop();
+                            if (possibleUsername && possibleUsername.length > 0 && possibleUsername.length < 30) {
+                                result.username = possibleUsername;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Extract all URLs from page
+                const urlRegex = /(https?:\\/\\/[^\\s]+)/g;
+                const allUrls = allPageText.match(urlRegex) || [];
+                result.urls = allUrls;
+                
+                // Extract hashtags from caption
+                if (result.caption) {
+                    const hashtagRegex = /#([a-zA-Z0-9_]+)/g;
+                    let match;
+                    while ((match = hashtagRegex.exec(result.caption)) !== null) {
+                        result.hashtags.push(match[1]);
+                    }
+                }
+                
+                // Check for recipe indicators
+                const recipeIndicators = [
+                    'ingredient', 'ingredients', 
+                    'cup', 'tbsp', 'tsp', 'tablespoon', 'teaspoon',
+                    'recipe', 'instruction', 
+                    'cook', 'bake', 'mix', 'stir',
+                    'oz', 'gram', 'g', 'pound', 'lb'
+                ];
+                
+                // Check if any indicators are found in the caption
+                result.recipe_indicators = recipeIndicators.some(indicator => 
+                    result.caption.toLowerCase().includes(indicator)
+                );
+                
+                return result;
+            }
+            
+            return extractEverything();
+            """
+            
+            content = driver.execute_script(script)
+            return content
+        except Exception as e:
+            logger.error(f"Comprehensive extraction failed: {str(e)}")
+            return None
 
     def _extract_with_javascript(self, driver):
         """
