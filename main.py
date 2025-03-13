@@ -1,102 +1,137 @@
-import os
+"""
+Main application for the Instagram Recipe Agent.
+Ties together all components and provides the entry point.
+"""
+
 import logging
-from fastapi import FastAPI, BackgroundTasks
-from pydantic import BaseModel
+import os
+import time
+from typing import Optional
 from dotenv import load_dotenv
-from src.agents.instagram_monitor import InstagramMonitorAgent
-from src.agents.recipe_extractor import RecipeExtractorAgent
-from src.agents.pdf_generator import PDFGeneratorAgent
+
+from src.agents.instagram_monitor import InstagramMonitor
+from src.agents.recipe_extractor import RecipeExtractor
+from src.agents.pdf_generator import PDFGenerator
 from src.agents.delivery_agent import DeliveryAgent
-from src.utils.db import init_db, get_db
+from src.utils.user_state import UserStateManager
+from src.utils.conversation_handler import ConversationHandler
+from src.utils.instagram_message_adapter import InstagramMessageAdapter
 
-# Load environment variables
-load_dotenv()
-
-# Configure logging
+# Set up logging
 logging.basicConfig(
-    level=logging.INFO if os.getenv("DEBUG") == "true" else logging.WARNING,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("fetch_bites.log"),
+        logging.StreamHandler()
+    ]
 )
+
 logger = logging.getLogger(__name__)
 
-# Initialize FastAPI app
-app = FastAPI(title="Instagram Recipe Agent")
-
-# Initialize database
-init_db()
-
-# Define data models
-class UserSignup(BaseModel):
-    email: str
-    instagram_account: str = None
-    preferences: dict = {}
-
-class RecipeProcessRequest(BaseModel):
-    post_url: str
-    email: str = None
-
-# Initialize agents
-monitor_agent = InstagramMonitorAgent()
-recipe_agent = RecipeExtractorAgent()
-pdf_agent = PDFGeneratorAgent()
-delivery_agent = DeliveryAgent()
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize background tasks when the app starts"""
-    logger.info("Starting Instagram Recipe Agent")
-
-@app.post("/signup")
-async def signup(user: UserSignup):
-    """Sign up a new user to monitor Instagram accounts"""
-    db = get_db()
-    # Add user to database
-    user_id = db.add_user(user.email, user.instagram_account, user.preferences)
-    return {"status": "success", "user_id": user_id}
-
-@app.post("/process")
-async def process_recipe(recipe: RecipeProcessRequest, background_tasks: BackgroundTasks):
-    """Process a specific Instagram post URL"""
-    logger.info(f"Manual recipe processing request for {recipe.post_url}")
+class FetchBitesApp:
+    """Main application class for the Instagram Recipe Agent."""
     
-    # Add background task to process the recipe
-    background_tasks.add_task(process_recipe_task, recipe.post_url, recipe.email)
-    
-    return {"status": "processing", "post_url": recipe.post_url}
-
-@app.get("/status")
-async def status():
-    """Check the system status"""
-    return {
-        "status": "online",
-        "monitored_accounts": monitor_agent.get_account_count(),
-        "recipes_processed": recipe_agent.get_processed_count(),
-        "pdfs_generated": pdf_agent.get_generated_count(),
-        "emails_sent": delivery_agent.get_sent_count(),
-    }
-
-async def process_recipe_task(post_url: str, email: str = None):
-    """Background task to process a recipe post"""
-    try:
-        # Extract content from Instagram post
-        content = await monitor_agent.extract_post_content(post_url)
+    def __init__(self):
+        """Initialize the application."""
+        # Load environment variables
+        load_dotenv()
         
-        # Extract recipe data
-        recipe_data = await recipe_agent.extract_recipe(content)
+        # Create data directories
+        os.makedirs("data/users", exist_ok=True)
+        os.makedirs("data/raw", exist_ok=True)
+        os.makedirs("data/processed", exist_ok=True)
+        os.makedirs("data/pdf", exist_ok=True)
         
-        # Generate PDF
-        pdf_path = await pdf_agent.generate_pdf(recipe_data)
+        # Initialize components
+        self._init_components()
         
-        # If email is provided, deliver the PDF
-        if email:
-            await delivery_agent.send_email(email, pdf_path, recipe_data["title"])
+    def _init_components(self):
+        """Initialize all application components."""
+        try:
+            # Initialize user state manager
+            self.user_state_manager = UserStateManager("data/users")
             
-        logger.info(f"Successfully processed recipe: {recipe_data['title']}")
-        return True
-    except Exception as e:
-        logger.error(f"Error processing recipe: {str(e)}")
-        return False
+            # Initialize Instagram monitor
+            self.instagram_monitor = InstagramMonitor()
+            
+            # Initialize recipe extractor
+            self.recipe_extractor = RecipeExtractor()
+            
+            # Initialize PDF generator
+            self.pdf_generator = PDFGenerator(
+                output_dir="data/pdf"
+            )
+            
+            # Initialize delivery agent
+            self.delivery_agent = DeliveryAgent(
+                smtp_server=os.getenv("SMTP_SERVER"),
+                smtp_port=int(os.getenv("SMTP_PORT", "587")),
+                smtp_username=os.getenv("SMTP_USERNAME"),
+                smtp_password=os.getenv("SMTP_PASSWORD"),
+                sender_email=os.getenv("EMAIL_SENDER")
+            )
+            
+            # Initialize conversation handler
+            self.conversation_handler = ConversationHandler(
+                user_state_manager=self.user_state_manager,
+                instagram_monitor=self.instagram_monitor,
+                recipe_extractor=self.recipe_extractor,
+                pdf_generator=self.pdf_generator,
+                delivery_agent=self.delivery_agent
+            )
+            
+            # Initialize Instagram message adapter
+            self.instagram_message_adapter = InstagramMessageAdapter(
+                username=os.getenv("INSTAGRAM_USERNAME"),
+                password=os.getenv("INSTAGRAM_PASSWORD"),
+                headless=True,
+                check_interval=30
+            )
+            
+            # Register message handler
+            self.instagram_message_adapter.register_message_handler(
+                self.conversation_handler.handle_message
+            )
+            
+            logger.info("All components initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Error initializing components: {str(e)}")
+            raise
+            
+    def start(self):
+        """Start the application."""
+        try:
+            logger.info("Starting Fetch Bites application...")
+            
+            # Start monitoring Instagram messages
+            self.instagram_message_adapter.start_message_monitoring()
+            
+        except KeyboardInterrupt:
+            logger.info("Application stopped by user")
+            self.stop()
+        except Exception as e:
+            logger.error(f"Error starting application: {str(e)}")
+            self.stop()
+            
+    def stop(self):
+        """Stop the application."""
+        logger.info("Stopping Fetch Bites application...")
+        
+        # Stop Instagram message monitoring
+        if hasattr(self, "instagram_message_adapter"):
+            self.instagram_message_adapter.stop_message_monitoring()
+            self.instagram_message_adapter.cleanup()
+            
+        logger.info("Application stopped")
+
+
+def main():
+    """Main entry point."""
+    app = FetchBitesApp()
+    app.start()
+
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    main()
