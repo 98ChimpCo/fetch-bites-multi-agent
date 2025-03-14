@@ -5,6 +5,10 @@ Manages the conversation flow and responses based on user input.
 
 import logging
 import re
+import os
+import threading
+import time
+import traceback
 from typing import Dict, Tuple, Optional
 
 from src.agents.instagram_monitor import InstagramMonitor
@@ -77,7 +81,8 @@ class ConversationHandler:
         # Process state-specific logic
         if current_state == STATE_NEW:
             # For new users, send welcome message if they don't provide a URL
-            if self.user_state_manager.is_instagram_post_url(message):
+            post_info = self._extract_instagram_post_info(message)
+            if post_info:
                 # User provided URL right away
                 self.user_state_manager.update_user_state(user_id, {
                     "state": STATE_AWAITING_EMAIL,
@@ -174,14 +179,21 @@ class ConversationHandler:
             })
             return EMAIL_REQUEST
             
-        # User has email, send returning user message
+        # User has email, update state and start processing
         self.user_state_manager.update_user_state(user_id, {
             "state": STATE_PROCESSING
         })
         
-        # In a real implementation, processing would happen asynchronously
-        # Here we'll simulate with a synchronous call for simplicity
-        return RETURNING_USER.format(email=email)
+        # Process the recipe request asynchronously
+        # In a real implementation, this would be truly asynchronous
+        try:
+            # Start process and inform user it's in progress
+            logger.info(f"Starting recipe processing for user {user_id}, post {post_url}")
+            threading.Thread(target=self._process_recipe_request_async, args=(user_id, post_url)).start()
+            return RETURNING_USER.format(email=email)
+        except Exception as e:
+            logger.error(f"Error starting recipe processing: {str(e)}")
+            return PROCESSING_ERROR
     
     def _process_recipe_request_async(self, user_id: str, post_url: str) -> None:
         """Process a recipe request asynchronously.
@@ -206,8 +218,16 @@ class ConversationHandler:
                 # Would need to notify user about the failure in a real implementation
                 return
                 
+            # Add source information to recipe data
+            if 'source' not in recipe_data:
+                recipe_data['source'] = {
+                    'platform': 'Instagram',
+                    'url': post_url,
+                    'extraction_date': time.strftime('%Y-%m-%d %H:%M:%S')
+                }
+                
             # Generate PDF
-            pdf_path = self.pdf_generator.generate_recipe_pdf(recipe_data, post_content.get("image_url"))
+            pdf_path = self.pdf_generator.generate_pdf(recipe_data)
             if not pdf_path:
                 logger.error(f"Failed to generate PDF for {post_url}")
                 # Would need to notify user about the failure in a real implementation
@@ -237,4 +257,28 @@ class ConversationHandler:
             
         except Exception as e:
             logger.error(f"Error processing recipe request: {str(e)}")
+            logger.error(traceback.format_exc())
             # Would need to notify user about the failure in a real implementation
+
+    def _extract_instagram_post_info(self, message: str) -> Optional[str]:
+        """Extract Instagram post information from a message."""
+        # Check if message is directly a URL
+        if message.startswith('http') and ('instagram.com' in message):
+            return message
+        
+        # Check for shared content - look for account names and food-related terms
+        food_keywords = ['recipe', 'cook', 'food', 'meal', 'dish', 'bake', 'ingredient']
+        instagram_accounts = ['kauscooks', 'hungry.happens', 'recipe', 'food']
+        
+        # Check if message mentions food and has an Instagram account name
+        has_food = any(keyword in message.lower() for keyword in food_keywords)
+        has_account = any(account in message.lower() for account in instagram_accounts)
+        
+        if has_account and has_food:
+            return message
+        
+        # Check for clear Instagram sharing indicators
+        if '@' in message and any(term in message.lower() for term in ['recipe', 'cook', 'food']):
+            return message
+        
+        return None

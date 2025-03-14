@@ -11,7 +11,7 @@ import anthropic
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Create handler if not already configured
+# Only add handler if none exist to prevent duplicates
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -588,3 +588,40 @@ If you cannot extract a complete recipe, return as much information as possible.
             return "hard"
         else:
             return "medium"
+        
+    def detect_recipe_in_text(self, text: str) -> bool:
+        """
+        Check if the given text likely contains a recipe
+        
+        Args:
+            text: Text to analyze
+            
+        Returns:
+            bool: True if text likely contains a recipe
+        """
+        # Recipe indicator keywords
+        keywords = [
+            'ingredient', 'ingredients', 'recipe', 'cup', 'tbsp', 'tsp',
+            'bake', 'cook', 'mix', 'stir', 'preheat', 'oven', 'heat',
+            'simmer', 'boil', 'fry', 'gram', 'oz', 'pound', 'minute', 'hour'
+        ]
+        
+        # Check for number of keywords
+        keyword_count = sum(1 for kw in keywords if kw in text.lower())
+        
+        # Check for recipe structure patterns
+        has_ingredients_section = re.search(r'ingredients[:;]', text, re.IGNORECASE) is not None
+        has_steps = re.search(r'(step\s*\d|instructions[:;]|directions[:;])', text, re.IGNORECASE) is not None
+        has_measurements = re.search(r'\d+\s*(cup|tbsp|tsp|oz|g|ml|pound|lb)', text, re.IGNORECASE) is not None
+        has_numbered_list = re.search(r'^\s*\d+\.', text, re.MULTILINE) is not None
+        
+        # Calculate recipe likelihood
+        recipe_indicators = [
+            keyword_count >= 3,
+            has_ingredients_section,
+            has_steps,
+            has_measurements,
+            has_numbered_list
+        ]
+        
+        return sum(recipe_indicators) >= 2  # Two or more indicators suggest a recipe

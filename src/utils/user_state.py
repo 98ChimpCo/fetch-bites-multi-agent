@@ -102,17 +102,36 @@ class UserStateManager:
         return bool(re.match(pattern, email))
     
     def is_instagram_post_url(self, url: str) -> bool:
-        """Check if a URL is a valid Instagram post URL.
+        """Check if a URL is a valid Instagram post URL or post content.
         
         Args:
-            url: URL to validate
+            url: URL or content to validate
             
         Returns:
             True if valid, False otherwise
         """
-        # Basic Instagram post URL validation
-        pattern = r'^https?://(www\.)?instagram\.com/p/[\w-]+/?.*$'
-        return bool(re.match(pattern, url))
+        # Check for standard Instagram post URL
+        standard_pattern = r'^https?://(www\.)?instagram\.com/p/[\w-]+/?.*$'
+        if re.match(standard_pattern, url):
+            return True
+            
+        # Check for Instagram username in the content (might be a shared post)
+        instagram_username_pattern = r'@[\w\.]+\s+'
+        if re.search(instagram_username_pattern, url):
+            return True
+            
+        # Check for common Instagram patterns
+        instagram_indicators = [
+            'instagram.com', 
+            'kauscooks',  # Add specific accounts you're interested in
+            'reel',
+            'story'
+        ]
+        
+        if any(indicator in url.lower() for indicator in instagram_indicators):
+            return True
+                
+        return False
     
     def add_processed_post(self, user_id: str, post_url: str, recipe_title: str) -> None:
         """Add a processed post to a user's history.

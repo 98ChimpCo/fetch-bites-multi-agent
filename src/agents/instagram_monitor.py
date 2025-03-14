@@ -617,17 +617,45 @@ class InstagramMonitor:
             logger.error(f"Error loading cookies: {str(e)}")
             return False
 
-    def extract_post_content(self, post_url, max_retries=3):
+    def extract_post_content(self, post_url_or_content, max_retries=3):
         """
-        Extract content from an Instagram post with enhanced URL and recipe detection
+        Extract content from an Instagram post URL or shared content
         
         Args:
-            post_url (str): URL of the Instagram post
+            post_url_or_content (str): URL of the Instagram post or shared content
             max_retries (int): Maximum number of retries for extraction
             
         Returns:
             dict: Post content with caption, username, etc. or None if failed
         """
+        # Check if input is a valid URL or direct content
+        is_url = post_url_or_content.startswith('http')
+        
+        # Handle direct content (not a URL)
+        if not is_url:
+            logger.info("Processing direct content share rather than URL...")
+            
+            # Create a content object from the shared post
+            content = {
+                'caption': post_url_or_content,
+                'username': self._extract_username_from_content(post_url_or_content),
+                'hashtags': self._extract_hashtags_from_content(post_url_or_content),
+                'recipe_indicators': self._check_recipe_indicators(post_url_or_content),
+                'urls': self._extract_urls_from_content(post_url_or_content),
+                'source': {
+                    'platform': 'Instagram',
+                    'url': 'Direct share',
+                    'extraction_date': time.strftime('%Y-%m-%d %H:%M:%S')
+                }
+            }
+            
+            caption_length = len(content.get('caption', '')) if content.get('caption') else 0
+            url_count = len(content.get('urls', [])) if content.get('urls') else 0
+            logger.info(f"Extracted direct content ({caption_length} chars) and {url_count} URLs")
+            
+            return content
+        
+        # Handle URL-based extraction with existing code
         driver = None
         try:
             # Set up WebDriver if not already done
@@ -637,13 +665,13 @@ class InstagramMonitor:
             else:
                 driver = self.driver
                 
-            logger.info(f"Extracting content from {post_url}...")
+            logger.info(f"Extracting content from {post_url_or_content}...")
             
             # Implement retry logic with longer timeouts
             for attempt in range(max_retries):
                 try:
                     # Navigate to the post with longer timeout
-                    driver.get(post_url)
+                    driver.get(post_url_or_content)
                     
                     # Take screenshot for debugging
                     screenshot_path = os.path.join(self.screenshot_dir, f"post_load_attempt_{attempt}.png")
@@ -711,6 +739,99 @@ class InstagramMonitor:
             # Only close the driver if we created it in this method
             if driver and driver != self.driver:
                 driver.quit()
+
+    def _extract_username_from_content(self, content):
+        """Extract Instagram username from content.
+        
+        Args:
+            content (str): Content to extract username from
+            
+        Returns:
+            str: Extracted username or 'unknown'
+        """
+        # Try to find @username format
+        username_match = re.search(r'@([\w\.]+)', content)
+        if username_match:
+            return username_match.group(1)
+        
+        # Look for known usernames
+        known_usernames = ['kauscooks', 'hungry.happens', 'foodie', 'recipe']
+        for username in known_usernames:
+            if username.lower() in content.lower():
+                return username
+        
+        # Try to extract username from content structure
+        lines = content.split('\n')
+        if lines and len(lines) > 0:
+            first_line = lines[0].strip()
+            # If first line is short, it might be a username
+            if 0 < len(first_line) < 30 and ' ' not in first_line:
+                return first_line
+                
+        return 'unknown'
+        
+    def _extract_hashtags_from_content(self, content):
+        """Extract hashtags from content.
+        
+        Args:
+            content (str): Content to extract hashtags from
+            
+        Returns:
+            list: List of extracted hashtags
+        """
+        hashtags = []
+        hashtag_pattern = r'#(\w+)'
+        matches = re.findall(hashtag_pattern, content)
+        if matches:
+            hashtags.extend(matches)
+        return hashtags
+
+    def _extract_urls_from_content(self, content):
+        """Extract URLs from content.
+        
+        Args:
+            content (str): Content to extract URLs from
+            
+        Returns:
+            list: List of extracted URLs
+        """
+        urls = []
+        url_pattern = r'https?://[^\s)>]+'
+        matches = re.findall(url_pattern, content)
+        if matches:
+            urls.extend(matches)
+        return urls
+
+    def _check_recipe_indicators(self, content):
+        """Check if content contains recipe indicators.
+        
+        Args:
+            content (str): Content to check
+            
+        Returns:
+            bool: True if content contains recipe indicators
+        """
+        # Keywords that suggest a recipe post
+        recipe_keywords = [
+            'recipe', 'ingredients', 'instructions', 
+            'cook', 'bake', 'roast', 'fry', 'grill', 'boil',
+            'tbsp', 'tsp', 'cup', 'cups', 'oz', 'pound', 'lb',
+            'minute', 'hour', 'heat', 'oven', 'stove', 'simmer',
+            'mix', 'stir', 'whisk', 'blend', 'combine'
+        ]
+        
+        # Check content for recipe keywords
+        content_lower = content.lower()
+        keyword_count = sum(1 for keyword in recipe_keywords if keyword in content_lower)
+        
+        # Recipe structure indicators
+        has_ingredient_list = bool(re.search(r'ingredients?:', content, re.IGNORECASE))
+        has_instruction_list = bool(re.search(r'(instructions?|directions?|steps?|method):', content, re.IGNORECASE))
+        has_numbered_steps = bool(re.search(r'([1-9][0-9]?\.|[1-9][0-9]?\))', content))
+        has_measurements = bool(re.search(r'([0-9]+\s*(cup|tbsp|tsp|oz|g|kg|ml|l))', content, re.IGNORECASE))
+        
+        # Return True if sufficient indicators are present
+        return keyword_count >= 2 or has_ingredient_list or has_instruction_list or has_numbered_steps or has_measurements
 
     def _extract_comprehensive(self, driver):
         """

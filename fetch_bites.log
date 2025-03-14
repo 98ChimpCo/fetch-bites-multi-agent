@@ -18,3 +18,683 @@
 2025-03-13 14:34:24,927 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
 2025-03-13 14:34:24,928 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
 2025-03-13 14:40:48,340 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-13 15:41:54,570 - __main__ - INFO - All components initialized successfully
+2025-03-13 15:41:54,570 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-13 15:41:54,576 - WDM - INFO - ====== WebDriver manager ======
+2025-03-13 15:41:54,771 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 15:41:54,880 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 15:41:54,984 - WDM - INFO - Driver [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88/chromedriver-mac-arm64/chromedriver] found in cache
+2025-03-13 15:41:56,110 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-13 15:42:05,987 - src.utils.instagram_message_adapter - INFO - Save Login Info dialog detected
+2025-03-13 15:42:06,056 - src.utils.instagram_message_adapter - INFO - Notifications dialog detected
+2025-03-13 15:42:13,090 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-13 15:42:13,090 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-13 15:42:13,370 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations using JavaScript
+2025-03-13 15:42:13,370 - src.utils.instagram_message_adapter - INFO - Processing conversation: fetch.bitesDown chevron icon...
+2025-03-13 15:42:16,766 - src.utils.instagram_message_adapter - INFO - Identified user: user_0
+2025-03-13 15:42:16,929 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-13 15:42:16,929 - src.utils.instagram_message_adapter - INFO - Processing message from user_0: 1...
+2025-03-13 15:42:20,158 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-13 15:42:20,161 - src.utils.instagram_message_adapter - ERROR - Error processing conversation: Message: stale element reference: stale element not found
+  (Session info: chrome=134.0.6998.89); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+0   chromedriver                        0x0000000101469804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000101461ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000100fb5ea8 cxxbridge1$string$len + 92928
+3   chromedriver                        0x0000000100fc67d4 cxxbridge1$string$len + 160812
+4   chromedriver                        0x0000000100fc5888 cxxbridge1$string$len + 156896
+5   chromedriver                        0x0000000100fbc458 cxxbridge1$string$len + 118960
+6   chromedriver                        0x0000000100fbab64 cxxbridge1$string$len + 112572
+7   chromedriver                        0x0000000100fbdd74 cxxbridge1$string$len + 125388
+8   chromedriver                        0x0000000100fbde1c cxxbridge1$string$len + 125556
+9   chromedriver                        0x0000000100ffea84 cxxbridge1$string$len + 390876
+10  chromedriver                        0x0000000100ff2d60 cxxbridge1$string$len + 342456
+11  chromedriver                        0x0000000100ff2878 cxxbridge1$string$len + 341200
+12  chromedriver                        0x000000010103e678 cxxbridge1$string$len + 651984
+13  chromedriver                        0x0000000100ff135c cxxbridge1$string$len + 335796
+14  chromedriver                        0x000000010142ecd4 cxxbridge1$str$ptr + 2545532
+15  chromedriver                        0x0000000101431fa0 cxxbridge1$str$ptr + 2558536
+16  chromedriver                        0x000000010140ed04 cxxbridge1$str$ptr + 2414508
+17  chromedriver                        0x0000000101432800 cxxbridge1$str$ptr + 2560680
+18  chromedriver                        0x00000001013ffba0 cxxbridge1$str$ptr + 2352712
+19  chromedriver                        0x000000010145245c cxxbridge1$str$ptr + 2690820
+20  chromedriver                        0x00000001014525e4 cxxbridge1$str$ptr + 2691212
+21  chromedriver                        0x0000000101461a50 cxxbridge1$str$ptr + 2753784
+22  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+23  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:42:20,162 - src.utils.instagram_message_adapter - INFO - Processing conversation: Requests...
+2025-03-13 15:42:20,164 - src.utils.instagram_message_adapter - ERROR - Error processing conversation: Message: stale element reference: stale element not found
+  (Session info: chrome=134.0.6998.89); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+0   chromedriver                        0x0000000101469804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000101461ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000100fb5ea8 cxxbridge1$string$len + 92928
+3   chromedriver                        0x0000000100fc67d4 cxxbridge1$string$len + 160812
+4   chromedriver                        0x0000000100fc5888 cxxbridge1$string$len + 156896
+5   chromedriver                        0x0000000100fbc458 cxxbridge1$string$len + 118960
+6   chromedriver                        0x0000000100fbab64 cxxbridge1$string$len + 112572
+7   chromedriver                        0x0000000100fbdd74 cxxbridge1$string$len + 125388
+8   chromedriver                        0x0000000100fbde1c cxxbridge1$string$len + 125556
+9   chromedriver                        0x0000000100ffea84 cxxbridge1$string$len + 390876
+10  chromedriver                        0x0000000100ff2d60 cxxbridge1$string$len + 342456
+11  chromedriver                        0x0000000100ff2878 cxxbridge1$string$len + 341200
+12  chromedriver                        0x000000010103e678 cxxbridge1$string$len + 651984
+13  chromedriver                        0x0000000100ff135c cxxbridge1$string$len + 335796
+14  chromedriver                        0x000000010142ecd4 cxxbridge1$str$ptr + 2545532
+15  chromedriver                        0x0000000101431fa0 cxxbridge1$str$ptr + 2558536
+16  chromedriver                        0x000000010140ed04 cxxbridge1$str$ptr + 2414508
+17  chromedriver                        0x0000000101432800 cxxbridge1$str$ptr + 2560680
+18  chromedriver                        0x00000001013ffba0 cxxbridge1$str$ptr + 2352712
+19  chromedriver                        0x000000010145245c cxxbridge1$str$ptr + 2690820
+20  chromedriver                        0x00000001014525e4 cxxbridge1$str$ptr + 2691212
+21  chromedriver                        0x0000000101461a50 cxxbridge1$str$ptr + 2753784
+22  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+23  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:42:20,164 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourHello  · 1h...
+2025-03-13 15:42:20,167 - src.utils.instagram_message_adapter - ERROR - Error processing conversation: Message: stale element reference: stale element not found
+  (Session info: chrome=134.0.6998.89); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+0   chromedriver                        0x0000000101469804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000101461ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000100fb5ea8 cxxbridge1$string$len + 92928
+3   chromedriver                        0x0000000100fc67d4 cxxbridge1$string$len + 160812
+4   chromedriver                        0x0000000100fc5888 cxxbridge1$string$len + 156896
+5   chromedriver                        0x0000000100fbc458 cxxbridge1$string$len + 118960
+6   chromedriver                        0x0000000100fbab64 cxxbridge1$string$len + 112572
+7   chromedriver                        0x0000000100fbdd74 cxxbridge1$string$len + 125388
+8   chromedriver                        0x0000000100fbde1c cxxbridge1$string$len + 125556
+9   chromedriver                        0x0000000100ffea84 cxxbridge1$string$len + 390876
+10  chromedriver                        0x0000000100ff2d60 cxxbridge1$string$len + 342456
+11  chromedriver                        0x0000000100ff2878 cxxbridge1$string$len + 341200
+12  chromedriver                        0x000000010103e678 cxxbridge1$string$len + 651984
+13  chromedriver                        0x0000000100ff135c cxxbridge1$string$len + 335796
+14  chromedriver                        0x000000010142ecd4 cxxbridge1$str$ptr + 2545532
+15  chromedriver                        0x0000000101431fa0 cxxbridge1$str$ptr + 2558536
+16  chromedriver                        0x000000010140ed04 cxxbridge1$str$ptr + 2414508
+17  chromedriver                        0x0000000101432800 cxxbridge1$str$ptr + 2560680
+18  chromedriver                        0x00000001013ffba0 cxxbridge1$str$ptr + 2352712
+19  chromedriver                        0x000000010145245c cxxbridge1$str$ptr + 2690820
+20  chromedriver                        0x00000001014525e4 cxxbridge1$str$ptr + 2691212
+21  chromedriver                        0x0000000101461a50 cxxbridge1$str$ptr + 2753784
+22  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+23  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:42:20,167 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourHello  · 1h...
+2025-03-13 15:42:20,169 - src.utils.instagram_message_adapter - ERROR - Error processing conversation: Message: stale element reference: stale element not found
+  (Session info: chrome=134.0.6998.89); For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+0   chromedriver                        0x0000000101469804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000101461ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000100fb5ea8 cxxbridge1$string$len + 92928
+3   chromedriver                        0x0000000100fc67d4 cxxbridge1$string$len + 160812
+4   chromedriver                        0x0000000100fc5888 cxxbridge1$string$len + 156896
+5   chromedriver                        0x0000000100fbc458 cxxbridge1$string$len + 118960
+6   chromedriver                        0x0000000100fbab64 cxxbridge1$string$len + 112572
+7   chromedriver                        0x0000000100fbdd74 cxxbridge1$string$len + 125388
+8   chromedriver                        0x0000000100fbde1c cxxbridge1$string$len + 125556
+9   chromedriver                        0x0000000100ffea84 cxxbridge1$string$len + 390876
+10  chromedriver                        0x0000000100ff2d60 cxxbridge1$string$len + 342456
+11  chromedriver                        0x0000000100ff2878 cxxbridge1$string$len + 341200
+12  chromedriver                        0x000000010103e678 cxxbridge1$string$len + 651984
+13  chromedriver                        0x0000000100ff135c cxxbridge1$string$len + 335796
+14  chromedriver                        0x000000010142ecd4 cxxbridge1$str$ptr + 2545532
+15  chromedriver                        0x0000000101431fa0 cxxbridge1$str$ptr + 2558536
+16  chromedriver                        0x000000010140ed04 cxxbridge1$str$ptr + 2414508
+17  chromedriver                        0x0000000101432800 cxxbridge1$str$ptr + 2560680
+18  chromedriver                        0x00000001013ffba0 cxxbridge1$str$ptr + 2352712
+19  chromedriver                        0x000000010145245c cxxbridge1$str$ptr + 2690820
+20  chromedriver                        0x00000001014525e4 cxxbridge1$str$ptr + 2691212
+21  chromedriver                        0x0000000101461a50 cxxbridge1$str$ptr + 2753784
+22  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+23  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:42:20,170 - src.utils.instagram_message_adapter - INFO - Found 1 new messages to process
+2025-03-13 15:42:20,170 - src.utils.instagram_message_adapter - INFO - Processing message from user_0: 1...
+2025-03-13 15:42:34,965 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:43:10,734 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-13 15:46:19,252 - __main__ - INFO - All components initialized successfully
+2025-03-13 15:46:19,253 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-13 15:46:19,258 - WDM - INFO - ====== WebDriver manager ======
+2025-03-13 15:46:19,445 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 15:46:19,552 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 15:46:19,885 - WDM - INFO - Driver [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88/chromedriver-mac-arm64/chromedriver] found in cache
+2025-03-13 15:46:21,208 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-13 15:46:30,168 - src.utils.instagram_message_adapter - INFO - Save Login Info dialog detected
+2025-03-13 15:46:30,234 - src.utils.instagram_message_adapter - INFO - Notifications dialog detected
+2025-03-13 15:46:37,166 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-13 15:46:37,166 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-13 15:46:41,581 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations
+2025-03-13 15:46:41,581 - src.utils.instagram_message_adapter - INFO - Processing conversation: fetch.bitesDown chevron icon...
+2025-03-13 15:46:43,980 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 15:46:43,982 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-13 15:46:43,982 - src.utils.instagram_message_adapter - INFO - Processing message from fetch.bites: InstagramHomeSearchExploreReel...
+2025-03-13 15:46:44,307 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:46:46,854 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-13 15:46:49,180 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 15:46:49,182 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-13 15:46:49,182 - src.utils.instagram_message_adapter - INFO - Processing message from fetch.bites: InstagramHomeSearchExploreReel...
+2025-03-13 15:46:49,475 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:46:51,885 - src.utils.instagram_message_adapter - INFO - Processing conversation: Requests...
+2025-03-13 15:46:54,177 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-13 15:46:54,179 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-13 15:46:54,179 - src.utils.instagram_message_adapter - INFO - Processing message from Message requests: InstagramHomeSearchExploreReel...
+2025-03-13 15:46:54,474 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:46:56,922 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourHello  · 1h...
+2025-03-13 15:46:59,285 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 15:46:59,287 - src.utils.instagram_message_adapter - INFO - Found 22 messages in conversation
+2025-03-13 15:46:59,287 - src.utils.instagram_message_adapter - INFO - Processing message from 117187959670170: Shahin ZangenehpourHelloEnter...
+2025-03-13 15:46:59,646 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:47:02,158 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourHello  · 1h...
+2025-03-13 15:47:04,593 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 15:47:04,595 - src.utils.instagram_message_adapter - INFO - Found 22 messages in conversation
+2025-03-13 15:47:04,595 - src.utils.instagram_message_adapter - INFO - Processing message from 117187959670170: Shahin ZangenehpourHelloEnter...
+2025-03-13 15:47:04,952 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:47:07,544 - src.utils.instagram_message_adapter - INFO - Found 5 new messages to process
+2025-03-13 15:47:25,128 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-13 15:57:08,541 - __main__ - INFO - All components initialized successfully
+2025-03-13 15:57:08,541 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-13 15:57:08,548 - WDM - INFO - ====== WebDriver manager ======
+2025-03-13 15:57:08,753 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 15:57:08,863 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 15:57:08,968 - WDM - INFO - Driver [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88/chromedriver-mac-arm64/chromedriver] found in cache
+2025-03-13 15:57:10,021 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-13 15:57:19,794 - src.utils.instagram_message_adapter - INFO - Save Login Info dialog detected
+2025-03-13 15:57:19,861 - src.utils.instagram_message_adapter - INFO - Notifications dialog detected
+2025-03-13 15:57:26,420 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-13 15:57:26,421 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-13 15:57:30,871 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations
+2025-03-13 15:57:30,871 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourHello  · 1h...
+2025-03-13 15:57:33,252 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 15:57:33,255 - src.utils.instagram_message_adapter - INFO - Found 22 messages in conversation
+2025-03-13 15:57:33,255 - src.utils.instagram_message_adapter - INFO - Found Hello message from 117187959670170: Shahin ZangenehpourHelloEnter...
+2025-03-13 15:57:38,721 - src.utils.instagram_message_adapter - INFO - Message sent directly: 
+Hmm, that doesn't look like a...
+2025-03-13 15:57:40,971 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourHello  · 1h...
+2025-03-13 15:57:43,342 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 15:57:43,344 - src.utils.instagram_message_adapter - INFO - Found 22 messages in conversation
+2025-03-13 15:57:45,514 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-13 15:57:47,863 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 15:57:47,865 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-13 15:57:47,865 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-13 15:57:49,551 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:57:51,749 - src.utils.instagram_message_adapter - INFO - Found 2 new messages to process
+2025-03-13 15:58:26,101 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations
+2025-03-13 15:58:26,101 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-13 15:58:28,442 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 15:58:28,446 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-13 15:58:28,447 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-13 15:58:29,061 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000102859804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000102851ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001023a5d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102435e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x000000010242e678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x00000001023e135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x000000010281ecd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000102821fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001027fed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000102822800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001027efba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010284245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001028425e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000102851a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:58:29,362 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:58:31,560 - src.utils.instagram_message_adapter - INFO - Processing conversation: fetch.bitesDown chevron icon...
+2025-03-13 15:58:33,945 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 15:58:33,947 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-13 15:58:33,947 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: InstagramHomeSearchExploreReel...
+2025-03-13 15:58:34,621 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000102859804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000102851ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001023a5d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102435e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x000000010242e678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x00000001023e135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x000000010281ecd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000102821fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001027fed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000102822800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001027efba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010284245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001028425e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000102851a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:58:34,948 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:58:37,190 - src.utils.instagram_message_adapter - INFO - Processing conversation: Requests...
+2025-03-13 15:58:39,501 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-13 15:58:39,503 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-13 15:58:39,503 - src.utils.instagram_message_adapter - INFO - Found message from Message requests: InstagramHomeSearchExploreReel...
+2025-03-13 15:58:40,090 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000102859804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000102851ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001023a5d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102435e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x000000010242e678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x00000001023e135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x000000010281ecd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000102821fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001027fed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000102822800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001027efba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010284245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001028425e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000102851a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 15:58:40,355 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 15:58:42,565 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-13 15:58:44,941 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 15:58:44,943 - src.utils.instagram_message_adapter - INFO - Found 22 messages in conversation
+2025-03-13 15:58:47,203 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-13 15:58:49,571 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 15:58:49,573 - src.utils.instagram_message_adapter - INFO - Found 23 messages in conversation
+2025-03-13 15:58:51,698 - src.utils.instagram_message_adapter - INFO - Found 3 new messages to process
+2025-03-13 15:58:58,103 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-13 16:06:56,781 - __main__ - INFO - All components initialized successfully
+2025-03-13 16:06:56,781 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-13 16:06:56,787 - WDM - INFO - ====== WebDriver manager ======
+2025-03-13 16:06:56,978 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 16:06:57,091 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-13 16:06:57,196 - WDM - INFO - Driver [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88/chromedriver-mac-arm64/chromedriver] found in cache
+2025-03-13 16:06:58,316 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-13 16:07:14,573 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-13 16:07:14,573 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-13 16:07:19,044 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations
+2025-03-13 16:07:19,045 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-13 16:07:21,357 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 16:07:21,360 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-13 16:07:21,360 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-13 16:07:23,059 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 16:07:25,944 - src.utils.instagram_message_adapter - INFO - Processing conversation: fetch.bitesDown chevron icon...
+2025-03-13 16:07:34,365 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-13 16:07:34,366 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-13 16:07:34,367 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: InstagramHomeSearchExploreReel...
+2025-03-13 16:07:35,784 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001052dd804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001052d5ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104e29d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104eb9e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104eb2678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104e6535c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001052a2cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001052a5fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105282d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001052a6800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105273ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001052c645c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001052c65e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001052d5a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 16:07:36,118 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 16:07:38,267 - src.utils.instagram_message_adapter - INFO - Processing conversation: Requests...
+2025-03-13 16:07:40,558 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-13 16:07:40,560 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-13 16:07:40,560 - src.utils.instagram_message_adapter - INFO - Found message from Message requests: InstagramHomeSearchExploreReel...
+2025-03-13 16:07:41,118 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001052dd804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001052d5ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104e29d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104eb9e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104eb2678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104e6535c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001052a2cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001052a5fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105282d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001052a6800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105273ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001052c645c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001052c65e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001052d5a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-13 16:07:41,395 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-13 16:07:44,441 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-13 16:07:56,901 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 16:07:56,903 - src.utils.instagram_message_adapter - INFO - Found 11 messages in conversation
+2025-03-13 16:07:56,903 - src.utils.instagram_message_adapter - INFO - Found message from 117187959670170: Shahin ZangenehpourkauscooksVe...
+2025-03-13 16:08:02,269 - src.utils.instagram_message_adapter - INFO - Message sent directly: 
+Hmm, that doesn't look like a...
+2025-03-13 16:08:04,474 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-13 16:08:06,852 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-13 16:08:06,854 - src.utils.instagram_message_adapter - INFO - Found 23 messages in conversation
+2025-03-13 16:08:09,081 - src.utils.instagram_message_adapter - INFO - Found 4 new messages to process
+2025-03-13 16:08:23,329 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-14 08:54:10,381 - __main__ - INFO - All components initialized successfully
+2025-03-14 08:54:10,381 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-14 08:54:10,388 - WDM - INFO - ====== WebDriver manager ======
+2025-03-14 08:54:15,735 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-14 08:54:16,174 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-14 08:54:16,384 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-14 08:54:16,671 - WDM - INFO - WebDriver version 134.0.6998.88 selected
+2025-03-14 08:54:16,672 - WDM - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.88/mac-arm64/chromedriver-mac-arm64.zip
+2025-03-14 08:54:16,672 - WDM - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.88/mac-arm64/chromedriver-mac-arm64.zip
+2025-03-14 08:54:16,811 - WDM - INFO - Driver downloading response is 200
+2025-03-14 08:54:17,606 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-14 08:54:17,788 - WDM - INFO - Driver has been saved in cache [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88]
+2025-03-14 08:54:18,581 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-14 08:54:39,363 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-14 08:54:39,364 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-14 08:54:44,097 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations
+2025-03-14 08:54:44,097 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-14 08:54:46,422 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 08:54:46,424 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-14 08:54:46,424 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-14 08:54:48,114 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 08:54:50,665 - src.utils.instagram_message_adapter - INFO - Processing conversation: fetch.bitesDown chevron icon...
+2025-03-14 08:54:53,040 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 08:54:53,042 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-14 08:54:53,042 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: InstagramHomeSearchExploreReel...
+2025-03-14 08:54:53,674 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000103419804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000103411ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000102f65d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102ff5e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000102fee678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000102fa135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001033decd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001033e1fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001033bed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001033e2800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001033afba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010340245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001034025e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000103411a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 08:54:54,003 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 08:54:56,497 - src.utils.instagram_message_adapter - INFO - Processing conversation: Requests...
+2025-03-14 08:54:58,795 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-14 08:54:58,797 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-14 08:54:58,797 - src.utils.instagram_message_adapter - INFO - Found message from Message requests: InstagramHomeSearchExploreReel...
+2025-03-14 08:54:59,368 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000103419804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000103411ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000102f65d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102ff5e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000102fee678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000102fa135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001033decd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001033e1fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001033bed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001033e2800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001033afba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010340245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001034025e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000103411a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 08:54:59,660 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 08:55:02,245 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-14 08:55:04,559 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-14 08:55:04,561 - src.utils.instagram_message_adapter - INFO - Found 11 messages in conversation
+2025-03-14 08:55:07,075 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-14 08:55:09,513 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-14 08:55:09,552 - src.utils.instagram_message_adapter - INFO - Found 22 messages in conversation
+2025-03-14 08:55:12,189 - src.utils.instagram_message_adapter - INFO - Found 3 new messages to process
+2025-03-14 08:55:47,918 - src.utils.instagram_message_adapter - INFO - Found 8 possible conversations
+2025-03-14 08:55:47,919 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-14 08:55:50,249 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 08:55:50,251 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-14 08:55:50,251 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-14 08:55:50,901 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000103419804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000103411ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000102f65d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102ff5e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000102fee678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000102fa135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001033decd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001033e1fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001033bed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001033e2800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001033afba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010340245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001034025e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000103411a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 08:55:51,197 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 08:55:53,829 - src.utils.instagram_message_adapter - INFO - Processing conversation: fetch.bitesDown chevron icon...
+2025-03-14 08:55:56,206 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 08:55:56,208 - src.utils.instagram_message_adapter - INFO - Found 7 messages in conversation
+2025-03-14 08:55:56,208 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: InstagramHomeSearchExploreReel...
+2025-03-14 08:55:56,885 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000103419804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000103411ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000102f65d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102ff5e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000102fee678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000102fa135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001033decd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001033e1fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001033bed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001033e2800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001033afba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010340245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001034025e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000103411a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 08:55:57,190 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 08:55:59,670 - src.utils.instagram_message_adapter - INFO - Processing conversation: Requests...
+2025-03-14 08:56:01,980 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-14 08:56:01,982 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-14 08:56:01,982 - src.utils.instagram_message_adapter - INFO - Found message from Message requests: InstagramHomeSearchExploreReel...
+2025-03-14 08:56:02,555 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000103419804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000103411ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000102f65d1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000102ff5e2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000102fee678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000102fa135c cxxbridge1$string$len + 335796
+6   chromedriver                        0x00000001033decd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x00000001033e1fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x00000001033bed04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x00000001033e2800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x00000001033afba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x000000010340245c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001034025e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000103411a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 08:56:02,834 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 08:56:05,344 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin ZangenehpourYou: Hmm, t...
+2025-03-14 08:56:06,693 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-14 09:52:14,490 - __main__ - INFO - All components initialized successfully
+2025-03-14 09:52:14,491 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-14 09:52:14,498 - WDM - INFO - ====== WebDriver manager ======
+2025-03-14 09:52:14,746 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-14 09:52:14,865 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-14 09:52:14,969 - WDM - INFO - Driver [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88/chromedriver-mac-arm64/chromedriver] found in cache
+2025-03-14 09:52:16,134 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-14 09:52:33,175 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-14 09:52:33,175 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-14 09:52:53,366 - src.utils.instagram_message_adapter - INFO - Found 4 filtered conversations
+2025-03-14 09:52:53,368 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-14 09:53:11,060 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 09:53:11,064 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-14 09:53:11,064 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: ClosePhone number, username, o...
+2025-03-14 09:53:13,148 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 09:53:15,723 - src.utils.instagram_message_adapter - INFO - Processing conversation: Soushiant ZanganehpourActive 1...
+2025-03-14 09:53:18,060 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 09:53:18,062 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-14 09:53:18,062 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-14 09:53:18,880 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001050d1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001050c9ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104c1dd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104cade2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104ca6678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104c5935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000105096cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000105099fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105076d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x000000010509a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105067ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001050ba45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001050ba5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001050c9a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 09:53:19,191 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 09:53:21,763 - src.utils.instagram_message_adapter - INFO - Processing conversation: Soushiant ZanganehpourActive 1...
+2025-03-14 09:53:24,080 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-14 09:53:24,082 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-14 09:53:24,082 - src.utils.instagram_message_adapter - INFO - Found message from Message requests: Hidden Requests...
+2025-03-14 09:53:24,643 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001050d1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001050c9ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104c1dd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104cade2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104ca6678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104c5935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000105096cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000105099fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105076d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x000000010509a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105067ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001050ba45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001050ba5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001050c9a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 09:53:24,919 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 09:53:34,567 - src.utils.instagram_message_adapter - INFO - Processing conversation: Send message...
+2025-03-14 09:53:36,981 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-14 09:53:36,984 - src.utils.instagram_message_adapter - INFO - Found 10 messages in conversation
+2025-03-14 09:53:36,984 - src.utils.instagram_message_adapter - INFO - Found potential recipe message from 117187959670170: Shahin ZangenehpourkauscooksVe...
+2025-03-14 09:53:42,703 - src.utils.instagram_message_adapter - INFO - Message sent directly: 
+That recipe looks delicious! ...
+2025-03-14 09:53:45,357 - src.utils.instagram_message_adapter - INFO - Found 4 new messages to process
+2025-03-14 09:54:21,667 - src.utils.instagram_message_adapter - INFO - Found 6 filtered conversations
+2025-03-14 09:54:21,667 - src.utils.instagram_message_adapter - INFO - Processing conversation: New message...
+2025-03-14 09:54:24,046 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 09:54:24,050 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-14 09:54:24,051 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: ClosePhone number, username, o...
+2025-03-14 09:54:24,781 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001050d1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001050c9ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104c1dd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104cade2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104ca6678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104c5935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000105096cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000105099fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105076d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x000000010509a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105067ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001050ba45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001050ba5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001050c9a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 09:54:25,115 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 09:54:27,683 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin Zangenehpourshahinz@mac...
+2025-03-14 09:54:30,033 - src.utils.instagram_message_adapter - INFO - Identified user: fetch.bites
+2025-03-14 09:54:30,035 - src.utils.instagram_message_adapter - INFO - Found 9 messages in conversation
+2025-03-14 09:54:30,036 - src.utils.instagram_message_adapter - INFO - Found message from fetch.bites: Soushiant Zanganehpour...
+2025-03-14 09:54:30,650 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001050d1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001050c9ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104c1dd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104cade2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104ca6678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104c5935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000105096cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000105099fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105076d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x000000010509a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105067ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001050ba45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001050ba5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001050c9a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 09:54:30,938 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 09:54:33,349 - src.utils.instagram_message_adapter - INFO - Processing conversation: Shahin Zangenehpourshahinz@mac...
+2025-03-14 09:54:35,659 - src.utils.instagram_message_adapter - INFO - Identified user: Message requests
+2025-03-14 09:54:35,661 - src.utils.instagram_message_adapter - INFO - Found 4 messages in conversation
+2025-03-14 09:54:35,661 - src.utils.instagram_message_adapter - INFO - Found message from Message requests: Hidden Requests...
+2025-03-14 09:54:36,446 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x00000001050d1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x00000001050c9ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x0000000104c1dd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000104cade2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000104ca6678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000104c5935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000105096cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000105099fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000105076d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x000000010509a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000105067ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x00000001050ba45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x00000001050ba5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x00000001050c9a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-14 09:54:36,736 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-14 09:54:39,384 - src.utils.instagram_message_adapter - INFO - Processing conversation: Soushiant ZanganehpourActive 1...
+2025-03-14 09:54:41,778 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-14 09:54:41,780 - src.utils.instagram_message_adapter - INFO - Found 12 messages in conversation
+2025-03-14 09:54:41,780 - src.utils.instagram_message_adapter - INFO - Found message from 117187959670170: Shahin Zangenehpourshahinz@mac...
+2025-03-14 09:54:46,752 - src.utils.instagram_message_adapter - INFO - Message sent directly: 
+That doesn't look like a vali...
+2025-03-14 09:54:49,308 - src.utils.instagram_message_adapter - INFO - Processing conversation: Soushiant ZanganehpourActive 1...
+2025-03-14 09:54:51,931 - src.utils.instagram_message_adapter - INFO - Identified user: 117187959670170
+2025-03-14 09:54:51,933 - src.utils.instagram_message_adapter - INFO - Found 12 messages in conversation
+2025-03-14 09:54:51,933 - src.utils.instagram_message_adapter - INFO - Found message from 117187959670170: Shahin Zangenehpourshahinz@mac...
+2025-03-14 09:54:56,931 - src.utils.instagram_message_adapter - INFO - Message sent directly: 
+That doesn't look like a vali...
+2025-03-14 09:54:59,416 - src.utils.instagram_message_adapter - INFO - Found 5 new messages to process
+2025-03-14 09:55:11,058 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
