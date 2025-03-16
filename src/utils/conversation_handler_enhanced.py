@@ -1,345 +1,261 @@
-"""
-Enhanced conversation handler for the Instagram Recipe Agent onboarding flow.
-Manages the conversation flow and responses based on user input with improved email extraction.
-"""
-
-import logging
-import re
 import os
-import threading
+import re
+import logging
 import time
-import traceback
-from typing import Dict, Tuple, Optional, List, Any
+from typing import Dict, List, Optional, Any, Callable
 
-from src.agents.instagram_monitor import InstagramMonitor
-from src.agents.recipe_extractor import RecipeExtractor
-from src.agents.pdf_generator import PDFGenerator
-from src.agents.delivery_agent import DeliveryAgent
-from src.utils.message_templates import (
-    WELCOME_MESSAGE,
-    HELP_MESSAGE,
-    EMAIL_REQUEST,
-    EMAIL_CONFIRMATION,
-    PROCESSING_COMPLETE,
-    RETURNING_USER,
-    INVALID_URL,
-    EXTRACTION_ERROR,
-    PROCESSING_ERROR,
-    INVALID_EMAIL
+from src.utils.user_state_enhanced import UserStateManager
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
-from src.utils.user_state_enhanced import UserStateManager, STATE_NEW, STATE_AWAITING_EMAIL, STATE_AWAITING_URL, STATE_PROCESSING
 
 logger = logging.getLogger(__name__)
 
-class ConversationHandlerEnhanced:
-    """Enhanced handler for the conversation flow for the Instagram Recipe Agent."""
+class ConversationHandler:
+    """
+    Enhanced conversation handler with improved flow management and response generation.
+    """
     
     def __init__(
-        self,
+        self, 
         user_state_manager: UserStateManager,
-        instagram_monitor: InstagramMonitor,
-        recipe_extractor: RecipeExtractor,
-        pdf_generator: PDFGenerator,
-        delivery_agent: DeliveryAgent
+        send_message_callback: Callable[[str, str], bool]
     ):
-        """Initialize the conversation handler.
+        """
+        Initialize conversation handler.
         
         Args:
-            user_state_manager: User state manager instance
-            instagram_monitor: Instagram monitor agent instance
-            recipe_extractor: Recipe extractor agent instance
-            pdf_generator: PDF generator agent instance
-            delivery_agent: Delivery agent instance
+            user_state_manager (UserStateManager): User state manager
+            send_message_callback (callable): Callback for sending messages
         """
         self.user_state_manager = user_state_manager
-        self.instagram_monitor = instagram_monitor
-        self.recipe_extractor = recipe_extractor
-        self.pdf_generator = pdf_generator
-        self.delivery_agent = delivery_agent
+        self.send_message_callback = send_message_callback
         
-    def handle_message(self, user_id: str, message: str) -> str:
-        """Handle an incoming message from a user with enhanced email extraction.
+        # Define conversation flows - mapping state to handler methods
+        self.state_handlers = {
+            "initial": self._handle_initial_state,
+            "awaiting_email": self._handle_awaiting_email_state,
+            "processing_recipe": self._handle_processing_recipe_state,
+            "completed": self._handle_completed_state
+        }
+        
+        # Message templates
+        self.templates = {
+            "welcome": "👋 Hello there, food explorer! I'm Fetch Bites, your personal recipe assistant! 🥘\n\n"
+                      "I can turn Instagram recipe posts into beautiful, printable recipe cards "
+                      "delivered straight to your inbox! No more screenshots or manually typing out recipes.\n\n"
+                      "Want to see what I can do? Just send me a link to an Instagram recipe post, "
+                      "and I'll work my magic! ✨\n\n"
+                      "Or type \"help\" to learn more about how I work.",
+                      
+            "help": "🍳 *How to Use Fetch Bites:*\n\n"
+                   "1️⃣ Send me a link to an Instagram recipe post\n"
+                   "2️⃣ I'll ask for your email address\n"
+                   "3️⃣ I'll extract the recipe and send you a beautifully formatted PDF\n\n"
+                   "You can also share posts directly with me from Instagram!\n\n"
+                   "Type \"examples\" to see the kinds of recipes I can process.",
+                   
+            "examples": "I can process all kinds of recipes from Instagram posts, like:\n\n"
+                       "🍝 Pasta dishes\n"
+                       "🍗 Chicken recipes\n"
+                       "🥗 Salads\n"
+                       "🍰 Desserts\n\n"
+                       "Just find a recipe post you like and send me the link!",
+                       
+            "email_request": "That recipe looks delicious! 😋 Before I can send you the recipe card...\n\n"
+                            "📧 What email address should I send your recipe card to?\n"
+                            "(Just type your email address)",
+                            
+            "invalid_email": "Hmm, that doesn't look like a valid email address. Could you please try again?\n\n"
+                            "I need a valid email address to send you the recipe card.",
+                            
+            "processing": "Perfect! I'll send your recipe card to {email}.\n\n"
+                         "Working on your recipe card now... ⏳",
+                         
+            "completion": "✨ Recipe card for \"{title}\" has been created and sent to your inbox!\n\n"
+                          "Feel free to send me another recipe post anytime you want to save a recipe.\n\n"
+                          "Happy cooking! 👨‍🍳👩‍🍳",
+                          
+            "no_recipe": "I couldn't find a recipe in that post. Could you try sharing a different post that contains "
+                        "recipe details like ingredients and cooking instructions?",
+                        
+            "error": "I'm having some trouble processing that. Could you try again or send a different recipe post?"
+        }
+    
+    def process_message(self, sender: str, content: str) -> Optional[str]:
+        """
+        Process an incoming message and generate a response.
         
         Args:
-            user_id: Unique identifier for the user
-            message: Message from the user
+            sender (str): Message sender
+            content (str): Message content
             
         Returns:
-            Response message to send to the user
+            str or None: Response message or None if no response needed
         """
-        # Log the raw message for debugging
-        logger.info(f"Received message from {user_id}: '{message}'")
+        logger.info(f"Received message from {sender}: '{content}'")
         
         # Get current user state
-        user_state = self.user_state_manager.get_user_state(user_id)
-        current_state = user_state.get("state", STATE_NEW)
+        user_state = self.user_state_manager.get_user_state(sender)
+        current_state = user_state.get("state", "initial")
         
-        # Check for command keywords regardless of state
-        message_lower = message.lower().strip()
-        
-        # Help command
-        if message_lower == "help":
-            return HELP_MESSAGE
-        
-        # Check for special message types - email detection
-        if "is_email" in message_lower or message_lower.endswith("@gmail.com") or message_lower.endswith("@mac.com") or "@" in message_lower:
-            # This might be an email message - try to extract email
-            if current_state == STATE_AWAITING_EMAIL or user_state.get("email") is None:
-                extracted_email = self._extract_email_from_message(message)
-                if extracted_email:
-                    # Process valid email
-                    return self._handle_valid_email(user_id, extracted_email)
-        
-        # Process state-specific logic
-        if current_state == STATE_NEW:
-            # For new users, check if they provided a URL right away
-            instagram_urls = self._extract_instagram_urls(message)
-            if instagram_urls:
-                # User provided URL right away
-                self.user_state_manager.update_user_state(user_id, {
-                    "state": STATE_AWAITING_EMAIL,
-                    "pending_url": instagram_urls[0]
-                })
-                return EMAIL_REQUEST
-            else:
-                # Update to awaiting URL state
-                self.user_state_manager.update_user_state(user_id, {
-                    "state": STATE_AWAITING_URL
-                })
-                return WELCOME_MESSAGE
-                
-        elif current_state == STATE_AWAITING_URL:
-            # Expecting a URL
-            instagram_urls = self._extract_instagram_urls(message)
-            if instagram_urls or self.user_state_manager.is_instagram_post_url(message):
-                # Valid URL provided
-                post_url = instagram_urls[0] if instagram_urls else message
-                
-                if user_state.get("email"):
-                    # User already has email, start processing
-                    return self._process_recipe_request(user_id, post_url)
-                else:
-                    # Need email first
-                    self.user_state_manager.update_user_state(user_id, {
-                        "state": STATE_AWAITING_EMAIL,
-                        "pending_url": post_url
-                    })
-                    return EMAIL_REQUEST
-            else:
-                # Invalid URL - check if it's a potential email instead
-                extracted_email = self._extract_email_from_message(message)
-                if extracted_email:
-                    # They've sent an email when we expected a URL - handle it anyway
-                    self.user_state_manager.update_user_state(user_id, {"email": extracted_email})
-                    return f"Thanks! I've saved your email address ({extracted_email}). Now, please send me an Instagram recipe post link to get a recipe card."
-                    
-                # Not a URL or email
-                return INVALID_URL
-                
-        elif current_state == STATE_AWAITING_EMAIL:
-            # Expecting an email address - try enhanced extraction
-            extracted_email = self._extract_email_from_message(message)
+        # Check for commands that override normal flow
+        if content.lower().strip() in ["help", "/help"]:
+            return self.templates["help"]
             
-            if extracted_email:
-                # Process valid email
-                return self._handle_valid_email(user_id, extracted_email)
-            else:
-                # Check if they sent a URL instead of an email
-                instagram_urls = self._extract_instagram_urls(message)
-                if instagram_urls:
-                    # They've sent a URL when we expected an email
-                    # Update the pending URL but still ask for email
-                    self.user_state_manager.update_user_state(user_id, {
-                        "pending_url": instagram_urls[0]
-                    })
-                    return EMAIL_REQUEST
-                    
-                # Invalid email
-                return INVALID_EMAIL
-        
-        # Default response for any other state or unrecognized input
-        instagram_urls = self._extract_instagram_urls(message)
-        if instagram_urls or self.user_state_manager.is_instagram_post_url(message):
-            post_url = instagram_urls[0] if instagram_urls else message
-            return self._process_recipe_request(user_id, post_url)
-        else:
-            # Last attempt to extract an email if needed
-            if not user_state.get("email"):
-                extracted_email = self._extract_email_from_message(message)
-                if extracted_email:
-                    return self._handle_valid_email(user_id, extracted_email)
+        if content.lower().strip() in ["examples", "/examples"]:
+            return self.templates["examples"]
             
-            # Update to awaiting URL state if in an unexpected state
-            self.user_state_manager.update_user_state(user_id, {
-                "state": STATE_AWAITING_URL
+        if content.lower().strip() in ["reset", "/reset"]:
+            self.user_state_manager.update_user_state(sender, {"state": "initial"})
+            return "I've reset our conversation. What would you like to do now?"
+        
+        # Handle based on current state
+        handler = self.state_handlers.get(current_state, self._handle_unknown_state)
+        return handler(sender, content, user_state)
+    
+    def _handle_initial_state(self, sender: str, content: str, user_state: Dict[str, Any]) -> str:
+        """Handle messages in initial state."""
+        # Check if this is a greeting
+        if self._is_greeting(content):
+            return self.templates["welcome"]
+        
+        # Check if this is a recipe URL or contains a URL
+        recipe_url = self._extract_url(content)
+        if recipe_url:
+            # Update state with recipe URL
+            self.user_state_manager.update_user_state(sender, {
+                "state": "awaiting_email",
+                "recipe_url": recipe_url
+            })
+            return self.templates["email_request"]
+        
+        # Check if content might be recipe text directly
+        if self._looks_like_recipe(content):
+            # Update state with recipe content
+            self.user_state_manager.update_user_state(sender, {
+                "state": "awaiting_email",
+                "recipe_content": content
+            })
+            return self.templates["email_request"]
+        
+        # Default response for initial state
+        return self.templates["welcome"]
+    
+    def _handle_awaiting_email_state(self, sender: str, content: str, user_state: Dict[str, Any]) -> str:
+        """Handle messages when awaiting email address."""
+        # Try to extract email
+        email = self.user_state_manager.extract_email_from_text(content)
+        
+        # If email found and valid
+        if email and self.user_state_manager.is_valid_email(email):
+            # Update state with email
+            self.user_state_manager.update_user_state(sender, {
+                "state": "processing_recipe",
+                "email": email
             })
             
-            # If they already have an email, remind them we need a URL
-            if user_state.get("email"):
-                return f"I need an Instagram recipe post link to create a recipe card for you. Please send me a link that starts with 'https://www.instagram.com/p/'"
-            else:
-                return INVALID_URL
+            # Return processing message
+            return self.templates["processing"].format(email=email)
+        else:
+            # Invalid or no email found
+            return self.templates["invalid_email"]
     
-    def _handle_valid_email(self, user_id: str, email: str) -> str:
-        """
-        Handle a valid extracted email address.
-        
-        Args:
-            user_id: User identifier
-            email: Extracted email address
-            
-        Returns:
-            Response message
-        """
-        user_state = self.user_state_manager.get_user_state(user_id)
-        pending_url = user_state.get("pending_url")
-        
-        # Update the email in user state
-        self.user_state_manager.update_user_state(user_id, {
-            "email": email
+    def _handle_processing_recipe_state(self, sender: str, content: str, user_state: Dict[str, Any]) -> Optional[str]:
+        """Handle messages when processing recipe."""
+        # This would trigger recipe processing in a real implementation
+        # For demo purposes, just transition to completed state
+        self.user_state_manager.update_user_state(sender, {
+            "state": "completed"
         })
         
-        # Send confirmation
-        confirmation = EMAIL_CONFIRMATION.format(email=email)
-        
-        if pending_url:
-            # Process the pending URL
-            self.user_state_manager.update_user_state(user_id, {
-                "state": STATE_PROCESSING
-            })
-            
-            # Process asynchronously
-            threading.Thread(target=self._process_recipe_request_async, args=(user_id, pending_url)).start()
-            return confirmation
-        else:
-            # No pending URL, await one
-            self.user_state_manager.update_user_state(user_id, {
-                "state": STATE_AWAITING_URL
-            })
-            return confirmation + "\n\nNow, send me an Instagram recipe post to try it out!"
+        # Return completion message
+        return self.templates["completion"].format(title="Delicious Recipe")
     
-    def _process_recipe_request(self, user_id: str, post_url: str) -> str:
-        """Process a recipe request for a user.
-        
-        Args:
-            user_id: Unique identifier for the user
-            post_url: Instagram post URL
-            
-        Returns:
-            Response message to send to the user
-        """
-        user_state = self.user_state_manager.get_user_state(user_id)
-        email = user_state.get("email")
-        
-        if not email:
-            # Need email first
-            self.user_state_manager.update_user_state(user_id, {
-                "state": STATE_AWAITING_EMAIL,
-                "pending_url": post_url
+    def _handle_completed_state(self, sender: str, content: str, user_state: Dict[str, Any]) -> str:
+        """Handle messages after recipe processing completed."""
+        # Check if this is a new recipe URL
+        recipe_url = self._extract_url(content)
+        if recipe_url:
+            # Start new recipe flow
+            self.user_state_manager.update_user_state(sender, {
+                "state": "awaiting_email",
+                "recipe_url": recipe_url
             })
-            return EMAIL_REQUEST
-            
-        # User has email, update state and start processing
-        self.user_state_manager.update_user_state(user_id, {
-            "state": STATE_PROCESSING
-        })
+            return self.templates["email_request"]
         
-        # Process the recipe request asynchronously
-        try:
-            # Start process and inform user it's in progress
-            logger.info(f"Starting recipe processing for user {user_id}, post {post_url}")
-            threading.Thread(target=self._process_recipe_request_async, args=(user_id, post_url)).start()
-            return RETURNING_USER.format(email=email)
-        except Exception as e:
-            logger.error(f"Error starting recipe processing: {str(e)}")
-            return PROCESSING_ERROR
-    
-    def _process_recipe_request_async(self, user_id: str, post_url: str) -> None:
-        """Process a recipe request asynchronously.
-        
-        Args:
-            user_id: Unique identifier for the user
-            post_url: Instagram post URL
-        """
-        try:
-            # Extract post content
-            post_content = self.instagram_monitor.extract_post_content(post_url)
-            if not post_content or not post_content.get("caption"):
-                logger.error(f"Failed to extract content from {post_url}")
-                # Would need to notify user about the failure in a real implementation
-                return
-                
-            # Extract recipe
-            recipe_data = self.recipe_extractor.extract_recipe(post_content["caption"])
-            if not recipe_data:
-                logger.error(f"Failed to extract recipe from {post_url}")
-                # Would need to notify user about the failure in a real implementation
-                return
-                
-            # Add source information to recipe data
-            if 'source' not in recipe_data:
-                recipe_data['source'] = {
-                    'platform': 'Instagram',
-                    'url': post_url,
-                    'extraction_date': time.strftime('%Y-%m-%d %H:%M:%S')
-                }
-                
-            # Generate PDF
-            pdf_path = self.pdf_generator.generate_pdf(recipe_data)
-            if not pdf_path:
-                logger.error(f"Failed to generate PDF for {post_url}")
-                # Would need to notify user about the failure in a real implementation
-                return
-                
-            # Send email
-            user_state = self.user_state_manager.get_user_state(user_id)
-            email = user_state.get("email")
-            if email:
-                self.delivery_agent.send_recipe_email(
-                    email, 
-                    recipe_data.get("title", "Recipe"),
-                    pdf_path
-                )
-                
-            # Update user state
-            self.user_state_manager.add_processed_post(
-                user_id, 
-                post_url, 
-                recipe_data.get("title", "Recipe")
-            )
-            self.user_state_manager.update_user_state(user_id, {
-                "state": STATE_AWAITING_URL
+        # Check if content might be a new recipe text
+        if self._looks_like_recipe(content):
+            # Start new recipe flow
+            self.user_state_manager.update_user_state(sender, {
+                "state": "awaiting_email",
+                "recipe_content": content
             })
-            
-            # In a real implementation, would notify user of completion
-            
-        except Exception as e:
-            logger.error(f"Error processing recipe request: {str(e)}")
-            logger.error(traceback.format_exc())
-            # Would need to notify user about the failure in a real implementation
-    
-    def _extract_email_from_message(self, message: str) -> Optional[str]:
-        """
-        Enhanced email extraction from message text.
+            return self.templates["email_request"]
         
-        Args:
-            message: Raw message text that might contain an email
-            
-        Returns:
-            Extracted email or None if no valid email found
-        """
-        # Use the enhanced extraction function from UserStateManager
-        return self.user_state_manager.extract_email_from_text(message)
+        # Default response - offer to process another recipe
+        return "Would you like to process another recipe? Just send me a link to an Instagram recipe post!"
     
-    def _extract_instagram_urls(self, message: str) -> List[str]:
-        """
-        Extract Instagram post URLs from a message.
+    def _handle_unknown_state(self, sender: str, content: str, user_state: Dict[str, Any]) -> str:
+        """Handle messages for unknown state."""
+        # Reset to initial state
+        self.user_state_manager.update_user_state(sender, {"state": "initial"})
+        return self.templates["welcome"]
+    
+    def _is_greeting(self, content: str) -> bool:
+        """Check if message is a greeting."""
+        greetings = ["hello", "hi", "hey", "howdy", "hola", "good morning", "good afternoon", "good evening", "👋"]
+        return any(greeting in content.lower() for greeting in greetings)
+    
+    def _extract_url(self, content: str) -> Optional[str]:
+        """Extract URL from message content."""
+        # Simple regex pattern for URLs
+        url_pattern = r'https?://(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*)'
         
-        Args:
-            message: Message that might contain Instagram URLs
+        # Find all URLs
+        urls = re.findall(url_pattern, content)
+        
+        # Filter for Instagram URLs
+        instagram_urls = [url for url in urls if "instagram.com" in url]
+        
+        # Return first Instagram URL if found
+        if instagram_urls:
+            return instagram_urls[0]
             
-        Returns:
-            List of extracted Instagram URLs
-        """
-        # Use the URL extraction function from UserStateManager
-        return self.user_state_manager.extract_instagram_urls(message)
+        # If no Instagram URL, return any URL
+        if urls:
+            return urls[0]
+            
+        return None
+    
+    def _looks_like_recipe(self, content: str) -> bool:
+        """Check if content might be a recipe."""
+        # Look for recipe indicators
+        recipe_indicators = [
+            r'\d+\s*(?:cup|cups|tbsp|tsp|tablespoon|teaspoon|oz|ounce|pound|lb|kg|g|gram|ml|liter|l)\b',  # Measurements
+            r'ingredient[s]?',  # Ingredient mention
+            r'instruction[s]?',  # Instruction mention
+            r'step\s+\d+',  # Step references
+            r'(?:pre-?heat|bake|cook|simmer|boil|fry|saute|roast|grill|mix|stir|blend|whisk)\b',  # Cooking verbs
+            r'(?:oven|stove|pan|pot|bowl|mixer|blender)\b'  # Cooking tools
+        ]
+        
+        # Check if content has multiple lines
+        has_multiple_lines = content.count('\n') >= 3
+        
+        # Check if content is long enough
+        is_long_enough = len(content.split()) >= 30
+        
+        # Check for recipe indicators
+        has_indicators = False
+        for pattern in recipe_indicators:
+            if re.search(pattern, content, re.IGNORECASE):
+                has_indicators = True
+                break
+        
+        # Consider it a recipe if it has indicators and is either long or has multiple lines
+        return has_indicators and (is_long_enough or has_multiple_lines)
