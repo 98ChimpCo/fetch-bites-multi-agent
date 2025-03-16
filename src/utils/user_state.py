@@ -89,17 +89,21 @@ class UserStateManager:
         return user_state
     
     def is_valid_email(self, email: str) -> bool:
-        """Check if an email address is valid.
+        """Check if the given string is a valid email address."""
+        # Trim whitespace and convert to lowercase
+        if isinstance(email, str):
+            email = email.strip().lower()
+        else:
+            return False
         
-        Args:
-            email: Email address to validate
-            
-        Returns:
-            True if valid, False otherwise
-        """
-        # Simple email validation regex
-        pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
-        return bool(re.match(pattern, email))
+        # Simple, permissive email pattern
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        is_valid = bool(re.match(email_pattern, email))
+        
+        # Debug logging
+        logger.info(f"Validating email: '{email}' - Result: {is_valid}")
+        
+        return is_valid
     
     def is_instagram_post_url(self, url: str) -> bool:
         """Check if a URL is a valid Instagram post URL or post content.

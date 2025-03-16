@@ -269,4 +269,176 @@ class DatabaseManager:
         try:
             cursor = self.conn.cursor()
             cursor.execute(
-                
+                "INSERT INTO delivered_recipes (user_id, recipe_id, delivered_at) VALUES (?, ?, ?)",
+                (user_id, recipe_id, datetime.now().isoformat())
+            )
+            self.conn.commit()
+            logger.info(f"Recorded recipe delivery - user_id: {user_id}, recipe_id: {recipe_id}")
+            return True
+        except sqlite3.IntegrityError:
+            # Already delivered, just return success
+            logger.info(f"Recipe already delivered - user_id: {user_id}, recipe_id: {recipe_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error recording recipe delivery: {str(e)}")
+            self.conn.rollback()
+            return False
+    
+    def get_user_by_email(self, email: str) -> Optional[Dict]:
+        """Get user information by email"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT id, email, created_at, preferences FROM users WHERE email = ?",
+                (email,)
+            )
+            
+            result = cursor.fetchone()
+            
+            if result:
+                user = dict(result)
+                if user.get('preferences'):
+                    user['preferences'] = json.loads(user['preferences'])
+                return user
+            else:
+                return None
+        except Exception as e:
+            logger.error(f"Error getting user by email: {str(e)}")
+            return None
+    
+    def get_user_by_id(self, user_id: int) -> Optional[Dict]:
+        """Get user information by ID"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT id, email, created_at, preferences FROM users WHERE id = ?",
+                (user_id,)
+            )
+            
+            result = cursor.fetchone()
+            
+            if result:
+                user = dict(result)
+                if user.get('preferences'):
+                    user['preferences'] = json.loads(user['preferences'])
+                return user
+            else:
+                return None
+        except Exception as e:
+            logger.error(f"Error getting user by ID: {str(e)}")
+            return None
+    
+    def get_monitored_accounts(self) -> List[Dict]:
+        """Get all monitored Instagram accounts"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT id, instagram_username, added_at, last_checked FROM monitored_accounts"
+            )
+            
+            results = cursor.fetchall()
+            return [dict(row) for row in results]
+        except Exception as e:
+            logger.error(f"Error getting monitored accounts: {str(e)}")
+            return []
+    
+    def get_user_subscriptions(self, user_id: int) -> List[Dict]:
+        """Get Instagram accounts a user is subscribed to"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                SELECT a.id, a.instagram_username, s.subscribed_at
+                FROM monitored_accounts a
+                JOIN user_account_subscriptions s ON a.id = s.account_id
+                WHERE s.user_id = ?
+                """,
+                (user_id,)
+            )
+            
+            results = cursor.fetchall()
+            return [dict(row) for row in results]
+        except Exception as e:
+            logger.error(f"Error getting user subscriptions: {str(e)}")
+            return []
+    
+    def get_recipe_by_id(self, recipe_id: int) -> Optional[Dict]:
+        """Get recipe information by ID"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT id, post_url, title, json_data, processed_at, pdf_path FROM processed_recipes WHERE id = ?",
+                (recipe_id,)
+            )
+            
+            result = cursor.fetchone()
+            
+            if result:
+                recipe = dict(result)
+                if recipe.get('json_data'):
+                    recipe['json_data'] = json.loads(recipe['json_data'])
+                return recipe
+            else:
+                return None
+        except Exception as e:
+            logger.error(f"Error getting recipe by ID: {str(e)}")
+            return None
+    
+    def get_recipe_by_url(self, post_url: str) -> Optional[Dict]:
+        """Get recipe information by Instagram post URL"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "SELECT id, post_url, title, json_data, processed_at, pdf_path FROM processed_recipes WHERE post_url = ?",
+                (post_url,)
+            )
+            
+            result = cursor.fetchone()
+            
+            if result:
+                recipe = dict(result)
+                if recipe.get('json_data'):
+                    recipe['json_data'] = json.loads(recipe['json_data'])
+                return recipe
+            else:
+                return None
+        except Exception as e:
+            logger.error(f"Error getting recipe by URL: {str(e)}")
+            return None
+    
+    def get_user_delivered_recipes(self, user_id: int) -> List[Dict]:
+        """Get recipes delivered to a user"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                """
+                SELECT r.id, r.post_url, r.title, r.processed_at, r.pdf_path, d.delivered_at
+                FROM processed_recipes r
+                JOIN delivered_recipes d ON r.id = d.recipe_id
+                WHERE d.user_id = ?
+                ORDER BY d.delivered_at DESC
+                """,
+                (user_id,)
+            )
+            
+            results = cursor.fetchall()
+            return [dict(row) for row in results]
+        except Exception as e:
+            logger.error(f"Error getting user delivered recipes: {str(e)}")
+            return []
+    
+    def update_user_preferences(self, user_id: int, preferences: Dict) -> bool:
+        """Update a user's preferences"""
+        try:
+            cursor = self.conn.cursor()
+            cursor.execute(
+                "UPDATE users SET preferences = ? WHERE id = ?",
+                (json.dumps(preferences), user_id)
+            )
+            self.conn.commit()
+            logger.info(f"Updated preferences for user_id: {user_id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error updating user preferences: {str(e)}")
+            self.conn.rollback()
+            return False
