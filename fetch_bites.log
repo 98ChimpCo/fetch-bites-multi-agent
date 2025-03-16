@@ -1150,3 +1150,257 @@ That doesn't look like a vali...
 That doesn't look like a vali...
 2025-03-15 17:17:38,016 - src.utils.instagram_message_adapter - INFO - Found 5 new messages to process
 2025-03-15 17:17:48,807 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user
+2025-03-15 21:06:03,141 - __main__ - INFO - All components initialized successfully
+2025-03-15 21:06:03,141 - __main__ - INFO - Starting Fetch Bites application...
+2025-03-15 21:06:03,147 - WDM - INFO - ====== WebDriver manager ======
+2025-03-15 21:06:03,825 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-15 21:06:04,241 - WDM - INFO - Get LATEST chromedriver version for google-chrome
+2025-03-15 21:06:04,360 - WDM - INFO - Driver [/Users/shahin/.wdm/drivers/chromedriver/mac64/134.0.6998.88/chromedriver-mac-arm64/chromedriver] found in cache
+2025-03-15 21:06:05,367 - src.utils.instagram_message_adapter - INFO - Logging in to Instagram...
+2025-03-15 21:06:22,218 - src.utils.instagram_message_adapter - INFO - Successfully logged in to Instagram
+2025-03-15 21:06:22,219 - src.utils.instagram_message_adapter - INFO - Starting Instagram message monitoring...
+2025-03-15 21:06:26,585 - src.utils.instagram_message_adapter - INFO - Found 1 unread conversations
+2025-03-15 21:06:28,687 - src.utils.conversation_handler - INFO - Received message from unknown: 'fetch.bites'
+2025-03-15 21:06:30,457 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:30,457 - src.utils.conversation_handler - INFO - Received message from unknown: 'PrimaryGeneralRequests'
+2025-03-15 21:06:31,015 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:31,282 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:31,283 - src.utils.conversation_handler - INFO - Received message from unknown: 'Shahin ZangenehpourYou: That doesn't look like a valid email address. Please send me a valid email so I can deliver your recipe card.  · 3h'
+2025-03-15 21:06:31,848 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:32,124 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:32,124 - src.utils.conversation_handler - INFO - Received message from unknown: 'Shahin Zangenehpour'
+2025-03-15 21:06:32,690 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:32,965 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:32,965 - src.utils.conversation_handler - INFO - Received message from unknown: 'You: That doesn't look like a valid email address. Please send me a valid email so I can deliver your recipe card.  · 3h'
+2025-03-15 21:06:33,547 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:33,825 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:33,825 - src.utils.conversation_handler - INFO - Received message from unknown: 'Soushiant Zanganehpour'
+2025-03-15 21:06:34,417 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:34,700 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:34,700 - src.utils.conversation_handler - INFO - Received message from unknown: 'Your messages'
+2025-03-15 21:06:35,277 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:35,565 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:35,565 - src.utils.conversation_handler - INFO - Received message from unknown: 'Send a message to start a chat.'
+2025-03-15 21:06:36,145 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:36,427 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:36,428 - src.utils.conversation_handler - INFO - Received message from unknown: 'Send message'
+2025-03-15 21:06:36,997 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:37,272 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:37,272 - src.utils.conversation_handler - INFO - Received message from unknown: 'Phone number, username, or email'
+2025-03-15 21:06:37,853 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:38,124 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:38,124 - src.utils.conversation_handler - INFO - Received message from unknown: 'Save login info'
+2025-03-15 21:06:38,671 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:38,940 - src.utils.instagram_message_adapter - ERROR - Could not find message input field
+2025-03-15 21:06:38,940 - src.utils.conversation_handler - INFO - Received message from unknown: 'Forgot password?'
+2025-03-15 21:06:39,507 - src.utils.instagram_message_adapter - WARNING - Coordinate approach failed: Message: move target out of bounds
+  (Session info: chrome=134.0.6998.89)
+Stacktrace:
+0   chromedriver                        0x0000000100ea1804 cxxbridge1$str$ptr + 2785964
+1   chromedriver                        0x0000000100e99ddc cxxbridge1$str$ptr + 2754692
+2   chromedriver                        0x00000001009edd1c cxxbridge1$string$len + 92532
+3   chromedriver                        0x0000000100a7de2c cxxbridge1$string$len + 682628
+4   chromedriver                        0x0000000100a76678 cxxbridge1$string$len + 651984
+5   chromedriver                        0x0000000100a2935c cxxbridge1$string$len + 335796
+6   chromedriver                        0x0000000100e66cd4 cxxbridge1$str$ptr + 2545532
+7   chromedriver                        0x0000000100e69fa0 cxxbridge1$str$ptr + 2558536
+8   chromedriver                        0x0000000100e46d04 cxxbridge1$str$ptr + 2414508
+9   chromedriver                        0x0000000100e6a800 cxxbridge1$str$ptr + 2560680
+10  chromedriver                        0x0000000100e37ba0 cxxbridge1$str$ptr + 2352712
+11  chromedriver                        0x0000000100e8a45c cxxbridge1$str$ptr + 2690820
+12  chromedriver                        0x0000000100e8a5e4 cxxbridge1$str$ptr + 2691212
+13  chromedriver                        0x0000000100e99a50 cxxbridge1$str$ptr + 2753784
+14  libsystem_pthread.dylib             0x00000001832c02e4 _pthread_start + 136
+15  libsystem_pthread.dylib             0x00000001832bb0fc thread_start + 8
+
+2025-03-15 21:06:39,608 - src.utils.instagram_message_adapter - INFO - Message monitoring stopped by user

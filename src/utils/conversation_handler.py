@@ -58,15 +58,10 @@ class ConversationHandler:
         self.delivery_agent = delivery_agent
         
     def handle_message(self, user_id: str, message: str) -> str:
-        """Handle an incoming message from a user.
+        """Handle an incoming message from a user."""
+        # Log the raw message for debugging
+        logger.info(f"Received message from {user_id}: '{message}'")
         
-        Args:
-            user_id: Unique identifier for the user
-            message: Message from the user
-            
-        Returns:
-            Response message to send to the user
-        """
         # Get current user state
         user_state = self.user_state_manager.get_user_state(user_id)
         current_state = user_state.get("state", STATE_NEW)
@@ -115,38 +110,43 @@ class ConversationHandler:
                 return INVALID_URL
                 
         elif current_state == STATE_AWAITING_EMAIL:
-            # Expecting an email address
+            # First, try with the raw message
             if self.user_state_manager.is_valid_email(message):
-                # Valid email provided
                 email = message
-                pending_url = user_state.get("pending_url")
-                
+            else:
+                # Enhanced email extraction
+                extracted_email = self._extract_email_from_message(message)
+                if not extracted_email:
+                    # No valid email found
+                    return INVALID_EMAIL
+                email = extracted_email
+                logger.info(f"Successfully extracted email: {email}")
+            
+            # Process with the extracted email
+            pending_url = user_state.get("pending_url")
+            
+            self.user_state_manager.update_user_state(user_id, {
+                "email": email
+            })
+            
+            # Send confirmation
+            confirmation = EMAIL_CONFIRMATION.format(email=email)
+            
+            if pending_url:
+                # Process the pending URL
                 self.user_state_manager.update_user_state(user_id, {
-                    "email": email
+                    "state": STATE_PROCESSING
                 })
                 
-                # Send confirmation
-                confirmation = EMAIL_CONFIRMATION.format(email=email)
-                
-                if pending_url:
-                    # Process the pending URL
-                    self.user_state_manager.update_user_state(user_id, {
-                        "state": STATE_PROCESSING
-                    })
-                    
-                    # Process asynchronously and return confirmation for now
-                    # In a real implementation, this would be a background task
-                    self._process_recipe_request_async(user_id, pending_url)
-                    return confirmation
-                else:
-                    # No pending URL, await one
-                    self.user_state_manager.update_user_state(user_id, {
-                        "state": STATE_AWAITING_URL
-                    })
-                    return confirmation + "\n\nNow, send me an Instagram recipe post to try it out!"
+                # Process asynchronously and return confirmation for now
+                self._process_recipe_request_async(user_id, pending_url)
+                return confirmation
             else:
-                # Invalid email
-                return INVALID_EMAIL
+                # No pending URL, await one
+                self.user_state_manager.update_user_state(user_id, {
+                    "state": STATE_AWAITING_URL
+                })
+                return confirmation + "\n\nNow, send me an Instagram recipe post to try it out!"
         
         # Default response for any other state or unrecognized input
         if self.user_state_manager.is_instagram_post_url(message):
@@ -157,6 +157,98 @@ class ConversationHandler:
                 "state": STATE_AWAITING_URL
             })
             return INVALID_URL
+
+    def _extract_email_from_message(self, message: str) -> Optional[str]:
+        """
+        Advanced email extraction from message text.
+        
+        Args:
+            message: Raw message text that might contain an email
+            
+        Returns:
+            Extracted email or None if no valid email found
+        """
+        if not message:
+            return None
+        
+        # Log the raw message for debugging
+        logger.info(f"Extracting email from: '{message}'")
+        
+        # Method 1: Use regex to find email patterns
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        email_matches = re.findall(email_pattern, message)
+        
+        if email_matches:
+            for match in email_matches:
+                if self.user_state_manager.is_valid_email(match):
+                    logger.info(f"Found email via regex: {match}")
+                    return match
+        
+        # Method 2: Clean up text and split into words
+        cleaned_text = message.lower()
+        # Remove common UI elements and punctuation
+        ui_elements = ['react', 'reply', 'more', 'enter', 'send', 'close']
+        
+        for element in ui_elements:
+            cleaned_text = cleaned_text.replace(element, ' ')
+        
+        # Replace non-email punctuation with spaces
+        cleaned_text = re.sub(r'[^\w\s@.-]', ' ', cleaned_text)
+        
+        # Split into words and examine each
+        words = re.split(r'\s+', cleaned_text)
+        
+        for word in words:
+            # Look for words with @ and . which are common in emails
+            if '@' in word and '.' in word:
+                # Further clean the word
+                clean_word = re.sub(r'[^a-zA-Z0-9.@_+-]', '', word)
+                if self.user_state_manager.is_valid_email(clean_word):
+                    logger.info(f"Found email via word cleaning: {clean_word}")
+                    return clean_word
+        
+        # Method 3: Try to extract just the email portion from longer text
+        at_index = message.find('@')
+        
+        if at_index != -1:
+            # Look for a valid email around the @ symbol
+            # Find start (working backwards from @)
+            start_index = at_index
+            while start_index > 0 and re.match(r'[a-zA-Z0-9._%+-]', message[start_index-1]):
+                start_index -= 1
+            
+            # Find end (working forwards from @)
+            end_index = at_index
+            while end_index < len(message)-1 and re.match(r'[a-zA-Z0-9.-]', message[end_index+1]):
+                end_index += 1
+            
+            # Find the domain end (looking for the '.' and valid TLD)
+            while end_index < len(message)-1:
+                if message[end_index] == '.':
+                    # Found a dot, check for valid TLD length (2-6 chars)
+                    potential_end = end_index + 1
+                    while potential_end < len(message) and re.match(r'[a-zA-Z]', message[potential_end]):
+                        potential_end += 1
+                    
+                    # If we found a valid TLD length, use this as our end
+                    if 2 <= potential_end - (end_index + 1) <= 6:
+                        end_index = potential_end
+                        break
+                
+                end_index += 1
+                if end_index >= len(message) or not re.match(r'[a-zA-Z0-9.-]', message[end_index]):
+                    break
+            
+            # Extract the potential email and validate
+            if start_index < at_index and end_index > at_index:
+                potential_email = message[start_index:end_index]
+                if self.user_state_manager.is_valid_email(potential_email):
+                    logger.info(f"Found email via @ parsing: {potential_email}")
+                    return potential_email
+        
+        # No valid email found with any method
+        logger.warning(f"No valid email found in message: '{message}'")
+        return None
     
     def _process_recipe_request(self, user_id: str, post_url: str) -> str:
         """Process a recipe request for a user.

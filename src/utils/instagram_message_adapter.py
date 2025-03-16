@@ -709,124 +709,107 @@ class InstagramMessageAdapter:
             return []
             
     def _send_message_direct(self, message: str) -> bool:
-        """Send a message in the currently open conversation.
+        """
+        Send a message directly using standard selectors.
         
         Args:
-            message: Message content to send
+            message: Message to send
             
         Returns:
             True if successful, False otherwise
         """
         try:
-            # Take screenshot before sending
-            self.driver.save_screenshot("screenshots/before_send_direct.png")
+            # Try to find the input field with various selectors
+            input_field = None
+            selectors = [
+                "textarea[placeholder='Message...']",
+                "div[contenteditable='true']", 
+                "div[role='textbox']",
+                "textarea"
+            ]
             
-            # Find and focus the message input field
-            if not self._find_message_input():
-                logger.error("Could not find message input field")
-                return False
-            
-            # Now the input should be focused, send message with keyboard events
-            from selenium.webdriver.common.keys import Keys
-            from selenium.webdriver.common.action_chains import ActionChains
-            
-            # Type message in multiple ways to increase chances of success
-            
-            # Method 1: ActionChains
-            try:
-                actions = ActionChains(self.driver)
-                
-                # Clear existing text if any
-                actions.key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).send_keys(Keys.DELETE).perform()
-                time.sleep(0.2)
-                
-                # Type message in chunks
-                for chunk in [message[i:i+20] for i in range(0, len(message), 20)]:
-                    actions = ActionChains(self.driver)
-                    actions.send_keys(chunk)
-                    actions.perform()
-                    time.sleep(0.2)
-                
-                # Take screenshot after typing
-                self.driver.save_screenshot("screenshots/after_typing.png")
-                
-                # Send message with Enter key
-                actions = ActionChains(self.driver)
-                actions.send_keys(Keys.RETURN)
-                actions.perform()
-            except Exception as e:
-                logger.warning(f"ActionChains sending failed: {str(e)}")
-                
-                # Method 2: JavaScript
+            for selector in selectors:
                 try:
-                    # Try to send using JavaScript
-                    # Properly escape the message for JavaScript
-                    escaped_message = message.replace('"', '\\"').replace('\n', '\\n')
+                    input_elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    for element in input_elements:
+                        if element.is_displayed():
+                            input_field = element
+                            break
+                    if input_field:
+                        break
+                except:
+                    continue
+            
+            if input_field:
+                # Click to focus
+                input_field.click()
+                time.sleep(0.5)
+                
+                # Clear any existing text
+                input_field.clear()
+                
+                # Type message
+                input_field.send_keys(message)
+                time.sleep(0.5)
+                
+                # Send with Enter key
+                input_field.send_keys(Keys.RETURN)
+                
+                logger.info(f"Message sent using direct approach: {message[:30]}...")
+                return True
+            
+            # If no input field found, try JavaScript approach
+            send_js = f"""
+            function sendMessage() {{
+                // Try to find message input
+                let textarea = document.querySelector('textarea[placeholder="Message..."]');
+                let contentEditable = document.querySelector('div[contenteditable="true"]');
+                let textbox = document.querySelector('div[role="textbox"]');
+                
+                let inputElement = textarea || contentEditable || textbox;
+                
+                if (inputElement) {{
+                    // Focus the element
+                    inputElement.focus();
                     
-                    send_js = """
-                    function sendMessage(text) {
-                        // Get the active element
-                        const active = document.activeElement;
-                        
-                        if (active) {
-                            // For textarea/input elements
-                            if (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT') {
-                                active.value = text;
-                                
-                                // Create and dispatch an Enter key event
-                                const enterEvent = new KeyboardEvent('keydown', {
-                                    key: 'Enter',
-                                    code: 'Enter',
-                                    keyCode: 13,
-                                    which: 13,
-                                    bubbles: true
-                                });
-                                
-                                active.dispatchEvent(enterEvent);
-                                return true;
-                            }
-                            // For contenteditable divs
-                            else if (active.getAttribute('contenteditable') === 'true' || active.getAttribute('role') === 'textbox') {
-                                active.textContent = text;
-                                
-                                // Create and dispatch an Enter key event
-                                const enterEvent = new KeyboardEvent('keydown', {
-                                    key: 'Enter',
-                                    code: 'Enter',
-                                    keyCode: 13,
-                                    which: 13,
-                                    bubbles: true
-                                });
-                                
-                                active.dispatchEvent(enterEvent);
-                                return true;
-                            }
-                        }
-                        
-                        return false;
-                    }
+                    // Set the value/content
+                    if (inputElement.tagName.toLowerCase() === 'textarea') {{
+                        inputElement.value = `{message.replace("'", "\\'")}`;
+                    }} else {{
+                        inputElement.textContent = `{message.replace("'", "\\'")}`;
+                    }}
                     
-                    return sendMessage(arguments[0]);
-                    """
+                    // Trigger input event
+                    inputElement.dispatchEvent(new Event('input', {{ bubbles: true }}));
                     
-                    sent = self.driver.execute_script(send_js, escaped_message)
-                    if not sent:
-                        raise Exception("JavaScript send failed")
-                except Exception as e:
-                    logger.warning(f"JavaScript sending failed: {str(e)}")
-                    return False
+                    // Send the message with Enter
+                    const enterEvent = new KeyboardEvent('keydown', {{
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13,
+                        which: 13,
+                        bubbles: true
+                    }});
+                    
+                    inputElement.dispatchEvent(enterEvent);
+                    return true;
+                }}
+                
+                return false;
+            }}
             
-            time.sleep(1)
+            return sendMessage();
+            """
             
-            # Take screenshot after sending
-            self.driver.save_screenshot("screenshots/after_send_direct.png")
+            result = self.driver.execute_script(send_js)
+            if result:
+                logger.info(f"Message sent using JavaScript approach: {message[:30]}...")
+                return True
             
-            logger.info(f"Message sent directly: {message[:30]}...")
-            return True
-            
+            logger.error("Could not find message input field or send message")
+            return False
         except Exception as e:
             logger.error(f"Error sending message directly: {str(e)}")
-            self.driver.save_screenshot("screenshots/send_direct_error.png")
             return False
 
     def send_message(self, user_id: str, message: str) -> bool:
@@ -916,59 +899,144 @@ class InstagramMessageAdapter:
         if self.driver:
             self.driver.quit()
             self.driver = None
+
+    def _extract_message_content(self, conversation_element=None):
+        """
+        Extract clean message content from the current conversation view.
+        
+        Returns:
+            List of message text content without UI elements
+        """
+        # Improved JavaScript for extracting message content
+        messages_js = """
+        try {
+            // Array to hold clean message content
+            let cleanMessages = [];
             
+            // Method 1: Find messages by role="row"
+            const rows = Array.from(document.querySelectorAll('[role="row"]'));
+            if (rows.length > 0) {
+                // Process each row to extract only the text content
+                rows.forEach(row => {
+                    // Skip rows with minimal content (likely UI elements)
+                    if (row.textContent.trim().length < 2) return;
+                    
+                    // Skip rows that are clearly UI elements
+                    const lowerText = row.textContent.toLowerCase();
+                    if (['seen', 'delivered', 'sent', 'read', 'active now'].some(ui => lowerText.includes(ui))) return;
+                    
+                    // Get main content div (usually the second div in the hierarchy)
+                    const contentDivs = Array.from(row.querySelectorAll('div > div')).filter(div => 
+                        div.textContent.trim().length > 0 &&
+                        !div.querySelector('button') && 
+                        !div.querySelector('svg')
+                    );
+                    
+                    if (contentDivs.length > 0) {
+                        // Extract text and clean it
+                        let messageText = contentDivs[0].textContent.trim();
+                        
+                        // Remove common UI text that might be in the message
+                        const uiElements = ['react', 'reply', 'more', 'enter', 'send'];
+                        uiElements.forEach(ui => {
+                            const regex = new RegExp(ui, 'gi');
+                            messageText = messageText.replace(regex, '');
+                        });
+                        
+                        if (messageText.length > 0) {
+                            cleanMessages.push(messageText.trim());
+                        }
+                    }
+                });
+            }
+            
+            // Method 2: If method 1 failed, try identifying message bubbles by style
+            if (cleanMessages.length === 0) {
+                const bubbles = Array.from(document.querySelectorAll('div[style*="background-color"]')).filter(
+                    div => div.textContent.trim().length > 0
+                );
+                
+                bubbles.forEach(bubble => {
+                    // Skip obvious UI elements
+                    if (bubble.querySelector('button') || bubble.querySelector('svg')) return;
+                    
+                    let text = bubble.textContent.trim();
+                    // Clean up UI elements
+                    const uiElements = ['react', 'reply', 'more', 'enter', 'send'];
+                    uiElements.forEach(ui => {
+                        const regex = new RegExp(ui, 'gi');
+                        text = text.replace(regex, '');
+                    });
+                    
+                    if (text.length > 0) {
+                        cleanMessages.push(text.trim());
+                    }
+                });
+            }
+            
+            // Method 3: Last resort, get all substantial text blocks
+            if (cleanMessages.length === 0) {
+                // Find all divs with substantial content that don't contain UI elements
+                const textDivs = Array.from(document.querySelectorAll('div')).filter(
+                    div => div.textContent.trim().length > 10 && 
+                        !div.querySelector('button') && 
+                        !div.querySelector('svg') &&
+                        !['seen', 'delivered', 'active'].some(ui => div.textContent.toLowerCase().includes(ui))
+                );
+                
+                textDivs.forEach(div => {
+                    cleanMessages.push(div.textContent.trim());
+                });
+            }
+            
+            return cleanMessages;
+        } catch (e) {
+            console.error('Error extracting message content:', e);
+            return [];
+        }
+        """
+        
+        try:
+            # Execute the JavaScript to extract messages
+            messages = self.driver.execute_script(messages_js)
+            
+            # Log what we found for debugging
+            logger.debug(f"Extracted {len(messages)} clean messages")
+            for i, msg in enumerate(messages):
+                logger.debug(f"Message {i}: '{msg[:50]}...' (length: {len(msg)})")
+            
+            return messages
+        except Exception as e:
+            logger.error(f"Error executing message extraction script: {str(e)}")
+            self.driver.save_screenshot("screenshots/extraction_error.png")
+            return []
+
     def process_messages_in_conversation(self, conversation):
         """Process messages within a conversation, focusing on unread ones."""
         try:
             # Open the conversation if needed
             self._open_conversation(conversation)
             
-            # Get all messages in the conversation
-            messages_js = """
-            let results = [];
-            try {
-                // Get all message elements
-                const allMessages = Array.from(document.querySelectorAll('div[role="row"]'));
-                
-                // Extract the messages with their details
-                results = allMessages.map((el, index) => {
-                    // Create a unique identifier based on text content and position
-                    const messageText = el.textContent.trim();
-                    const messageId = `${messageText.substring(0, 50)}_${index}`;
-                    
-                    // Check if this message has the unread indicator
-                    const isUnread = el.querySelector('.unread-indicator') !== null || 
-                                el.classList.contains('unread');
-                    
-                    return {
-                        id: messageId,
-                        text: messageText,
-                        isUnread: isUnread,
-                        index: index
-                    };
-                });
-            } catch (e) {
-                console.error('Error finding messages:', e);
-            }
-            return results;
-            """
+            # Get clean messages using the new extraction method
+            messages = self._extract_message_content()
             
-            messages = self.driver.execute_script(messages_js)
-            
-            # Filter to only unread messages
-            unread_messages = [msg for msg in messages if msg.get('isUnread', False)]
-            logger.info(f"Found {len(unread_messages)} unread messages in conversation")
-            
-            # Process only unread messages
-            for message in unread_messages:
-                message_id = message.get('id')
+            # Process messages (modify as needed for your application)
+            for message in messages:
+                # Generate a unique ID for the message
+                message_id = f"{message[:30]}_{hash(message)}"
                 
                 # Skip if already processed
                 if self.message_tracker.is_processed(message_id):
                     continue
                     
-                # Process the message
-                self._process_message(message)
+                # Process the message with your handlers
+                for handler in self.message_handlers:
+                    try:
+                        response = handler(conversation.get('user_id', 'unknown'), message)
+                        if response:
+                            self._send_message_direct(response)
+                    except Exception as e:
+                        logger.error(f"Error in message handler: {str(e)}")
                 
                 # Mark as processed
                 self.message_tracker.mark_processed(message_id)
