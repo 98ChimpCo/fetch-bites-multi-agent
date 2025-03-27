@@ -6,6 +6,7 @@ import logging
 import requests
 from typing import Dict, List, Optional
 import anthropic
+from src.services.pdf_helper import generate_pdf_and_return_path
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -54,13 +55,31 @@ class RecipeExtractor:
             if len(text.split()) < 20 and not force:
                 logger.warning("Text too short to extract recipe")
                 return None
-                    
+                
+            recipe = None
             # Use Claude API if available, otherwise use regex-based extraction
             if self.client:
-                return self._extract_with_claude(text)
+                recipe = self._extract_with_claude(text)
             else:
                 logger.warning("Claude API not available, using fallback extraction")
-                return self._extract_with_regex(text)
+                recipe = self._extract_with_regex(text)
+
+            # If we successfully extracted a recipe, try generating a PDF
+            if recipe:
+                pdf_path = generate_pdf_and_return_path(recipe)
+                
+                from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
+                InstagramMessageAdapterVision.latest_generated_pdf_path = pdf_path
+
+                if pdf_path:
+                    recipe["pdf_path"] = pdf_path
+                    logger.info(f"PDF generated at: {pdf_path}")
+                else:
+                    logger.warning("Recipe extracted but PDF generation failed")
+                return recipe
+
+            logger.warning("No valid recipe extracted")
+            return None
                 
         except Exception as e:
             logger.error(f"Failed to extract recipe: {str(e)}")

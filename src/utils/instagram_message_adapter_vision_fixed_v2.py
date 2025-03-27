@@ -1,3 +1,4 @@
+import sys
 import os
 import time
 import random
@@ -19,6 +20,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from src.utils.claude_vision_assistant import ClaudeVisionAssistant
+from src.utils.mock_email_delivery import mock_send_email
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Set up logging
 logging.basicConfig(
@@ -78,6 +82,8 @@ class InstagramMessageAdapterVision:
         # Create screenshots directory if it doesn't exist
         os.makedirs(self.screenshot_dir, exist_ok=True)
         
+        logger.info("InstagramMessageAdapterVision initialized.")
+
         # Register cleanup handler to ensure browser is closed
         atexit.register(self.cleanup)
     
@@ -250,6 +256,28 @@ class InstagramMessageAdapterVision:
             logger.error(f"Login failed: {str(e)}")
             return False
     
+    def _find_unread_conversations(self):
+        """
+        Dynamically find unread conversations by looking for DOM elements
+        that represent new messages in Instagram DMs.
+        Returns a list of clickable WebElements, not coordinates.
+        """
+        try:
+            unread_threads = self.driver.find_elements(By.XPATH, '//div[@aria-label="Unread"]')
+            if not unread_threads:
+                logger.info("No unread threads found via aria-label, trying fallback selector...")
+                unread_threads = self.driver.find_elements(By.XPATH, '//div[contains(@aria-label, "new message")]')
+
+            if not unread_threads:
+                logger.info("Still no unread threads found using fallback.")
+            else:
+                logger.info(f"Found {len(unread_threads)} unread thread(s)")
+
+            return unread_threads
+        except Exception as e:
+            logger.error(f"Error locating unread conversations: {e}")
+            return []
+            
     def _type_humanlike(self, element, text: str):
         """Type text with human-like random delays."""
         for char in text:
@@ -786,9 +814,173 @@ class InstagramMessageAdapterVision:
             logger.error(f"Error reading messages: {str(e)}")
             return []
 
+    def _extract_post_url_from_attachment(self, conversation_html: str) -> Optional[str]:
+        """
+        Extract Instagram post URL from a shared post/reel in a conversation.
+        
+        Args:
+            conversation_html (str): HTML content of the conversation
+            
+        Returns:
+            str or None: Extracted post URL or None if not found
+        """
+        try:
+            # First try to extract using JavaScript directly
+            post_url_js = """
+            function findPostUrl() {
+                // Look for shared post containers
+                const sharedPosts = document.querySelectorAll('div[role="button"]');
+                
+                for (const element of sharedPosts) {
+                    // Check if this element contains an Instagram post link
+                    const links = element.querySelectorAll('a');
+                    for (const link of links) {
+                        if (link.href && 
+                            (link.href.includes('/p/') || 
+                            link.href.includes('/reel/') || 
+                            link.href.includes('/tv/'))) {
+                            return link.href;
+                        }
+                    }
+                    
+                    // Sometimes the URL is in a data attribute or onclick handler
+                    const dataAttributes = element.getAttributeNames();
+                    for (const attr of dataAttributes) {
+                        if (attr.startsWith('data-')) {
+                            const value = element.getAttribute(attr);
+                            if (value && 
+                                (value.includes('/p/') || 
+                                value.includes('/reel/') || 
+                                value.includes('/tv/'))) {
+                                // Extract the URL using regex
+                                const urlMatch = value.match(/(https?:\/\/[^\s'"]+instagram\.com\/(?:p|reel|tv)\/[^\s'"]+)/);
+                                if (urlMatch) return urlMatch[1];
+                            }
+                        }
+                    }
+                    
+                    // Check onclick attributes
+                    const onclickValue = element.getAttribute('onclick');
+                    if (onclickValue && 
+                        (onclickValue.includes('/p/') || 
+                        onclickValue.includes('/reel/') || 
+                        onclickValue.includes('/tv/'))) {
+                        const urlMatch = onclickValue.match(/(https?:\/\/[^\s'"]+instagram\.com\/(?:p|reel|tv)\/[^\s'"]+)/);
+                        if (urlMatch) return urlMatch[1];
+                    }
+                    
+                    // Check if this element contains an image that might be from a post
+                    const images = element.querySelectorAll('img');
+                    for (const img of images) {
+                        const src = img.getAttribute('src');
+                        // Sometimes the post ID is in the image src
+                        if (src && src.includes('instagram')) {
+                            // Look for parent elements that might have the post link
+                            let parent = img.parentElement;
+                            for (let i = 0; i < 5; i++) {
+                                if (!parent) break;
+                                
+                                const onclick = parent.getAttribute('onclick');
+                                if (onclick && 
+                                    (onclick.includes('/p/') || 
+                                    onclick.includes('/reel/') || 
+                                    onclick.includes('/tv/'))) {
+                                    const urlMatch = onclick.match(/(https?:\/\/[^\s'"]+instagram\.com\/(?:p|reel|tv)\/[^\s'"]+)/);
+                                    if (urlMatch) return urlMatch[1];
+                                }
+                                
+                                parent = parent.parentElement;
+                            }
+                        }
+                    }
+                }
+                
+                // If we still haven't found anything, try a more generic approach
+                // Look for elements that might be interactive (shared posts usually are)
+                const interactiveElements = document.querySelectorAll('[role="button"], [tabindex="0"]');
+                for (const element of interactiveElements) {
+                    // Check if the element contains the word "shared" or "sent" indicating it's a shared post
+                    const text = element.textContent.toLowerCase();
+                    if ((text.includes('shared') || text.includes('sent')) && 
+                        (text.includes('post') || text.includes('reel') || text.includes('video'))) {
+                        // This is likely a shared post container, now try to extract the post ID
+                        // Instagram post IDs typically contain a mix of letters, numbers, and underscores
+                        const idPattern = /\/([A-Za-z0-9_-]{11,})\//;
+                        const match = element.innerHTML.match(idPattern);
+                        if (match) {
+                            const postId = match[1];
+                            // Construct the post URL based on the ID
+                            return `https://www.instagram.com/p/${postId}/`;
+                        }
+                    }
+                }
+                
+                return null;
+            }
+            
+            return findPostUrl();
+            """
+            
+            post_url = self.driver.execute_script(post_url_js)
+            if post_url:
+                logger.info(f"Found post URL in attachment: {post_url}")
+                return post_url
+                
+            # If JavaScript approach fails, take a screenshot and try to use Claude Vision
+            screenshot_path = f"{self.screenshot_dir}/shared_post.png"
+            self.driver.save_screenshot(screenshot_path)
+            
+            # Use Claude Vision to analyze the screenshot and look for a post URL
+            logger.info("Using Claude Vision to identify shared post")
+            
+            # Inject this prompt for Claude Vision
+            prompt = """
+            This is a screenshot of an Instagram Direct Message conversation with a shared post or reel.
+            
+            I'm trying to extract the Instagram post or reel URL from this shared content.
+            
+            Look for any visual indicators of a shared post/reel, such as:
+            1. A thumbnail/preview image of a post
+            2. A play button indicating a video
+            3. UI elements typical of shared Instagram content
+            
+            If you can identify an Instagram post or reel in this image, provide the following information:
+            1. Is this a shared Instagram post or reel? (yes/no)
+            2. Any visible post ID or URL parts you can see
+            3. Any username that might be associated with the post
+            4. Any caption text visible from the post
+            5. Is this content likely to be a recipe? Look for food images, cooking instructions, ingredients list, etc.
+            
+            Format your response as JSON:
+            {
+                "is_shared_post": true/false,
+                "post_id": "post ID if visible",
+                "username": "username if visible",
+                "caption_snippet": "any visible caption text",
+                "is_recipe": true/false,
+                "confidence": 0-100
+            }
+            """
+            
+            analysis = self.claude_assistant.analyze_instagram_content(screenshot_path)
+            
+            # Process Claude's analysis
+            if analysis and analysis.get("is_shared_post") and analysis.get("post_id"):
+                post_id = analysis.get("post_id")
+                # Construct URL from post ID
+                constructed_url = f"https://www.instagram.com/p/{post_id}/"
+                logger.info(f"Constructed post URL from Claude Vision analysis: {constructed_url}")
+                return constructed_url
+                
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error extracting post URL from attachment: {str(e)}")
+            return None
+    
     def _process_conversation(self, conversation, index):
         """
-        Process a single conversation with enhanced error recovery.
+        Process a single conversation with improved attachment and message handling.
         
         Args:
             conversation (dict): Conversation data
@@ -799,7 +991,6 @@ class InstagramMessageAdapterVision:
         """
         try:
             # Open conversation - use coordinates if available
-            success = False
             if "x" in conversation and "y" in conversation:
                 x = int(conversation["x"] * self.screen_width)
                 y = int(conversation["y"] * self.screen_height)
@@ -815,62 +1006,201 @@ class InstagramMessageAdapterVision:
                 return False
                 
             # Wait longer for conversation to load
-            time.sleep(4)
+            time.sleep(3)
             
             # Dismiss any popups that might have appeared
             self.dismiss_popups()
             
-            # Read messages - try multiple times to ensure we get messages
-            messages = []
-            for attempt in range(3):
-                messages = self._read_messages_from_conversation()
-                if messages and len(messages) > 0:
-                    break
-                time.sleep(1)
+            # First, take a screenshot for analysis
+            screenshot_path = f"{self.screenshot_dir}/conversation_{int(time.time())}.png"
+            self.driver.save_screenshot(screenshot_path)
+            
+            # Use Claude Vision to analyze the content
+            logger.info("Using Claude Vision to identify shared post")
+            analysis = self.claude_assistant.analyze_instagram_content(screenshot_path)
+            
+            # If we found a recipe and have a post URL, process it
+            post_url = analysis.get('post_url')
+            if not post_url or "unable to determine" in post_url.lower():
+                logger.warning("Post URL not available or unclear in Claude analysis")
+                post_url = None
+            
+            if analysis.get('contains_recipe', False) and post_url:
+                confidence = analysis.get('confidence', 0)
+                logger.info(f"Found recipe post with {confidence}% confidence: {post_url}")
                 
+                # Process the post using test_workflow
+                try:
+                    # Import here to avoid circular imports
+                    # First save the current directory
+                    current_dir = os.getcwd()
+                    
+                    # Add a delay to let Chrome stabilize
+                    time.sleep(1)
+                    
+                    # Import the function
+                    from test_workflow import process_post
+                    
+                    # Process the post
+                    recipe_success = process_post(post_url)
+                    
+                    if recipe_success:
+                        logger.info(f"Successfully processed recipe from post: {post_url}")
+                        # Send a confirmation message back to the user
+                        self._send_message_direct(
+                            "I've found a recipe in the post you shared and created a recipe card! "
+                            "Would you like me to send it to your email?"
+                        )
+                    else:
+                        logger.warning(f"Failed to process recipe from post: {post_url}")
+                        # Let the user know we encountered an issue
+                        self._send_message_direct(
+                            "I detected a recipe in the post you shared, but couldn't process it successfully. "
+                            "Could you please share a different recipe post?"
+                        )
+                except Exception as e:
+                    logger.error(f"Error processing recipe post: {str(e)}")
+                    self._send_message_direct(
+                        "I encountered an error while processing the recipe post. "
+                        "Could you please try sharing a different recipe?"
+                    )
+            elif analysis.get('contains_recipe', False) and not post_url:
+                logger.warning("Recipe detected but couldn't extract post URL")
+                # Try JavaScript-based URL extraction as fallback
+                try:
+                    post_url_js = """
+                    function findPostUrl() {
+                        // Look for shared post elements
+                        const sharedContentElements = document.querySelectorAll('div[role="button"]');
+                        for (const el of sharedContentElements) {
+                            // Check if it has an image (shared posts usually do)
+                            const hasImage = el.querySelectorAll('img').length > 0;
+                            // Check if it has any recipe-like text
+                            const text = el.textContent.toLowerCase();
+                            const hasRecipeIndicators = 
+                                text.includes('recipe') || 
+                                text.includes('ingredients') || 
+                                text.includes('cook') ||
+                                text.includes('bake') ||
+                                text.includes('cup') ||
+                                text.includes('tbsp');
+                                
+                            if (hasImage && hasRecipeIndicators) {
+                                // This might be a shared post - check for links
+                                const links = el.querySelectorAll('a');
+                                for (const link of links) {
+                                    if (link.href && (link.href.includes('/p/') || link.href.includes('/reel/'))) {
+                                        return link.href;
+                                    }
+                                }
+                                
+                                // If no direct link found, try to extract from onclick handlers
+                                if (el.onclick || el.getAttribute('onclick')) {
+                                    const onclickText = el.getAttribute('onclick') || el.onclick.toString();
+                                    const urlMatch = onclickText.match(/https:\/\/www\.instagram\.com\/(p|reel)\/([A-Za-z0-9_-]+)/);
+                                    if (urlMatch) {
+                                        return urlMatch[0];
+                                    }
+                                }
+                                
+                                // Check for post ID in data attributes
+                                const postIdMatch = Array.from(el.attributes)
+                                    .filter(attr => attr.name.startsWith('data-'))
+                                    .map(attr => attr.value.match(/([A-Za-z0-9_-]{10,})/))
+                                    .filter(Boolean)[0];
+                                    
+                                if (postIdMatch) {
+                                    return `https://www.instagram.com/p/${postIdMatch[1]}/`;
+                                }
+                            }
+                        }
+                        return null;
+                    }
+                    return findPostUrl();
+                    """
+                    js_url = self.driver.execute_script(post_url_js)
+                    
+                    if js_url:
+                        logger.info(f"Found post URL using JavaScript: {js_url}")
+                        post_url = js_url
+                        
+                        # Now process this URL
+                        from test_workflow import process_post
+                        recipe_success = process_post(post_url)
+                        
+                        if recipe_success:
+                            logger.info(f"Successfully processed recipe from post: {post_url}")
+                            self._send_message_direct(
+                                "I've found a recipe in the post you shared and created a recipe card! "
+                                "Would you like me to send it to your email?"
+                            )
+                        else:
+                            logger.warning(f"Failed to process recipe from post: {post_url}")
+                            self._send_message_direct(
+                                "I detected a recipe in the post you shared, but couldn't process it successfully. "
+                                "Could you please share a different recipe post?"
+                            )
+                    else:
+                        logger.warning("Failed to extract post URL even with JavaScript")
+                        self._send_message_direct(
+                            "I detected a recipe in the post, but couldn't access it. "
+                            "Could you please share the recipe as a direct link instead?"
+                        )
+                        
+                except Exception as e:
+                    logger.error(f"JavaScript URL extraction failed: {str(e)}")
+                    self._send_message_direct(
+                        "I can see there's a recipe in the post you shared, but I'm having trouble accessing it. "
+                        "Could you please copy and share the direct link to the recipe post?"
+                    )
+                    
+            # Process regular messages as well
+            messages = self._read_messages_from_conversation()
+            
             if not messages:
                 logger.warning(f"No messages found in conversation {index}")
                 # Go back to inbox
                 self._navigate_back_to_inbox()
                 return False
-                
-            # Process only the most recent messages to avoid duplicates
-            # Use at most the 3 most recent messages
-            recent_messages = messages[-3:] if len(messages) > 3 else messages
             
-            for message in recent_messages:
+            # Get only the latest unprocessed message
+            latest_message = self._get_latest_message(messages)
+            
+            message_text = latest_message.get("content", "")
+            email_candidate = extract_email_from_message(message_text)
+
+            if email_candidate:
+                logger.info(f"Detected email in conversation: {email_candidate}")
+
+                if hasattr(self, "latest_generated_pdf_path") and self.latest_generated_pdf_path:
+                    from src.utils.mock_email_delivery import mock_send_email
+                    mock_send_email(to=email_candidate, attachment=self.latest_generated_pdf_path)
+                else:
+                    logger.warning("User sent email, but no PDF was available to send.")
+
+            # New logic to route the message via structured handler
+            from src.router import handle_incoming_dm
+            
+            if latest_message:
+                sender = latest_message.get("sender", "Unknown")
+                content = latest_message.get("content", "")
+                
+                dm_data = {
+                    "from": sender,
+                    "message": content,
+                    "screenshot_path": screenshot_path,  # already captured above
+                    "html_block": None  # Add if you capture DOM HTML
+                }
+                
                 try:
-                    # Skip messages from fetch.bites or system messages
-                    sender = message.get("sender", "Unknown")
-                    content = message.get("content", "")
-                    
-                    if not content:
-                        continue
-                        
-                    # Skip self messages or system UI elements
-                    if self._is_self_message(sender, content):
-                        continue
-                        
-                    # Skip Instagram system messages
-                    if (sender.lower() in ["instagram", "meta", "unknown"] and 
-                        any(x in content.lower() for x in ["©", "active", "home", "search", "reels", "profile"])):
-                        continue
-                    
-                    # Create a robust message hash
-                    message_hash = self._create_robust_message_hash(sender, content)
-                    
-                    # Skip if already processed
-                    if message_hash in self.processed_messages:
-                        continue
-                        
-                    # Mark as processed
-                    self.processed_messages.add(message_hash)
-                    logger.info(f"Processing new message from {sender}: '{content[:30]}...'")
-                    
-                    # Process the message
-                    self.message_callback(sender, content)
+                    logger.info(f"Routing message from {sender} through handle_incoming_dm()")
+                    handled = handle_incoming_dm(dm_data)
+                    if not handled:
+                        logger.warning("DM router could not handle this message.")
                 except Exception as e:
-                    logger.error(f"Error processing message: {str(e)}")
+                    logger.error(f"Error while routing message to DM handler: {e}")
+            else:
+                logger.info("No new messages to process in this conversation")
             
             # Go back to inbox
             return self._navigate_back_to_inbox()
@@ -965,17 +1295,14 @@ class InstagramMessageAdapterVision:
         Returns:
             str: A hash that identifies this message
         """
-        import re
-        
         # Normalize sender
         normalized_sender = sender.lower().strip()
         if not normalized_sender or normalized_sender in ["unknown", "user"]:
             normalized_sender = "unknown_user"
         
-        # Extract just the first few words of content (ignoring timestamps, etc.)
-        # This makes the hash more robust against minor content variations
+        # Extract just the first few words of content
         if content:
-            # Remove timestamps and common metadata patterns that might change
+            # Remove timestamps and common metadata patterns
             content = re.sub(r'\b\d+[hms] ago\b', '', content.lower())
             content = re.sub(r'\b(active|online|offline)\b', '', content)
             
@@ -991,6 +1318,65 @@ class InstagramMessageAdapterVision:
         # Create a hash that ignores minor variations
         return f"{normalized_sender}:{core_content}"
 
+    def _get_latest_message(self, messages):
+        """
+        Extract only the newest unprocessed message from a conversation.
+        
+        Args:
+            messages (List[Dict]): List of messages in the conversation
+            
+        Returns:
+            Dict or None: The newest unprocessed message or None
+        """
+        if not messages:
+            return None
+            
+        # Sort messages by timestamp if available
+        # Instagram often displays newest messages at the bottom
+        # So the last message in the list is likely the newest
+        latest_message = messages[-1]
+        
+        # Extract sender and content
+        sender = latest_message.get("sender", "Unknown")
+        content = latest_message.get("content", "")
+        
+        # Skip if empty or system message
+        if not content or self._is_ui_element(content) or self._is_self_message(sender, content):
+            return None
+            
+        # Create fingerprint for deduplication
+        fingerprint = self._create_message_fingerprint(sender, content)
+        
+        # Skip if already processed
+        if fingerprint in self.processed_messages:
+            return None
+            
+        # Add to processed messages
+        self.processed_messages.add(fingerprint)
+        
+        # Return the latest message
+        return latest_message
+
+    def _create_message_fingerprint(self, sender, content):
+        """Create a unique fingerprint for a message to avoid duplicates."""
+        # Clean the content and sender
+        clean_sender = sender.lower().strip() if sender else "unknown"
+        clean_content = content.lower().strip() if content else ""
+        
+        # Remove common volatile elements like timestamps
+        clean_content = re.sub(r'\b\d+[hms] ago\b', '', clean_content)
+        clean_content = re.sub(r'\b(active|online|offline)\b', '', clean_content)
+        
+        # Create a concise fingerprint
+        words = clean_content.split()
+        content_sample = ' '.join(words[:min(10, len(words))])
+        
+        # Include length as part of the fingerprint
+        content_length = len(clean_content)
+        
+        # Create the fingerprint
+        return f"{clean_sender}:{content_sample}:{content_length}"
+    
     def send_message(self, recipient: str, message: str) -> bool:
         """
         Send a message to a specific recipient.
@@ -1038,10 +1424,38 @@ class InstagramMessageAdapterVision:
             logger.error(f"Error sending message to {recipient}: {str(e)}")
             return False
     
+    def _is_ui_element(self, content: str) -> bool:
+        """Check if content appears to be UI element text rather than an actual message."""
+        if not content:
+            return True
+            
+        ui_indicators = [
+            "close", "escape", "↑", "up", "↓", "down", "active", "online", 
+            "seen", "read", "delivered", "typing", "home", "search", "explore"
+        ]
+        
+        # Clean and normalize content
+        normalized = content.lower().strip()
+        
+        # Very short texts are likely UI elements
+        if len(normalized) < 3:
+            return True
+            
+        # Check for UI indicators
+        for indicator in ui_indicators:
+            if indicator in normalized:
+                return True
+                
+        # Check for timestamp patterns
+        timestamp_pattern = r'\b\d+[hms] ago\b'
+        if re.search(timestamp_pattern, normalized):
+            return True
+            
+        return False
+
     def monitor_messages(self, interval_seconds=10):
         """
-        Enhanced message monitoring with better navigation, error recovery,
-        and message reading capabilities.
+        Enhanced message monitoring focused on unread messages first.
         
         Args:
             interval_seconds (int): Interval between message checks
@@ -1052,123 +1466,51 @@ class InstagramMessageAdapterVision:
                 self.driver = self._setup_webdriver()
                 self.login(self.driver)
             
-            logger.info("Starting enhanced Instagram message monitoring...")
+            logger.info("Starting Instagram message monitoring...")
             
-            # Track conversations to ensure we don't check the same ones repeatedly
-            processed_conversations = set()
-            conversation_failure_count = {}
-            
-            # Time when we last found a message
-            last_message_time = time.time()
+            # Track processed conversations
+            processed_messages = set()
             
             while not self.stop_event.is_set():
                 try:
-                    # Check stop file
+                    # Check for stop file
                     if os.path.exists("stop_app.txt"):
                         logger.info("Stop file detected, shutting down...")
                         break
-                    
-                    # If we haven't found a message in a while, refresh the page
-                    current_time = time.time()
-                    if current_time - last_message_time > 120:  # 2 minutes
-                        logger.info("No messages found in 2 minutes, refreshing inbox")
-                        self.driver.get("https://www.instagram.com/direct/inbox/")
-                        time.sleep(3)
-                        processed_conversations.clear()  # Reset
-                        conversation_failure_count.clear()
                         
-                    # Dismiss any popups that might interfere
-                    popup_dismissed = self.dismiss_popups()
-                    if popup_dismissed:
-                        time.sleep(1)  # Give time for UI to settle after popup dismissed
-                    
-                    # Navigate to inbox with enhanced navigation if needed
-                    current_url = self.driver.current_url
-                    if "direct/inbox" not in current_url and "direct/t" not in current_url:
-                        logger.info("Not on inbox or conversation page, navigating to inbox")
-                        if not self.navigate_to_messages():
-                            logger.warning("Failed to navigate to messages, retrying...")
-                            time.sleep(interval_seconds)
-                            continue
-                    
-                    # Find conversations
-                    conversations = self._find_conversations()
-                    if not conversations:
-                        logger.warning("No conversations found, will retry")
+                    # Navigate to inbox
+                    if "direct/inbox" not in self.driver.current_url:
                         self.driver.get("https://www.instagram.com/direct/inbox/")
                         time.sleep(3)
-                        continue
                     
-                    logger.info(f"Found {len(conversations)} conversations in inbox")
+                    # First check for unread conversations
+                    unread_conversations = self._find_unread_conversations()
                     
-                    # Check for new/unread conversations first
-                    unread_conversations = [c for c in conversations if c.get("hasUnread", False)]
-                    
-                    # If there are unread conversations, prioritize them
                     if unread_conversations:
-                        target_conversations = unread_conversations
                         logger.info(f"Found {len(unread_conversations)} unread conversations")
+                        # Process unread conversations first
+                        for i, conversation in enumerate(unread_conversations):
+                            self._process_conversation(conversation, i)
                     else:
-                        # Otherwise, check conversations we haven't checked recently
-                        unchecked_conversations = []
-                        for i, convo in enumerate(conversations):
-                            # Create a hash based on position and text
-                            convo_id = f"{i}:{convo.get('text', '')[:20]}"
-                            if convo_id not in processed_conversations:
-                                unchecked_conversations.append((i, convo))
-                        
-                        # If all conversations have been checked, start over
-                        if not unchecked_conversations:
-                            logger.info("All conversations checked, resetting")
-                            processed_conversations.clear()
-                            time.sleep(interval_seconds)
-                            continue
-                            
-                        # Sort by failure count (ascending) to prioritize ones that haven't failed
-                        unchecked_conversations.sort(key=lambda x: conversation_failure_count.get(x[0], 0))
-                        target_conversations = [convo for _, convo in unchecked_conversations]
-                    
-                    # Process each conversation in order of priority
-                    for i, conversation in enumerate(target_conversations[:min(3, len(target_conversations))]):
-                        # Create a hash to track this conversation
-                        convo_id = f"{i}:{conversation.get('text', '')[:20]}"
-                        
-                        # Process the conversation
-                        success = self._process_conversation(conversation, i)
-                        
-                        # If successful, mark as processed and update last message time
-                        if success:
-                            processed_conversations.add(convo_id)
-                            last_message_time = time.time()
-                            conversation_failure_count[i] = 0  # Reset failure count
-                        else:
-                            # Increment failure count
-                            conversation_failure_count[i] = conversation_failure_count.get(i, 0) + 1
-                            
-                        # Ensure we're back on the inbox page
-                        if "direct/inbox" not in self.driver.current_url:
-                            self.driver.get("https://www.instagram.com/direct/inbox/")
-                            time.sleep(2)
-                    
-                    # Limit processed messages cache to avoid memory bloat
-                    if len(self.processed_messages) > 500:
-                        # Keep only the 200 most recent messages
-                        self.processed_messages = set(list(self.processed_messages)[-200:])
+                        # If no unread, check a few regular conversations
+                        conversations = self._find_conversations()
+                        if conversations:
+                            logger.info(f"Found {len(conversations)} conversations")
+                            # Just check the first few
+                            for i, conversation in enumerate(conversations[:2]):
+                                self._process_conversation(conversation, i)
                     
                     # Wait before next check
                     time.sleep(interval_seconds)
                     
                 except Exception as e:
                     logger.error(f"Error in message monitoring loop: {str(e)}")
-                    # Take recovery action
                     try:
                         self.driver.get("https://www.instagram.com/direct/inbox/")
                         time.sleep(5)
                     except:
-                        # More serious error, try to restart browser
                         self._restart_browser()
-                    
-                    time.sleep(interval_seconds * 2)  # Wait longer after error
+                    time.sleep(interval_seconds * 2)
                     
         except Exception as e:
             logger.error(f"Fatal error in monitor_messages: {str(e)}")
@@ -1182,6 +1524,9 @@ class InstagramMessageAdapterVision:
         Args:
             interval_seconds (int): Interval between message checks
         """
+
+        logger.info("Monitoring loop started.")
+
         self.stop_event.clear()
         threading.Thread(target=self.monitor_messages, args=(interval_seconds,), daemon=True).start()
     
@@ -1227,43 +1572,6 @@ class InstagramMessageAdapterVision:
         
         return self.send_message(recipient, sanitized_message)
     
-    def _create_robust_message_hash(sender: str, content: str) -> str:
-        """
-        Create a more robust message hash that's resistant to minor variations.
-        
-        Args:
-            sender (str): Message sender
-            content (str): Message content
-            
-        Returns:
-            str: A hash that identifies this message
-        """
-        import re
-        
-        # Normalize sender
-        normalized_sender = sender.lower().strip()
-        if not normalized_sender or normalized_sender in ["unknown", "user"]:
-            normalized_sender = "unknown_user"
-        
-        # Extract just the first few words of content (ignoring timestamps, etc.)
-        # This makes the hash more robust against minor content variations
-        if content:
-            # Remove timestamps and common metadata patterns that might change
-            content = re.sub(r'\b\d+[hms] ago\b', '', content.lower())
-            content = re.sub(r'\b(active|online|offline)\b', '', content)
-            
-            # Get just the first 5 words for the hash
-            words = content.strip().split()
-            if words:
-                core_content = ' '.join(words[:min(5, len(words))])
-            else:
-                core_content = "empty_message"
-        else:
-            core_content = "empty_message"
-        
-        # Create a hash that ignores minor variations
-        return f"{normalized_sender}:{core_content}"
-
     def dismiss_popups(self) -> bool:
         """
         Attempt to dismiss common Instagram popups that might interfere with navigation.
@@ -1504,3 +1812,7 @@ class InstagramMessageAdapterVision:
     def __del__(self):
         """Destructor to ensure resources are cleaned up."""
         self.cleanup()
+
+    def extract_email_from_message(text: str) -> Optional[str]:
+        match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+        return match.group(0) if match else None

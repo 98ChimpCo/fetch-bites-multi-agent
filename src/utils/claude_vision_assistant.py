@@ -291,17 +291,17 @@ class ClaudeVisionAssistant:
     
     def analyze_instagram_content(self, screenshot_path: str) -> Dict:
         """
-        Analyze Instagram content to determine if it contains a recipe.
+        Analyze Instagram content to determine if it contains a recipe and extract post URL.
         
         Args:
             screenshot_path (str): Path to the screenshot file
             
         Returns:
-            Dict: Analysis results including whether content contains a recipe
+            Dict: Analysis results including whether content contains a recipe and post URL
         """
         if not self.client:
             logger.warning("No Claude client available. Cannot perform content analysis.")
-            return {"contains_recipe": False, "confidence": 0, "recipe_indicators": []}
+            return {"contains_recipe": False, "confidence": 0, "recipe_indicators": [], "post_url": None}
             
         try:
             # Read and encode the image
@@ -309,10 +309,10 @@ class ClaudeVisionAssistant:
                 img_content = f.read()
                 img_b64 = base64.b64encode(img_content).decode('utf-8')
                 
-            # Create prompt for recipe detection
+            # Create prompt for recipe detection and URL extraction
             prompt = """
             Analyze this Instagram post screenshot and determine if it contains a recipe or cooking instructions.
-            
+
             Look for:
             1. Lists of ingredients
             2. Cooking steps or instructions
@@ -320,13 +320,25 @@ class ClaudeVisionAssistant:
             4. Cooking terms (bake, stir, mix, etc.)
             5. Recipe-related hashtags (#recipe, #cooking, #homemade, etc.)
             
+            MOST IMPORTANTLY: Look for any Instagram post URL or post ID visible in the screenshot.
+            Instagram post URLs typically look like: https://www.instagram.com/p/XXXX/ or https://www.instagram.com/reel/XXXX/
+            Post IDs are alphanumeric strings like CqBx7Z8Jd2P or similar.
+            
+            If you see a shared post, look for:
+            - The post thumbnail/preview
+            - Any visible username of the original poster
+            - Any visible post ID in the UI elements
+            - Any visible URL or link text
+            
             Return your analysis as a JSON object with this structure:
             {
                 "contains_recipe": true/false,
                 "confidence": 0-100 (how confident you are that this is a recipe),
                 "recipe_indicators": ["list", "of", "observed", "recipe", "indicators"],
                 "recipe_type": "The type of recipe if identifiable" (optional),
-                "ingredients_detected": ["list", "of", "ingredients"] (if visible)
+                "post_url": "Full Instagram post URL if visible",
+                "post_id": "Just the post ID part if URL not fully visible",
+                "username": "Username of the original poster if visible"
             }
             """
             
@@ -356,14 +368,21 @@ class ClaudeVisionAssistant:
             try:
                 analysis = json.loads(json_str)
                 logger.info(f"Successfully analyzed content: Recipe detected: {analysis.get('contains_recipe', False)}")
+                
+                # Construct full URL if we only have post ID
+                if not analysis.get('post_url') and analysis.get('post_id'):
+                    post_id = analysis.get('post_id')
+                    analysis['post_url'] = f"https://www.instagram.com/p/{post_id}/"
+                    logger.info(f"Constructed post URL from ID: {analysis['post_url']}")
+                    
                 return analysis
             except json.JSONDecodeError as e:
                 logger.error(f"Failed to parse JSON from Claude response: {e}")
-                return {"contains_recipe": False, "confidence": 0, "recipe_indicators": []}
+                return {"contains_recipe": False, "confidence": 0, "recipe_indicators": [], "post_url": None}
                 
         except Exception as e:
             logger.error(f"Error in analyze_instagram_content: {str(e)}")
-            return {"contains_recipe": False, "confidence": 0, "recipe_indicators": []}
+            return {"contains_recipe": False, "confidence": 0, "recipe_indicators": [], "post_url": None}
     
     def identify_clickable_elements(self, screenshot_path: str) -> Dict[str, List[Dict]]:
         """
@@ -549,3 +568,53 @@ class ClaudeVisionAssistant:
         except Exception as e:
             logger.error(f"Error in get_conversation_list: {str(e)}")
             return []
+
+    def extract_structured_post_data(self, dm_data: Dict) -> Dict:
+        """
+        Extract a structured post object from a DM message or screenshot.
+        Returns keys: post_url, caption_text, confidence, source_type
+        """
+        result = {
+            "post_url": None,
+            "caption_text": None,
+            "confidence": None,
+            "source_type": "unknown"
+        }
+
+        try:
+            if dm_data.get("screenshot_path"):
+                analysis = self.analyze_instagram_content(dm_data["screenshot_path"])
+                if analysis.get("post_url"):
+                    result.update({
+                        "post_url": analysis["post_url"],
+                        "confidence": analysis.get("confidence", 0),
+                        "source_type": "screenshot"
+                    })
+                if analysis.get("contains_recipe"):
+                    result["caption_text"] = analysis.get("caption_text") or ""
+
+            elif dm_data.get("html_block"):
+                url_match = re.search(r"https://www.instagram.com/[^\s\"']+", dm_data["html_block"])
+                if url_match:
+                    result.update({
+                        "post_url": url_match.group(0),
+                        "confidence": 85.0,
+                        "source_type": "html_block"
+                    })
+
+            elif dm_data.get("message"):
+                url_match = re.search(r"https://www.instagram.com/[^\s\"']+", dm_data["message"])
+                if url_match:
+                    result.update({
+                        "post_url": url_match.group(0),
+                        "confidence": 90.0,
+                        "source_type": "message"
+                    })
+                else:
+                    result["caption_text"] = dm_data["message"]
+                    result["source_type"] = "message_text"
+
+            return result
+        except Exception as e:
+            logger.error(f"Failed to extract structured post data: {e}")
+            return result
