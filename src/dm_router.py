@@ -1,9 +1,8 @@
 import logging
-from test_workflow import process_post
 from src.utils.claude_vision_assistant import ClaudeVisionAssistant
 from src.agents.recipe_extractor import RecipeExtractor
-from src.services.pdf_helper import generate_pdf_and_return_path
-from src.utils.mock_email_delivery import mock_send_email
+from src.utils.pdf_utils import generate_pdf_and_return_path
+from src.utils.email_simulator import mock_send_email
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +17,10 @@ def handle_incoming_dm(dm_data: dict) -> bool:
             screenshot_path=dm_data.get("screenshot_path", None)
         )
 
+        if post_metadata is None:
+            logger.warning("Skipping message routing — post_metadata is None.")
+            return
+        
         if result.get("post_url"):
             success = process_post(result["post_url"])
             return success

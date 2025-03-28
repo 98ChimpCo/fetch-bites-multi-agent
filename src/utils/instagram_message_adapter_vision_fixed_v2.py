@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 
 from src.utils.claude_vision_assistant import ClaudeVisionAssistant
-from src.utils.mock_email_delivery import mock_send_email
+from src.utils.email_simulator import mock_send_email
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -33,6 +33,39 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+def extract_email_from_message(text: str) -> Optional[str]:
+    match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    return match.group(0) if match else None
+    
+
+def process_post(post_url: str) -> bool:
+    from src.agents.instagram_monitor import InstagramMonitor
+    from src.agents.recipe_extractor import RecipeExtractor
+    from src.utils.pdf_utils import generate_pdf_and_return_path
+
+    logger.info(f"Processing post: {post_url}")
+    monitor = InstagramMonitor()
+    content = monitor.extract_post_content(post_url)
+
+    if not content or not content.get("caption"):
+        logger.warning("Failed to extract content or caption from post.")
+        return False
+
+    extractor = RecipeExtractor()
+    recipe = extractor.extract_recipe(content["caption"])
+
+    if not recipe:
+        logger.warning("Failed to extract recipe from caption.")
+        return False
+
+    try:
+        pdf_path = generate_pdf_and_return_path(recipe)
+        logger.info(f"PDF successfully generated at: {pdf_path}")
+        return True
+    except Exception as e:
+        logger.warning(f"PDF generation failed: {e}")
+        return False
+    
 class InstagramMessageAdapterVision:
     """
     Adapter for monitoring and responding to Instagram Direct Messages using Claude Vision
@@ -1007,6 +1040,48 @@ class InstagramMessageAdapterVision:
                 
             # Wait longer for conversation to load
             time.sleep(3)
+
+            # Try clicking the shared post preview before analyzing
+            expanded = self._expand_shared_post()
+            # === Fallback: Claude Vision click ===
+            screenshot_path = f"{self.screenshot_dir}/shared_preview_search_{int(time.time())}.png"
+            self.driver.save_screenshot(screenshot_path)
+            
+            coords = self.claude_assistant.find_shared_post_coordinates(screenshot_path)
+            if coords:
+                x = int(coords["x"] * self.screen_width)
+                y = int(coords["y"] * self.screen_height)
+                self._click_at_coordinates(x, y)
+                time.sleep(2)
+                logger.info("Fallback click via Claude Vision was attempted.")
+                return True
+            
+            logger.warning("Fallback click failed — skipping this conversation after cooldown.")
+            time.sleep(5)
+            return False
+            
+            try:
+                # Try locating the first shared post/reel preview via DOM
+                shared_post_previews = self.driver.find_elements(By.XPATH, '//article//div[contains(@style,"background-image")] | //div[contains(@aria-label, "Post") or contains(@aria-label, "Reel")]')
+
+                if shared_post_previews:
+                    logger.info(f"Found {len(shared_post_previews)} candidate post previews")
+                    for candidate in shared_post_previews:
+                        try:
+                            if candidate.is_displayed():
+                                candidate.click()
+                                logger.info("Clicked on shared post preview successfully.")
+                                time.sleep(2)
+                                return True
+                        except Exception as e:
+                            logger.warning(f"Click attempt failed: {e}")
+
+                if shared_post_preview:
+                    shared_post_preview.click()
+                    time.sleep(2)  # Let the post expand fully
+                    logger.info("Clicked on shared post preview successfully.")
+            except Exception as e:
+                logger.warning(f"Could not click shared post preview: {e}")
             
             # Dismiss any popups that might have appeared
             self.dismiss_popups()
@@ -1015,13 +1090,15 @@ class InstagramMessageAdapterVision:
             screenshot_path = f"{self.screenshot_dir}/conversation_{int(time.time())}.png"
             self.driver.save_screenshot(screenshot_path)
             
-            # Use Claude Vision to analyze the content
-            logger.info("Using Claude Vision to identify shared post")
-            analysis = self.claude_assistant.analyze_instagram_content(screenshot_path)
+            # Use Claude Vision to analyze the focused shared post
+            analysis = self._process_shared_post_preview()
+            if analysis is None:
+                logger.warning("Analysis object is None, skipping...")
+                return False
             
             # If we found a recipe and have a post URL, process it
             post_url = analysis.get('post_url')
-            if not post_url or "unable to determine" in post_url.lower():
+            if not post_url or not post_url.startswith("http") or "unable to determine" in post_url.lower():
                 logger.warning("Post URL not available or unclear in Claude analysis")
                 post_url = None
             
@@ -1039,8 +1116,12 @@ class InstagramMessageAdapterVision:
                     time.sleep(1)
                     
                     # Import the function
-                    from test_workflow import process_post
-                    
+                    # from manual_post_tester import process_post
+                    # process_post is now defined locally in this file
+
+                    if not post_url.startswith("http"):
+                        logger.warning(f"Post URL invalid, skipping: {post_url}")
+                        return False
                     # Process the post
                     recipe_success = process_post(post_url)
                     
@@ -1125,7 +1206,9 @@ class InstagramMessageAdapterVision:
                         post_url = js_url
                         
                         # Now process this URL
-                        from test_workflow import process_post
+                        #from manual_post_tester import process_post
+                        # process_post is now defined locally in this file
+
                         recipe_success = process_post(post_url)
                         
                         if recipe_success:
@@ -1173,13 +1256,13 @@ class InstagramMessageAdapterVision:
                 logger.info(f"Detected email in conversation: {email_candidate}")
 
                 if hasattr(self, "latest_generated_pdf_path") and self.latest_generated_pdf_path:
-                    from src.utils.mock_email_delivery import mock_send_email
+                    from src.utils.email_simulator import mock_send_email
                     mock_send_email(to=email_candidate, attachment=self.latest_generated_pdf_path)
                 else:
                     logger.warning("User sent email, but no PDF was available to send.")
 
             # New logic to route the message via structured handler
-            from src.router import handle_incoming_dm
+            from src.dm_router import handle_incoming_dm
             
             if latest_message:
                 sender = latest_message.get("sender", "Unknown")
@@ -1813,6 +1896,105 @@ class InstagramMessageAdapterVision:
         """Destructor to ensure resources are cleaned up."""
         self.cleanup()
 
-    def extract_email_from_message(text: str) -> Optional[str]:
-        match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
-        return match.group(0) if match else None
+    def _process_shared_post_preview(self):
+        """
+        Focus the Instagram shared post (e.g., video/reel/photo), take a screenshot,
+        analyze it with Claude, then dismiss the overlay.
+        """
+        try:
+            # STEP 1: Click the shared post preview
+            logger.info("Attempting to click the shared post preview for enhanced vision context...")
+            shared_post = self.driver.find_element(By.XPATH, '//div[@role="button" and .//img]')
+            shared_post.click()
+            time.sleep(3)
+
+            # STEP 2: Take focused screenshot
+            focused_screenshot = f"{self.screenshot_dir}/focused_post_{int(time.time())}.png"
+            self.driver.save_screenshot(focused_screenshot)
+            logger.info(f"Captured focused post screenshot at {focused_screenshot}")
+
+            # STEP 3: Analyze with Claude
+            analysis = self.claude_assistant.analyze_instagram_content(focused_screenshot)
+            logger.info(f"Claude analysis result from focused view: {analysis}")
+
+            # STEP 4: Dismiss post overlay
+            actions = ActionChains(self.driver)
+            actions.send_keys(Keys.ESCAPE).perform()
+            time.sleep(1)
+            logger.info("Dismissed focused post view")
+            return analysis
+
+        except Exception as e:
+            logger.warning(f"Could not analyze focused post preview: {str(e)}<truncated__content/>")
+
+    def _expand_shared_post(self) -> bool:
+        """
+        Attempt to expand a shared Instagram post in a conversation via DOM and fallback to Claude Vision.
+        Returns True if successful, False otherwise.
+        """
+        logger.info("Looking for shared post preview...")
+
+        # Try DOM click first
+        try:
+            post_candidates = self.driver.find_elements(
+                By.XPATH,
+                '//div[contains(@style, "background-image") and not(contains(@style, "svg"))]'
+            )
+
+            if post_candidates:
+                logger.info(f"Found {len(post_candidates)} shared post preview candidate(s)")
+                for candidate in post_candidates:
+                    try:
+                        if candidate.is_displayed():
+                            candidate.click()
+                            logger.info("Clicked on shared post preview successfully.")
+                            time.sleep(2)
+                            return True
+                    except Exception as e:
+                        logger.warning(f"Post preview DOM click failed: {e}")
+            else:
+                logger.warning("No shared post previews found.")
+        except Exception as e:
+            logger.warning(f"Error during DOM preview click: {e}")
+
+        # Fallback to Claude Vision
+        logger.info("Falling back to Vision to click post preview...")
+        screenshot_path = f"{self.screenshot_dir}/shared_preview_search_{int(time.time())}.png"
+        self.driver.save_screenshot(screenshot_path)
+
+        try:
+            coords = self.claude_assistant.find_shared_post_coordinates(screenshot_path)
+            if coords:
+                x = int(coords["x"] * self.screen_width)
+                y = int(coords["y"] * self.screen_height)
+                self._click_at_coordinates(x, y)
+                logger.info("Fallback click via Claude Vision was attempted.")
+                time.sleep(2)
+                return True
+            else:
+                logger.warning("Claude Vision could not find shared post coordinates.")
+        except Exception as e:
+            logger.error(f"Vision fallback failed: {e}")
+
+        # Save screenshot for debugging
+        fail_path = f"{self.screenshot_dir}/unopened_preview_{int(time.time())}.png"
+        self.driver.save_screenshot(fail_path)
+        logger.warning(f"Tried all post previews but none opened an overlay. Saved screenshot to {fail_path}")
+        return False
+            
+    def run_adapter():
+        """
+        Entry point for running the Instagram Message Adapter.
+        Instantiates the adapter with example credentials and starts monitoring.
+        """
+        # Replace with actual credentials and callback as needed
+        adapter = InstagramMessageAdapterVision(
+            username="your_username",
+            password="your_password",
+            message_callback=lambda sender, message: print(f"Message from {sender}: {message}"),
+            headless=False
+        )
+        adapter.start_monitoring()
+
+    if __name__ == "__main__":
+        run_adapter()

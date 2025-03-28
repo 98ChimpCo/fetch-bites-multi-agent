@@ -618,3 +618,112 @@ class ClaudeVisionAssistant:
         except Exception as e:
             logger.error(f"Failed to extract structured post data: {e}")
             return result
+
+    def extract_structured_post_data(self, message_text: str, screenshot_path: Optional[str] = None) -> Dict:
+        """
+        Use Claude Vision to parse a DM message and optionally a screenshot
+        into structured post data, including any post URL or recipe hints.
+
+        Args:
+            message_text (str): The raw message text from the DM
+            screenshot_path (Optional[str]): Path to screenshot if available
+
+        Returns:
+            Dict: Structured data including post_url, confidence, contains_recipe, etc.
+        """
+        prompt = f"""
+        You are an assistant that helps extract information from Instagram DMs.
+
+        A user has sent the following message:
+        ---
+        {message_text}
+        ---
+
+        If the message includes an Instagram post or reel URL, extract it.
+        If the message seems to describe a recipe (e.g., ingredients, instructions), flag that.
+
+        Return JSON in this format:
+        {{
+            "post_url": "<url if found>",
+            "contains_recipe": true/false,
+            "confidence": 0–100,
+            "source": "message_only"
+        }}
+        """
+
+        try:
+            if screenshot_path:
+                result = self.client.analyze(prompt=prompt, image_path=screenshot_path)
+            else:
+                result = self.client.analyze(prompt=prompt)
+
+            # Force parsing to structured JSON
+            structured = self._force_json_parse(result)
+            return structured
+
+        except Exception as e:
+            logger.error(f"extract_structured_post_data failed: {e}")
+            return {
+                "post_url": None,
+                "contains_recipe": False,
+                "confidence": 0,
+                "source": "error"
+            }
+        
+    def find_shared_post_coordinates(self, screenshot_path: str) -> Optional[Dict[str, float]]:
+        """
+        Ask Claude to locate the shared post preview in a screenshot.
+        Returns normalized coordinates (0-1 range) if found.
+        """
+        prompt = """
+        You are an expert UI assistant. The attached screenshot is from an Instagram DM thread.
+
+        A user has shared a post preview (e.g. a video thumbnail or image preview). 
+        Please locate the preview of that shared post.
+
+        Respond in JSON:
+        {
+            "x": 0.5,  // normalized X coordinate (0 to 1)
+            "y": 0.6   // normalized Y coordinate (0 to 1)
+        }
+
+        Only respond with the JSON. Do not include any explanation.
+        """
+
+        try:
+            response = self.analyze_image_and_get_json(screenshot_path, prompt)
+            if response and "x" in response and "y" in response:
+                return {"x": float(response["x"]), "y": float(response["y"])}
+        except Exception as e:
+            logger.error(f"Vision coordinate extraction failed: {e}")
+        
+        return None
+    
+    def analyze_image_and_get_json(self, screenshot_path: str, prompt: str) -> Optional[Dict]:
+        """
+        Helper method to run Claude Vision with an image and extract a clean JSON response.
+        """
+        try:
+            with open(screenshot_path, "rb") as f:
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
+
+            message = self.client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=1024,
+                messages=[
+                    {"role": "user", "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}}
+                    ]}
+                ]
+            )
+
+            # Try extracting clean JSON
+            text = message.content[0].text
+            json_match = re.search(r'```json\n(.*?)\n```', text, re.DOTALL)
+            json_str = json_match.group(1) if json_match else text[text.find("{"):text.rfind("}")+1]
+            return json.loads(json_str)
+
+        except Exception as e:
+            logger.error(f"Claude Vision JSON parse error: {e}")
+            return None

@@ -38,52 +38,34 @@ class RecipeExtractor:
             self.client = anthropic.Anthropic(api_key=self.api_key)
     
     def extract_recipe(self, text: str, force: bool = False) -> Optional[Dict]:
-        """
-        Extract structured recipe data from text
-        
-        Args:
-            text (str): Text to extract recipe from
-            force (bool, optional): Force extraction even if content is minimal
-            
-        Returns:
-            dict: Structured recipe data or None if extraction fails
-        """
-        try:
-            logger.info("Extracting recipe from text...")
-            
-            # Check if text is too short to be a recipe, unless force=True
-            if len(text.split()) < 20 and not force:
-                logger.warning("Text too short to extract recipe")
-                return None
-                
-            recipe = None
-            # Use Claude API if available, otherwise use regex-based extraction
-            if self.client:
-                recipe = self._extract_with_claude(text)
-            else:
-                logger.warning("Claude API not available, using fallback extraction")
-                recipe = self._extract_with_regex(text)
+        logger.info("Extracting recipe from text...")
 
-            # If we successfully extracted a recipe, try generating a PDF
-            if recipe:
-                pdf_path = generate_pdf_and_return_path(recipe)
-                
-                from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
-                InstagramMessageAdapterVision.latest_generated_pdf_path = pdf_path
+        # Check if text is too short to be a recipe, unless forced
+        if len(text.split()) < 20 and not force:
+            logger.warning("Text too short to extract recipe")
+            return None
 
-                if pdf_path:
-                    recipe["pdf_path"] = pdf_path
-                    logger.info(f"PDF generated at: {pdf_path}")
+        for attempt in range(3):
+            try:
+                logger.info(f"Claude recipe extraction attempt {attempt + 1}")
+                recipe = self._extract_with_claude(text) if self.client else self._extract_with_regex(text)
+                if recipe and isinstance(recipe, dict) and recipe.get("instructions"):
+                    logger.info("Valid recipe extracted from Claude or fallback")
+                    try:
+                        pdf_path = generate_pdf_and_return_path(recipe)
+                        from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
+                        InstagramMessageAdapterVision.latest_generated_pdf_path = pdf_path
+                        recipe["pdf_path"] = pdf_path
+                    except Exception as e:
+                        logger.warning(f"PDF generation failed: {e}")
+                    return recipe
                 else:
-                    logger.warning("Recipe extracted but PDF generation failed")
-                return recipe
+                    logger.warning("Claude response doesn't contain a valid recipe")
+            except Exception as e:
+                logger.warning(f"Attempt {attempt + 1} failed with error: {e}")
 
-            logger.warning("No valid recipe extracted")
-            return None
-                
-        except Exception as e:
-            logger.error(f"Failed to extract recipe: {str(e)}")
-            return None
+        logger.warning("No valid recipe extracted after 3 attempts")
+        return None
     
     def _extract_with_claude(self, text: str) -> Optional[Dict]:
         """
@@ -155,6 +137,7 @@ If you cannot extract a complete recipe, return as much information as possible.
             
             # Extract JSON from Claude's response
             response_text = message.content[0].text
+            logger.warning(f"Claude raw response:\n{response_text}")
             
             # Extract JSON from the response
             json_match = re.search(r'```json\n(.*?)\n```', response_text, re.DOTALL)
