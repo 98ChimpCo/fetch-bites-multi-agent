@@ -59,8 +59,7 @@ class ClaudeVisionAssistant:
                 
             # Read and encode the image
             with open(screenshot_path, "rb") as f:
-                img_content = f.read()
-                img_b64 = base64.b64encode(img_content).decode('utf-8')
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
                 
             # Create prompt for UI analysis
             prompt = """
@@ -146,8 +145,7 @@ class ClaudeVisionAssistant:
         try:
             # Read and encode the image
             with open(screenshot_path, "rb") as f:
-                img_content = f.read()
-                img_b64 = base64.b64encode(img_content).decode('utf-8')
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
                 
             # Create prompt for message extraction
             prompt = """
@@ -225,8 +223,7 @@ class ClaudeVisionAssistant:
         try:
             # Read and encode the image
             with open(screenshot_path, "rb") as f:
-                img_content = f.read()
-                img_b64 = base64.b64encode(img_content).decode('utf-8')
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
                 
             # Create prompt for email extraction
             prompt = """
@@ -289,101 +286,78 @@ class ClaudeVisionAssistant:
             logger.error(f"Error in extract_emails: {str(e)}")
             return []
     
-    def analyze_instagram_content(self, screenshot_path: str) -> Dict:
+    def analyze_instagram_content(self, image_path: str) -> Optional[Dict]:
+        logger.info(f"🧠 ClaudeVision: analyzing screenshot {image_path}")
         """
-        Analyze Instagram content to determine if it contains a recipe and extract post URL.
-        
-        Args:
-            screenshot_path (str): Path to the screenshot file
-            
-        Returns:
-            Dict: Analysis results including whether content contains a recipe and post URL
+        Send image to Claude Vision API with tailored prompt for analyzing shared IG posts.
         """
-        if not self.client:
-            logger.warning("No Claude client available. Cannot perform content analysis.")
-            return {"contains_recipe": False, "confidence": 0, "recipe_indicators": [], "post_url": None}
-            
         try:
-            # Read and encode the image
-            with open(screenshot_path, "rb") as f:
-                img_content = f.read()
-                img_b64 = base64.b64encode(img_content).decode('utf-8')
-                
-            # Create prompt for recipe detection and URL extraction
-            prompt = """
-            Analyze this Instagram post screenshot and determine if it contains a recipe or cooking instructions.
+            with open(image_path, "rb") as image_file:
+                img_b64 = base64.b64encode(image_file.read()).decode("utf-8")
 
-            Look for:
-            1. Lists of ingredients
-            2. Cooking steps or instructions
-            3. Measurements (cups, teaspoons, grams, etc.)
-            4. Cooking terms (bake, stir, mix, etc.)
-            5. Recipe-related hashtags (#recipe, #cooking, #homemade, etc.)
-            
-            MOST IMPORTANTLY: Look for any Instagram post URL or post ID visible in the screenshot.
-            Instagram post URLs typically look like: https://www.instagram.com/p/XXXX/ or https://www.instagram.com/reel/XXXX/
-            Post IDs are alphanumeric strings like CqBx7Z8Jd2P or similar.
-            
-            If you see a shared post, look for:
-            - The post thumbnail/preview
-            - Any visible username of the original poster
-            - Any visible post ID in the UI elements
-            - Any visible URL or link text
-            
-            Return your analysis as a JSON object with this structure:
+            prompt = """
+            You are analyzing a screenshot of an Instagram post shared in a DM.
+
+            Your goal is to extract the post’s metadata as precisely as possible.
+
+            Please return a JSON object with:
             {
-                "contains_recipe": true/false,
-                "confidence": 0-100 (how confident you are that this is a recipe),
-                "recipe_indicators": ["list", "of", "observed", "recipe", "indicators"],
-                "recipe_type": "The type of recipe if identifiable" (optional),
-                "post_url": "Full Instagram post URL if visible",
-                "post_id": "Just the post ID part if URL not fully visible",
-                "username": "Username of the original poster if visible"
+                "is_shared_post": true/false,
+                "post_url": "https://www.instagram.com/reel/xyz123/" (if visible or guessable),
+                "post_id": "xyz123",
+                "username": "@accountname" (if visible),
+                "caption_snippet": "...",
+                "is_recipe": true/false,
+                "confidence": 0–100
             }
+            Be as specific as possible and always include a 'post_url' if the structure is visible (e.g. via URL bar or permalink).
             """
-            
-            # Send request to Claude Vision
-            message = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+
+            response = self.client.messages.create(
+                model="claude-3-opus-20240229",
                 max_tokens=1024,
+                temperature=0.3,
+                system="You are an expert UI interpreter for Instagram screenshots.",
                 messages=[
-                    {"role": "user", "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}}
-                    ]}
-                ]
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/png",
+                                    "data": img_b64,
+                                },
+                            },
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
             )
-            
-            # Parse JSON from response
-            response_text = message.content[0].text
-            # Extract JSON from the response
-            json_match = re.search(r'```json\n(.*?)\n```', response_text, re.DOTALL)
-            
-            if json_match:
-                json_str = json_match.group(1)
-            else:
-                # Try to find JSON without code block markers
-                json_str = response_text[response_text.find("{"):response_text.rfind("}")+1]
-            
-            try:
-                analysis = json.loads(json_str)
-                logger.info(f"Successfully analyzed content: Recipe detected: {analysis.get('contains_recipe', False)}")
-                
-                # Construct full URL if we only have post ID
-                if not analysis.get('post_url') and analysis.get('post_id'):
-                    post_id = analysis.get('post_id')
-                    analysis['post_url'] = f"https://www.instagram.com/p/{post_id}/"
-                    logger.info(f"Constructed post URL from ID: {analysis['post_url']}")
-                    
-                return analysis
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse JSON from Claude response: {e}")
-                return {"contains_recipe": False, "confidence": 0, "recipe_indicators": [], "post_url": None}
-                
+
+            if hasattr(response, "content"):
+                text = response.content[0].text.strip()
+                logger.info(f"Claude raw response: {text}")
+
+                # Extract JSON block only
+                json_match = re.search(r'\{.*\}', text, re.DOTALL)
+                if not json_match:
+                    logger.error("No JSON object found in Claude response.")
+                    return None
+
+                json_str = json_match.group(0)
+
+                try:
+                    return json.loads(json_str)
+                except Exception as e:
+                    logger.error(f"Failed to parse extracted JSON block: {e}")
+                    return None
+
         except Exception as e:
-            logger.error(f"Error in analyze_instagram_content: {str(e)}")
-            return {"contains_recipe": False, "confidence": 0, "recipe_indicators": [], "post_url": None}
-    
+            logger.error(f"Claude Vision error: {e}")
+            return None
+        
     def identify_clickable_elements(self, screenshot_path: str) -> Dict[str, List[Dict]]:
         """
         Identify all clickable elements in an Instagram interface screenshot.
@@ -401,8 +375,7 @@ class ClaudeVisionAssistant:
         try:
             # Read and encode the image
             with open(screenshot_path, "rb") as f:
-                img_content = f.read()
-                img_b64 = base64.b64encode(img_content).decode('utf-8')
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
                 
             # Create prompt for clickable element identification
             prompt = """
@@ -504,8 +477,7 @@ class ClaudeVisionAssistant:
         try:
             # Read and encode the image
             with open(screenshot_path, "rb") as f:
-                img_content = f.read()
-                img_b64 = base64.b64encode(img_content).decode('utf-8')
+                img_b64 = base64.b64encode(f.read()).decode('utf-8')
                 
             # Create prompt for conversation list extraction
             prompt = """
@@ -570,6 +542,7 @@ class ClaudeVisionAssistant:
             return []
 
     def extract_structured_post_data(self, dm_data: Dict) -> Dict:
+        logger.info(f"🧠 Extracting structured post data from: {list(dm_data.keys())}")
         """
         Extract a structured post object from a DM message or screenshot.
         Returns keys: post_url, caption_text, confidence, source_type
@@ -584,6 +557,9 @@ class ClaudeVisionAssistant:
         try:
             if dm_data.get("screenshot_path"):
                 analysis = self.analyze_instagram_content(dm_data["screenshot_path"])
+                if not analysis:
+                    logger.warning("Claude Vision returned no analysis.")
+                    return result
                 if analysis.get("post_url"):
                     result.update({
                         "post_url": analysis["post_url"],
@@ -618,57 +594,6 @@ class ClaudeVisionAssistant:
         except Exception as e:
             logger.error(f"Failed to extract structured post data: {e}")
             return result
-
-    def extract_structured_post_data(self, message_text: str, screenshot_path: Optional[str] = None) -> Dict:
-        """
-        Use Claude Vision to parse a DM message and optionally a screenshot
-        into structured post data, including any post URL or recipe hints.
-
-        Args:
-            message_text (str): The raw message text from the DM
-            screenshot_path (Optional[str]): Path to screenshot if available
-
-        Returns:
-            Dict: Structured data including post_url, confidence, contains_recipe, etc.
-        """
-        prompt = f"""
-        You are an assistant that helps extract information from Instagram DMs.
-
-        A user has sent the following message:
-        ---
-        {message_text}
-        ---
-
-        If the message includes an Instagram post or reel URL, extract it.
-        If the message seems to describe a recipe (e.g., ingredients, instructions), flag that.
-
-        Return JSON in this format:
-        {{
-            "post_url": "<url if found>",
-            "contains_recipe": true/false,
-            "confidence": 0–100,
-            "source": "message_only"
-        }}
-        """
-
-        try:
-            if screenshot_path:
-                result = self.client.analyze(prompt=prompt, image_path=screenshot_path)
-            else:
-                result = self.client.analyze(prompt=prompt)
-
-            # Force parsing to structured JSON
-            structured = self._force_json_parse(result)
-            return structured
-
-        except Exception as e:
-            logger.error(f"extract_structured_post_data failed: {e}")
-            return {
-                "post_url": None,
-                "contains_recipe": False,
-                "confidence": 0,
-                "source": "error"
-            }
         
     def find_shared_post_coordinates(self, screenshot_path: str) -> Optional[Dict[str, float]]:
         """
@@ -699,31 +624,52 @@ class ClaudeVisionAssistant:
         
         return None
     
-    def analyze_image_and_get_json(self, screenshot_path: str, prompt: str) -> Optional[Dict]:
+
+    def analyze_image_and_get_json(self, screenshot_path: str, prompt: str) -> Dict:
         """
-        Helper method to run Claude Vision with an image and extract a clean JSON response.
+        Send a screenshot and prompt to Claude Vision and return the parsed JSON response.
         """
         try:
             with open(screenshot_path, "rb") as f:
-                img_b64 = base64.b64encode(f.read()).decode('utf-8')
+                img_b64 = base64.b64encode(f.read()).decode("utf-8")
 
             message = self.client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=1024,
-                messages=[
-                    {"role": "user", "content": [
+                messages=[{
+                    "role": "user",
+                    "content": [
                         {"type": "text", "text": prompt},
                         {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": img_b64}}
-                    ]}
-                ]
+                    ]
+                }]
             )
 
-            # Try extracting clean JSON
-            text = message.content[0].text
-            json_match = re.search(r'```json\n(.*?)\n```', text, re.DOTALL)
-            json_str = json_match.group(1) if json_match else text[text.find("{"):text.rfind("}")+1]
-            return json.loads(json_str)
-
+            match = re.search(r"\{.*?\}", message.content[0].text, re.DOTALL)
+            if match:
+                return json.loads(match.group(0))
+            else:
+                logger.error("No JSON object found in Claude response.")
+                return {}
         except Exception as e:
-            logger.error(f"Claude Vision JSON parse error: {e}")
-            return None
+            logger.error(f"analyze_image_and_get_json failed: {e}")
+            return {}
+        
+    def extract_post_content_from_image(self, screenshot_path: str) -> Dict:
+        """
+        Given a screenshot of an Instagram post, ask Claude to return caption and metadata.
+        """
+        prompt = """
+        This is a screenshot of an Instagram post.
+
+        Please extract the following in JSON format:
+        {
+        "caption": "...",
+        "hashtags": ["...", "..."],
+        "mentions": ["..."],
+        "urls": ["..."]
+        }
+
+        Only include fields if present. Return clean JSON only.
+        """
+        return self.analyze_image_and_get_json(screenshot_path, prompt)

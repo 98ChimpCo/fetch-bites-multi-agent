@@ -15,7 +15,7 @@ from src.agents.pdf_generator import PDFGenerator
 from src.agents.delivery_agent import DeliveryAgent
 from src.utils.user_state import UserStateManager
 from src.utils.conversation_handler import ConversationHandler
-from src.utils.instagram_message_adapter import InstagramMessageAdapter
+from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapter
 
 # Set up logging
 logging.basicConfig(

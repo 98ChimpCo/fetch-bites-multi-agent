@@ -7,8 +7,8 @@ import threading
 import json
 import re
 import atexit
-from typing import Dict, List, Optional, Callable, Any, Tuple, Set
 
+from typing import Dict, List, Optional, Callable, Any, Tuple, Set
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
@@ -18,9 +18,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-
 from src.utils.claude_vision_assistant import ClaudeVisionAssistant
-from src.utils.email_simulator import mock_send_email
+from selenium.common.exceptions import ElementClickInterceptedException 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -36,35 +35,6 @@ logger = logging.getLogger(__name__)
 def extract_email_from_message(text: str) -> Optional[str]:
     match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
     return match.group(0) if match else None
-    
-
-def process_post(post_url: str) -> bool:
-    from src.agents.instagram_monitor import InstagramMonitor
-    from src.agents.recipe_extractor import RecipeExtractor
-    from src.utils.pdf_utils import generate_pdf_and_return_path
-
-    logger.info(f"Processing post: {post_url}")
-    monitor = InstagramMonitor()
-    content = monitor.extract_post_content(post_url)
-
-    if not content or not content.get("caption"):
-        logger.warning("Failed to extract content or caption from post.")
-        return False
-
-    extractor = RecipeExtractor()
-    recipe = extractor.extract_recipe(content["caption"])
-
-    if not recipe:
-        logger.warning("Failed to extract recipe from caption.")
-        return False
-
-    try:
-        pdf_path = generate_pdf_and_return_path(recipe)
-        logger.info(f"PDF successfully generated at: {pdf_path}")
-        return True
-    except Exception as e:
-        logger.warning(f"PDF generation failed: {e}")
-        return False
     
 class InstagramMessageAdapterVision:
     """
@@ -140,7 +110,10 @@ class InstagramMessageAdapterVision:
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option("useAutomationExtension", False)
         chrome_options.add_argument("--disable-extensions")
-        
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
+
         # Add random user agent
         user_agents = [
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
@@ -968,31 +941,21 @@ class InstagramMessageAdapterVision:
             
             # Inject this prompt for Claude Vision
             prompt = """
-            This is a screenshot of an Instagram Direct Message conversation with a shared post or reel.
-            
-            I'm trying to extract the Instagram post or reel URL from this shared content.
-            
-            Look for any visual indicators of a shared post/reel, such as:
-            1. A thumbnail/preview image of a post
-            2. A play button indicating a video
-            3. UI elements typical of shared Instagram content
-            
-            If you can identify an Instagram post or reel in this image, provide the following information:
-            1. Is this a shared Instagram post or reel? (yes/no)
-            2. Any visible post ID or URL parts you can see
-            3. Any username that might be associated with the post
-            4. Any caption text visible from the post
-            5. Is this content likely to be a recipe? Look for food images, cooking instructions, ingredients list, etc.
-            
-            Format your response as JSON:
+            This screenshot shows an Instagram Direct Message conversation that likely includes a shared post or reel.
+
+            Your job is to detect if a shared Instagram post is visible in the screenshot. Please analyze the full image carefully, especially for post thumbnails, play icons, post UI elements, or captions.
+
+            Respond in structured JSON like this:
             {
-                "is_shared_post": true/false,
-                "post_id": "post ID if visible",
-                "username": "username if visible",
-                "caption_snippet": "any visible caption text",
-                "is_recipe": true/false,
-                "confidence": 0-100
+            "is_shared_post": true or false,
+            "post_id": "ABC123xyz" if visible or null,
+            "username": "poster_username" if visible or null,
+            "caption_snippet": "first few visible words of the post",
+            "is_recipe": true or false,
+            "confidence": number between 0 and 100
             }
+
+            Think step by step and only respond with valid JSON.
             """
             
             analysis = self.claude_assistant.analyze_instagram_content(screenshot_path)
@@ -1011,6 +974,52 @@ class InstagramMessageAdapterVision:
             logger.error(f"Error extracting post URL from attachment: {str(e)}")
             return None
     
+    def _click_shared_post_preview_dom(self) -> bool:
+        """
+        Try to locate and click the shared post preview using DOM/XPath.
+        Returns True if a click was successful.
+        """
+        try:
+            candidate_selectors = [
+                '//div[@role="button" and .//img]',
+                '//article//div[contains(@style,"background-image")]',
+                '//div[contains(@aria-label, "Post") or contains(@aria-label, "Reel")]'
+            ]
+
+            for selector in candidate_selectors:
+                candidates = self.driver.find_elements(By.XPATH, selector)
+                if candidates:
+                    logger.info(f"DOM click: found {len(candidates)} elements for selector {selector}")
+                    for candidate in candidates:
+                        try:
+                            self.driver.execute_script("arguments[0].scrollIntoView({ behavior: 'instant', block: 'center' });", candidate)
+                            for i in range(2):
+                                try:
+                                    candidate.click()
+                                    if self._confirm_post_expansion(timeout=3):
+                                        return True
+                                except Exception:
+                                    pass
+                                self.dismiss_popups()
+                                time.sleep(1)
+
+                            self.driver.execute_script("""
+                                const evt = new MouseEvent('click', {
+                                    bubbles: true,
+                                    cancelable: true,
+                                    view: window
+                                });
+                                arguments[0].dispatchEvent(evt);
+                            """, candidate)
+                            if self._confirm_post_expansion(timeout=3):
+                                return True
+                        except Exception as e:
+                            logger.warning(f"Failed clicking DOM preview: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Exception in _click_shared_post_preview_dom: {e}")
+            return False
+
     def _process_conversation(self, conversation, index):
         """
         Process a single conversation with improved attachment and message handling.
@@ -1041,55 +1050,127 @@ class InstagramMessageAdapterVision:
             # Wait longer for conversation to load
             time.sleep(3)
 
-            # Try clicking the shared post preview before analyzing
-            expanded = self._expand_shared_post()
-            # === Fallback: Claude Vision click ===
-            screenshot_path = f"{self.screenshot_dir}/shared_preview_search_{int(time.time())}.png"
-            self.driver.save_screenshot(screenshot_path)
+            # Try clicking the shared post preview via DOM
+            logger.info("Attempting to click the shared post preview for enhanced vision context...")
+            candidate_selectors = [
+                '//div[@role="button" and .//img]',
+                '//article//div[contains(@style,"background-image")]',
+                '//div[contains(@aria-label, "Post") or contains(@aria-label, "Reel")]'
+            ]
             
-            coords = self.claude_assistant.find_shared_post_coordinates(screenshot_path)
-            if coords:
-                x = int(coords["x"] * self.screen_width)
-                y = int(coords["y"] * self.screen_height)
-                self._click_at_coordinates(x, y)
-                time.sleep(2)
-                logger.info("Fallback click via Claude Vision was attempted.")
-                return True
+            for selector in candidate_selectors:
+                candidates = self.driver.find_elements(By.XPATH, selector)
+                if candidates:
+                    logger.info(f"DOM click: found {len(candidates)} elements for selector {selector}")
+                    for candidate in candidates:
+                        if candidate.is_displayed():
+                            try:
+                                # Simulate hover over candidate element
+                                try:
+                                    actions = ActionChains(self.driver)
+                                    actions.move_to_element(candidate).perform()
+                                    time.sleep(0.5)
+                                    logger.info("Hovered over candidate element.")
+                                except Exception as hover_error:
+                                    logger.warning(f"Hover simulation failed: {hover_error}")
+
+                                # Dump candidate outerHTML for debugging
+                                try:
+                                    html_dump = candidate.get_attribute("outerHTML")
+                                    logger.debug(f"Candidate outerHTML: {html_dump[:500]}...")
+                                except Exception as dump_error:
+                                    logger.warning(f"Failed to dump outerHTML of candidate: {dump_error}")
+
+                                # Try clicking <a> child if available
+                                try:
+                                    anchor = candidate.find_element(By.TAG_NAME, "a")
+                                    if anchor and anchor.is_displayed():
+                                        logger.info("Found anchor tag inside candidate, attempting click via JS...")
+                                        self.driver.execute_script("""
+                                            arguments[0].scrollIntoView({ behavior: 'instant', block: 'center' });
+                                            const evt = new MouseEvent('click', {
+                                                bubbles: true,
+                                                cancelable: true,
+                                                view: window
+                                            });
+                                            arguments[0].dispatchEvent(evt);
+                                        """, anchor)
+                                        time.sleep(3)
+                                        logger.info("Clicked <a> tag via JS.")
+                                        post_expanded = self.driver.find_elements(By.XPATH, '//div[contains(@role,"dialog")] | //article')
+                                        if post_expanded:
+                                            logger.info("Post expanded successfully via <a> tag click.")
+                                            return True
+                                except Exception as link_click_error:
+                                    logger.warning(f"Clicking anchor inside preview failed: {link_click_error}")
+
+                                # Scroll and attempt robust JS click
+                                self.driver.execute_script("""
+                                    arguments[0].scrollIntoView({behavior: 'instant', block: 'center'});
+                                    const rect = arguments[0].getBoundingClientRect();
+                                    const clickEvent = new MouseEvent('click', {
+                                        bubbles: true,
+                                        cancelable: true,
+                                        view: window
+                                    });
+                                    arguments[0].dispatchEvent(clickEvent);
+                                """, candidate)
+                                logger.info("Clicked shared post preview via JS dispatchEvent fallback.")
+                                time.sleep(4)  # Longer delay to allow rendering
+
+                                # Confirm post expansion
+                                post_expanded = self.driver.find_elements(By.XPATH, '//div[contains(@role,"dialog")] | //article')
+                                if post_expanded:
+                                    logger.info("Post expanded successfully.")
+                                    return True
+                                else:
+                                    logger.warning("Post click dispatched but expansion not confirmed.")
+                            except Exception as outer_e:
+                                logger.warning(f"Failed attempting to click post preview robustly: {outer_e}")
             
-            logger.warning("Fallback click failed — skipping this conversation after cooldown.")
-            time.sleep(5)
-            return False
-            
+            if not self._click_shared_post_preview_dom():
+                logger.info("DOM click failed. Falling back to Vision to click post preview...")
+                if not self._click_shared_post_preview_fallback():
+                    logger.warning("Post preview click failed, skipping this DM...")
+                    time.sleep(3)
+                    return False
+
+            # Attempt bulk JS dispatch to all matching post previews
             try:
-                # Try locating the first shared post/reel preview via DOM
-                shared_post_previews = self.driver.find_elements(By.XPATH, '//article//div[contains(@style,"background-image")] | //div[contains(@aria-label, "Post") or contains(@aria-label, "Reel")]')
+                logger.info("Trying JS-based bulk click fallback on all post-like elements...")
+                self.driver.execute_script("""
+                    const candidates = Array.from(document.querySelectorAll('div[role="button"]'));
+                    for (const el of candidates) {
+                        if (el.innerText.toLowerCase().includes('view post') || el.querySelector('img')) {
+                            el.scrollIntoView({ behavior: "instant", block: "center" });
+                            const evt = new MouseEvent('click', {
+                                bubbles: true,
+                                cancelable: true,
+                                view: window
+                            });
+                            el.dispatchEvent(evt);
+                        }
+                    }
+                """)
+                time.sleep(4)
+            except Exception as bulk_click_error:
+                logger.warning(f"Bulk JS dispatch fallback failed: {bulk_click_error}")
 
-                if shared_post_previews:
-                    logger.info(f"Found {len(shared_post_previews)} candidate post previews")
-                    for candidate in shared_post_previews:
-                        try:
-                            if candidate.is_displayed():
-                                candidate.click()
-                                logger.info("Clicked on shared post preview successfully.")
-                                time.sleep(2)
-                                return True
-                        except Exception as e:
-                            logger.warning(f"Click attempt failed: {e}")
+            # Verify post expansion after bulk JS fallback
+            post_expanded = self.driver.find_elements(By.XPATH, '//div[contains(@role,"dialog")] | //article')
+            if post_expanded:
+                logger.info("Confirmed post expanded after bulk JS fallback.")
+            else:
+                logger.warning("Post still not expanded — trying fallback URL extraction and direct navigation...")
+                try:
+                    post_url = self._extract_post_url_from_attachment(self.driver.page_source)
+                    if post_url:
+                        logger.info(f"Navigating directly to extracted post URL: {post_url}")
+                        self.driver.get(post_url)
+                        time.sleep(4)
+                except Exception as nav_error:
+                    logger.error(f"Error navigating to extracted post URL: {nav_error}")
 
-                if shared_post_preview:
-                    shared_post_preview.click()
-                    time.sleep(2)  # Let the post expand fully
-                    logger.info("Clicked on shared post preview successfully.")
-            except Exception as e:
-                logger.warning(f"Could not click shared post preview: {e}")
-            
-            # Dismiss any popups that might have appeared
-            self.dismiss_popups()
-            
-            # First, take a screenshot for analysis
-            screenshot_path = f"{self.screenshot_dir}/conversation_{int(time.time())}.png"
-            self.driver.save_screenshot(screenshot_path)
-            
             # Use Claude Vision to analyze the focused shared post
             analysis = self._process_shared_post_preview()
             if analysis is None:
@@ -1098,9 +1179,9 @@ class InstagramMessageAdapterVision:
             
             # If we found a recipe and have a post URL, process it
             post_url = analysis.get('post_url')
-            if not post_url or not post_url.startswith("http") or "unable to determine" in post_url.lower():
-                logger.warning("Post URL not available or unclear in Claude analysis")
-                post_url = None
+            if not post_url:
+                logger.warning("Post URL not available or unclear in Claude analysis. Trying fallback...")
+                post_url = self._extract_post_url_from_attachment(self.driver.page_source)
             
             if analysis.get('contains_recipe', False) and post_url:
                 confidence = analysis.get('confidence', 0)
@@ -1115,36 +1196,17 @@ class InstagramMessageAdapterVision:
                     # Add a delay to let Chrome stabilize
                     time.sleep(1)
                     
-                    # Import the function
-                    # from manual_post_tester import process_post
-                    # process_post is now defined locally in this file
-
                     if not post_url.startswith("http"):
                         logger.warning(f"Post URL invalid, skipping: {post_url}")
                         return False
-                    # Process the post
-                    recipe_success = process_post(post_url)
                     
-                    if recipe_success:
-                        logger.info(f"Successfully processed recipe from post: {post_url}")
-                        # Send a confirmation message back to the user
-                        self._send_message_direct(
-                            "I've found a recipe in the post you shared and created a recipe card! "
-                            "Would you like me to send it to your email?"
-                        )
-                    else:
-                        logger.warning(f"Failed to process recipe from post: {post_url}")
-                        # Let the user know we encountered an issue
-                        self._send_message_direct(
-                            "I detected a recipe in the post you shared, but couldn't process it successfully. "
-                            "Could you please share a different recipe post?"
-                        )
                 except Exception as e:
                     logger.error(f"Error processing recipe post: {str(e)}")
                     self._send_message_direct(
                         "I encountered an error while processing the recipe post. "
                         "Could you please try sharing a different recipe?"
                     )
+
             elif analysis.get('contains_recipe', False) and not post_url:
                 logger.warning("Recipe detected but couldn't extract post URL")
                 # Try JavaScript-based URL extraction as fallback
@@ -1197,6 +1259,7 @@ class InstagramMessageAdapterVision:
                         }
                         return null;
                     }
+                    console.log("Fallback JavaScript attempting to extract post URL from DOM structure...");
                     return findPostUrl();
                     """
                     js_url = self.driver.execute_script(post_url_js)
@@ -1204,25 +1267,7 @@ class InstagramMessageAdapterVision:
                     if js_url:
                         logger.info(f"Found post URL using JavaScript: {js_url}")
                         post_url = js_url
-                        
-                        # Now process this URL
-                        #from manual_post_tester import process_post
-                        # process_post is now defined locally in this file
-
-                        recipe_success = process_post(post_url)
-                        
-                        if recipe_success:
-                            logger.info(f"Successfully processed recipe from post: {post_url}")
-                            self._send_message_direct(
-                                "I've found a recipe in the post you shared and created a recipe card! "
-                                "Would you like me to send it to your email?"
-                            )
-                        else:
-                            logger.warning(f"Failed to process recipe from post: {post_url}")
-                            self._send_message_direct(
-                                "I detected a recipe in the post you shared, but couldn't process it successfully. "
-                                "Could you please share a different recipe post?"
-                            )
+                            
                     else:
                         logger.warning("Failed to extract post URL even with JavaScript")
                         self._send_message_direct(
@@ -1249,8 +1294,15 @@ class InstagramMessageAdapterVision:
             # Get only the latest unprocessed message
             latest_message = self._get_latest_message(messages)
             
-            message_text = latest_message.get("content", "")
-            email_candidate = extract_email_from_message(message_text)
+            structured_data = self.claude_assistant.extract_structured_post_data({
+                "screenshot_path": screenshot_path,
+                "message": latest_message.get("content", ""),
+                "html_block": None
+            })
+            if not structured_data:
+                logger.warning("Structured data from Claude is None. Skipping email extraction and DM routing.")
+                return False
+            email_candidate = extract_email_from_message(structured_data.get("caption_text", ""))
 
             if email_candidate:
                 logger.info(f"Detected email in conversation: {email_candidate}")
@@ -1270,7 +1322,10 @@ class InstagramMessageAdapterVision:
                 
                 dm_data = {
                     "from": sender,
-                    "message": content,
+                    "message": structured_data.get("caption_text", content),
+                    "post_url": structured_data.get("post_url"),
+                    "confidence": structured_data.get("confidence"),
+                    "source_type": structured_data.get("source_type"),
                     "screenshot_path": screenshot_path,  # already captured above
                     "html_block": None  # Add if you capture DOM HTML
                 }
@@ -1902,30 +1957,21 @@ class InstagramMessageAdapterVision:
         analyze it with Claude, then dismiss the overlay.
         """
         try:
-            # STEP 1: Click the shared post preview
-            logger.info("Attempting to click the shared post preview for enhanced vision context...")
-            shared_post = self.driver.find_element(By.XPATH, '//div[@role="button" and .//img]')
-            shared_post.click()
-            time.sleep(3)
-
-            # STEP 2: Take focused screenshot
-            focused_screenshot = f"{self.screenshot_dir}/focused_post_{int(time.time())}.png"
-            self.driver.save_screenshot(focused_screenshot)
-            logger.info(f"Captured focused post screenshot at {focused_screenshot}")
-
-            # STEP 3: Analyze with Claude
-            analysis = self.claude_assistant.analyze_instagram_content(focused_screenshot)
-            logger.info(f"Claude analysis result from focused view: {analysis}")
-
-            # STEP 4: Dismiss post overlay
-            actions = ActionChains(self.driver)
-            actions.send_keys(Keys.ESCAPE).perform()
-            time.sleep(1)
-            logger.info("Dismissed focused post view")
-            return analysis
-
+            # Wait to allow the post preview to fully expand
+            time.sleep(2)
+ 
+            # Screenshot the focused post
+            focused_screenshot_path = f"{self.screenshot_dir}/focused_post_{int(time.time())}.png"
+            self.driver.save_screenshot(focused_screenshot_path)
+            logger.info(f"Captured focused post screenshot at {focused_screenshot_path}")
+ 
+            # Analyze the screenshot using Claude
+            result = self.claude_assistant.analyze_instagram_content(focused_screenshot_path)
+            logger.info(f"Claude analysis result from focused view: {result}")
+            return result
         except Exception as e:
-            logger.warning(f"Could not analyze focused post preview: {str(e)}<truncated__content/>")
+            logger.error(f"Error analyzing focused post: {str(e)}")
+            return None
 
     def _expand_shared_post(self) -> bool:
         """
@@ -1946,9 +1992,24 @@ class InstagramMessageAdapterVision:
                 for candidate in post_candidates:
                     try:
                         if candidate.is_displayed():
-                            candidate.click()
+                            if candidate.is_displayed():
+                                candidate.click()
                             logger.info("Clicked on shared post preview successfully.")
                             time.sleep(2)
+                            # Screenshot the expanded post
+                            expanded_path = f"{self.screenshot_dir}/expanded_post_{int(time.time())}.png"
+                            self.driver.save_screenshot(expanded_path)
+
+                            # Extract and generate PDF
+                            from src.workflows.recipe_from_post import process_post_from_dm_screenshot
+                            pdf_path = process_post_from_dm_screenshot(expanded_path)
+
+                            if pdf_path:
+                                logger.info(f"Recipe PDF created from post: {pdf_path}")
+                                # TODO: Attach/send to user once delivery is hooked up
+                            else:
+                                logger.warning("Failed to extract recipe from expanded post screenshot")
+
                             return True
                     except Exception as e:
                         logger.warning(f"Post preview DOM click failed: {e}")
@@ -1968,6 +2029,17 @@ class InstagramMessageAdapterVision:
                 x = int(coords["x"] * self.screen_width)
                 y = int(coords["y"] * self.screen_height)
                 self._click_at_coordinates(x, y)
+                # Take a screenshot after clicking to verify the screen state
+                post_click_path = f"{self.screenshot_dir}/post_click_check_{int(time.time())}.png"
+                self.driver.save_screenshot(post_click_path)
+
+                # Use Claude to check what screen we're on
+                screen_state = self.claude_assistant.identify_ui_elements(post_click_path)
+                if "input_field" not in screen_state or "send_button" not in screen_state:
+                    logger.warning("Likely ended up in 'New Message' screen. Going back...")
+                    self.driver.get("https://www.instagram.com/direct/inbox/")
+                    time.sleep(2)
+                    return False
                 logger.info("Fallback click via Claude Vision was attempted.")
                 time.sleep(2)
                 return True
@@ -1998,3 +2070,36 @@ class InstagramMessageAdapterVision:
 
     if __name__ == "__main__":
         run_adapter()
+
+    def _click_shared_post_preview_fallback(self) -> bool:
+        """
+        Use Claude Vision to locate and click on the shared post preview in a conversation.
+        """
+        try:
+            fallback_screenshot_path = f"{self.screenshot_dir}/fallback_click_{int(time.time())}.png"
+            self.driver.save_screenshot(fallback_screenshot_path)
+
+            coords = self.claude_assistant.find_shared_post_coordinates(fallback_screenshot_path)
+            if coords:
+                x = int(coords["x"] * self.screen_width)
+                y = int(coords["y"] * self.screen_height)
+                self._click_at_coordinates(x, y)
+                time.sleep(2)  # Let the post load fully
+                return True
+            else:
+                logger.warning("Claude could not find shared post preview coordinates.")
+                return False
+        except Exception as e:
+            logger.error(f"Fallback vision click failed: {e}")
+            return False
+        
+    def _confirm_post_expansion(self, timeout=10) -> bool:
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                lambda d: len(d.find_elements(By.XPATH, '//div[contains(@role,"dialog")] | //article')) > 0
+            )
+            logger.info("Post expansion confirmed.")
+            return True
+        except Exception as e:
+            logger.warning(f"Post expansion not confirmed: {str(e)}")
+            return False
