@@ -41,7 +41,7 @@ def process_post_url(post_url: str) -> bool:
     pdf_agent = PDFGenerator()
 
     monitor.login()
-    content = monitor.extract_content_from_post(post_url)
+    content = monitor.extract_post_content(post_url)
     if not content:
         logger.warning("Failed to extract content.")
         return False

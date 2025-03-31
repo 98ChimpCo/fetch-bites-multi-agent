@@ -6,7 +6,7 @@
 
 ## 🚀 Project Status
 
-**Version:** v0.2.0 (Interactive Agent Prototype)  
+**Version:** v0.3.0 (Closed-Loop Vision Agent)  
 **Status:** Actively under development
 
 ---
@@ -19,7 +19,7 @@
 - ✍️ Extracts captions and metadata using Claude Vision prompts
 - 🧪 Automatically parses recipe steps, ingredients, and titles with Claude's reasoning
 - 📄 Generates and saves printable PDF recipe cards
-- 📨 [Coming Soon] Sends recipe cards back via Instagram DM or email
+- 📤 Replies with the recipe PDF directly in Instagram DMs using Claude-guided UI interactions
 
 ---
 
@@ -80,7 +80,7 @@ Before you begin, ensure that you have the following prerequisites:
 
 To run the system as a whole, simply execute:
 ```bash
-python main_vision_fixed_v2.py
+python playwright_preview_clicker.py
 ```
 
 For testing a known Instagram post, you can run:
@@ -94,16 +94,14 @@ python manual_post_tester.py --url https://www.instagram.com/p/your_post_id/
 
 ### First-Time Users
 1. User sends a message or post to the agent.
-2. Agent replies with an introduction message and asks for a recipe link.
-3. User sends a post or video containing a recipe.
-4. The agent expands the post, extracts the recipe, and asks for the user's email.
-5. The user sends their email address.
-6. The agent generates the recipe as a PDF and "sends" it (mock or real).
+2. Agent identifies the shared post visually using Claude.
+3. The post is expanded, and its caption is extracted.
+4. Claude parses the recipe and generates a PDF.
+5. Agent replies to the same DM thread with the generated PDF automatically.
 
 ### Returning Users
-1. The agent remembers the user and skips the intro message.
-2. It extracts the recipe and reuses the email address to deliver the result.
-3. The agent can handle multiple posts and repeat the process with a feedback loop.
+1. The agent can handle multiple incoming posts from the same user.
+2. It extracts, parses, and replies to each with a recipe PDF in the same thread.
 
 ---
 
@@ -131,10 +129,12 @@ fetch-bites/
 
 ## 📌 Upcoming Milestones
 
-- [ ] **Email Detection from DMs** – Automating email collection from conversations.
-- [ ] **PDF Delivery via Email or Instagram** – Integrating email APIs for real-world delivery.
-- [ ] **OCR Fallback for Video-only Reels** – Adding support for processing recipe text in Instagram Reels.
-- [ ] **Language Translation for International Recipes** – Enabling automatic translation of recipe content.
+- [ ] Conversational onboarding flow with user memory
+- [ ] Email collection and delivery support
+- [ ] Database storage of user and recipe data
+- [ ] Open-source LLM fallback for visual or caption parsing
+- [ ] OCR fallback support for Reels or text-in-video posts
+- [ ] Language-aware recipe processing and localization
 
 ---
 
@@ -146,6 +146,6 @@ The code is licensed under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgements
 
-- [Anthropic Claude](https://www.anthropic.com/) — for the Claude Vision model, which powers recipe extraction from images.
-- [Selenium](https://www.selenium.dev/) — used for automating browser interactions (currently being transitioned to Playwright).
-- [Jinja2 + wkhtmltopdf](https://wkhtmltopdf.org/) — for rendering the recipe into a PDF format.
+- [Anthropic Claude](https://www.anthropic.com/) — powering UI understanding and recipe parsing
+- [Playwright](https://playwright.dev/) — for stable browser automation and file uploads
+- [Jinja2 + wkhtmltopdf](https://wkhtmltopdf.org/) — for clean PDF rendering

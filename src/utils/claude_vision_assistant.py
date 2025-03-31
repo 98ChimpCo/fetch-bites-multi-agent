@@ -296,23 +296,19 @@ class ClaudeVisionAssistant:
                 img_b64 = base64.b64encode(image_file.read()).decode("utf-8")
 
                 prompt = """
-                This is a screenshot of a fully expanded Instagram post (not a message thread).
-
-                Please determine if this is a shared recipe or food-related post. If so, return the following JSON:
-
-                {
-                "is_shared_post": true,
-                "post_url": "https://www.instagram.com/p/POST_ID/",
-                "confidence": 0.9,
-                "summary": "Short description of what the post is about"
-                }
-
-                If this is not a recipe/food post, return:
-                {
-                "is_shared_post": false
-                }
-
-                Return only JSON. Do not include any extra commentary or click targets.
+                This is a screenshot of an Instagram DM thread. A user may have shared a post preview (e.g. video or photo thumbnail) and the DM interface may be visible.
+                
+                Please analyze the screenshot and return the following in **valid JSON**:
+                
+                - "is_shared_post": true or false — whether a shared post is present
+                - "post_url": the Instagram post URL if visible
+                - "confidence": a float between 0 and 1 for your certainty
+                - "summary": a 1-line summary of what the post appears to be about
+                - If visible, return the click target coordinates of the shared post preview as "click_target": {"x": ..., "y": ...}
+                - If the message input field is visible, return "message_box": {"x": ..., "y": ...}
+                - If the send button is visible, return "send_button": {"x": ..., "y": ...}
+                
+                Use normalized screen coordinates (0-1 range). Do not include any explanation — just return a single JSON object.
                 """
                 response = self.client.messages.create(
                 model="claude-3-opus-20240229",

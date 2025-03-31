@@ -33,3 +33,15 @@ Thumbs.db
 # Generated files
 *.pdf
 templates/pdf/
+
+# Ignore screenshots
+/screenshots/*.png
+screenshots/**
+
+# Ignore all PDFs, including in nested folders
+*.pdf
+**/*.pdf
+
+# Just in case someone changes file extensions
+*.PNG
+*.Pdf

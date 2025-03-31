@@ -5,12 +5,12 @@
 Here is the updated `project_bible-v0-0-14.md` with information reflecting current milestones, work on Playwright, and transition away from Selenium:
 
 ```markdown
-# Project Bible: Instagram Recipe Multi-Agent System (v0.0.14)
+# Project Bible: Instagram Recipe Multi-Agent System (v0.0.15)
 
 ## Overview
 **Project Name:** Fetch Bites Multi-Agent System  
 **Start Date:** March 10, 2025  
-**Current Version:** v0.0.14  
+**Current Version:** v0.0.15  
 **Last Updated:** March 30, 2025
 
 ---
@@ -81,4 +81,4 @@ This release pauses further work on Selenium click resolution in favor of a mode
 
 ---
 
-_Last Updated: March 30, 2025 — Version 0.0.14_
+_Last Updated: March 30, 2025 — Version 0.0.15_
