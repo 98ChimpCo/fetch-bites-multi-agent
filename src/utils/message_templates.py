@@ -8,9 +8,12 @@ WELCOME_MESSAGE = """
 
 I can turn Instagram recipe posts into beautiful, printable recipe cards delivered straight to your inbox! No more screenshots or manually typing out recipes.
 
-Want to see what I can do? Just send me a link to an Instagram recipe post, and I'll work my magic! ✨
+To use me:
+1. Send me an Instagram recipe post link (must start with https://www.instagram.com/...)
+2. Or share a recipe post directly from the Instagram app
+3. I'll extract the recipe and create a PDF recipe card for you!
 
-Or type "help" to learn more about how I work.
+Ready to try it out? Send me a recipe post!
 """
 
 # Help message explaining the service

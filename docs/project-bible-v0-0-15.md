@@ -1,3 +1,10 @@
+---
+
+### ✅ **Updated `Project Bible`**:
+
+Here is the updated `project_bible-v0-0-14.md` with information reflecting current milestones, work on Playwright, and transition away from Selenium:
+
+```markdown
 # Project Bible: Instagram Recipe Multi-Agent System (v0.0.14)
 
 ## Overview

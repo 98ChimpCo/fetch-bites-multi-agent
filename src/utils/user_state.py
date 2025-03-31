@@ -1,13 +1,13 @@
 """
-Enhanced User state management for the Instagram Recipe Agent.
-Tracks user interaction state and saves user information with improved email extraction.
+User state management for the Instagram Recipe Agent.
+Tracks user interaction state and saves user information.
 """
 
 import json
 import os
 import re
 import logging
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 
 logger = logging.getLogger(__name__)
 
@@ -89,24 +89,12 @@ class UserStateManager:
         return user_state
     
     def is_valid_email(self, email: str) -> bool:
-        """Check if the given string is a valid email address.
-        
-        Args:
-            email: String to check
-            
-        Returns:
-            True if valid email, False otherwise
-        """
+        """Check if the given string is a valid email address."""
         # Trim whitespace and convert to lowercase
-        if not isinstance(email, str):
-            return False
-            
-        # First attempt to extract an email if the string contains other text
-        extracted_email = self.extract_email_from_text(email)
-        if extracted_email:
-            email = extracted_email
-        else:
+        if isinstance(email, str):
             email = email.strip().lower()
+        else:
+            return False
         
         # Simple, permissive email pattern
         email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -116,97 +104,6 @@ class UserStateManager:
         logger.info(f"Validating email: '{email}' - Result: {is_valid}")
         
         return is_valid
-    
-    def extract_email_from_text(self, text: str) -> Optional[str]:
-        """
-        Extract email address from text that may contain other content.
-        
-        Args:
-            text: Text that might contain an email address
-            
-        Returns:
-            Extracted email address or None if not found
-        """
-        if not text or not isinstance(text, str):
-            return None
-            
-        # Debug log
-        logger.info(f"Trying to extract email from: '{text}'")
-        
-        # First try common email pattern
-        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-        email_matches = re.findall(email_pattern, text)
-        
-        if email_matches:
-            extracted = email_matches[0]
-            logger.info(f"Found email via regex: {extracted}")
-            return extracted
-        
-        # Clean up text - remove common UI elements
-        cleaned_text = text.lower()
-        ui_elements = [
-            'react', 'reply', 'more', 'enter', 'send', 'close', 
-            'password', 'login', 'save', 'forgot', 'phone number', 'username'
-        ]
-        
-        for element in ui_elements:
-            cleaned_text = cleaned_text.replace(element, ' ')
-        
-        # Remove any non-email characters and split by spaces
-        words = re.split(r'[\s,;]+', cleaned_text)
-        
-        # Check each word for email pattern
-        for word in words:
-            if '@' in word and '.' in word and len(word) > 5:
-                # Further clean the word in case there are still unwanted characters
-                cleaned_word = re.sub(r'[^a-zA-Z0-9.@_+-]', '', word)
-                
-                # Validate the cleaned word
-                if re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', cleaned_word):
-                    logger.info(f"Found email via word cleaning: {cleaned_word}")
-                    return cleaned_word
-        
-        # Try extracting email parts around @ symbol
-        at_index = text.find('@')
-        if at_index != -1:
-            # Look for a valid email around the @ symbol
-            # Find start (working backwards from @)
-            start_index = at_index
-            while start_index > 0 and re.match(r'[a-zA-Z0-9._%+-]', text[start_index-1]):
-                start_index -= 1
-            
-            # Find end (working forwards from @)
-            end_index = at_index
-            while end_index < len(text)-1 and re.match(r'[a-zA-Z0-9.-]', text[end_index+1]):
-                end_index += 1
-            
-            # Find the domain end (looking for the '.' and valid TLD)
-            while end_index < len(text)-1:
-                if text[end_index] == '.':
-                    # Found a dot, check for valid TLD length (2-6 chars)
-                    potential_end = end_index + 1
-                    while potential_end < len(text) and re.match(r'[a-zA-Z]', text[potential_end]):
-                        potential_end += 1
-                    
-                    # If we found a valid TLD length, use this as our end
-                    if 2 <= potential_end - (end_index + 1) <= 6:
-                        end_index = potential_end
-                        break
-                
-                end_index += 1
-                if end_index >= len(text) or not re.match(r'[a-zA-Z0-9.-]', text[end_index]):
-                    break
-            
-            # Extract the potential email and validate
-            if start_index < at_index and end_index > at_index:
-                potential_email = text[start_index:end_index]
-                if re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', potential_email):
-                    logger.info(f"Found email via @ parsing: {potential_email}")
-                    return potential_email
-        
-        # No valid email found
-        logger.warning(f"No email extracted from: '{text}'")
-        return None
     
     def is_instagram_post_url(self, url: str) -> bool:
         """Check if a URL is a valid Instagram post URL or post content.
@@ -231,7 +128,6 @@ class UserStateManager:
         instagram_indicators = [
             'instagram.com', 
             'kauscooks',  # Add specific accounts you're interested in
-            'hungry.happens',
             'reel',
             'story'
         ]
@@ -240,28 +136,6 @@ class UserStateManager:
             return True
                 
         return False
-    
-    def extract_instagram_urls(self, text: str) -> List[str]:
-        """
-        Extract Instagram post URLs from text.
-        
-        Args:
-            text: Text that might contain Instagram URLs
-            
-        Returns:
-            List of extracted Instagram URLs
-        """
-        if not text or not isinstance(text, str):
-            return []
-        
-        # Instagram post URL pattern
-        instagram_url_pattern = r'https?://(www\.)?instagram\.com/p/[\w-]+/?[^\s]*'
-        
-        # Find all matching URLs
-        urls = re.findall(instagram_url_pattern, text)
-        
-        # Return full URLs
-        return [match for match in re.findall(instagram_url_pattern, text)]
     
     def add_processed_post(self, user_id: str, post_url: str, recipe_title: str) -> None:
         """Add a processed post to a user's history.
@@ -280,6 +154,45 @@ class UserStateManager:
         })
         self.update_user_state(user_id, {"processed_posts": processed_posts})
 
+    def extract_email_from_text(self, text: str) -> Optional[str]:
+        """
+        Extract email address from text that may contain other content.
+        
+        Args:
+            text: Text that might contain an email address
+            
+        Returns:
+            Extracted email address or None if not found
+        """
+        if not text:
+            return None
+            
+        # First try common email pattern
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        email_matches = re.findall(email_pattern, text)
+        
+        if email_matches:
+            return email_matches[0]
+        
+        # Clean up text - remove common UI elements
+        cleaned_text = text.lower()
+        ui_elements = ['react', 'reply', 'more', 'enter', 'send', 'close']
+        
+        for element in ui_elements:
+            cleaned_text = cleaned_text.replace(element, ' ')
+        
+        # Remove any non-email characters and split by spaces
+        words = re.split(r'[\s,;]+', cleaned_text)
+        
+        # Check each word for email pattern
+        for word in words:
+            if '@' in word and '.' in word and len(word) > 5:
+                # Further clean the word in case there are still unwanted characters
+                cleaned_word = re.sub(r'[^a-zA-Z0-9.@_+-]', '', word)
+                if self.is_valid_email(cleaned_word):
+                    return cleaned_word
+        
+        return None
 
 def import_datetime():
     """Import datetime module dynamically to avoid circular imports."""

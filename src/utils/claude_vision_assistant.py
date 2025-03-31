@@ -295,25 +295,26 @@ class ClaudeVisionAssistant:
             with open(image_path, "rb") as image_file:
                 img_b64 = base64.b64encode(image_file.read()).decode("utf-8")
 
-            prompt = """
-            You are analyzing a screenshot of an Instagram post shared in a DM.
+                prompt = """
+                This is a screenshot of a fully expanded Instagram post (not a message thread).
 
-            Your goal is to extract the post’s metadata as precisely as possible.
+                Please determine if this is a shared recipe or food-related post. If so, return the following JSON:
 
-            Please return a JSON object with:
-            {
-                "is_shared_post": true/false,
-                "post_url": "https://www.instagram.com/reel/xyz123/" (if visible or guessable),
-                "post_id": "xyz123",
-                "username": "@accountname" (if visible),
-                "caption_snippet": "...",
-                "is_recipe": true/false,
-                "confidence": 0–100
-            }
-            Be as specific as possible and always include a 'post_url' if the structure is visible (e.g. via URL bar or permalink).
-            """
+                {
+                "is_shared_post": true,
+                "post_url": "https://www.instagram.com/p/POST_ID/",
+                "confidence": 0.9,
+                "summary": "Short description of what the post is about"
+                }
 
-            response = self.client.messages.create(
+                If this is not a recipe/food post, return:
+                {
+                "is_shared_post": false
+                }
+
+                Return only JSON. Do not include any extra commentary or click targets.
+                """
+                response = self.client.messages.create(
                 model="claude-3-opus-20240229",
                 max_tokens=1024,
                 temperature=0.3,
@@ -673,3 +674,65 @@ class ClaudeVisionAssistant:
         Only include fields if present. Return clean JSON only.
         """
         return self.analyze_image_and_get_json(screenshot_path, prompt)
+
+    def get_click_target_from_screenshot(self, screenshot_path: str, target_name: str = "Shahin Zangenehpour") -> Optional[Dict[str, float]]:
+        """
+        Ask Claude Vision to find a DM conversation tile matching a name and return click coordinates.
+ 
+        Args:
+            screenshot_path (str): Path to the screenshot image.
+            target_name (str): The display name of the person to click.
+ 
+        Returns:
+            Dict with keys 'x' and 'y' (normalized 0-1), or None if not found.
+        """
+        if not self.client:
+            logger.warning("No Claude client available. Cannot locate conversation click target.")
+            return None
+ 
+        try:
+            with open(screenshot_path, "rb") as f:
+                img_b64 = base64.b64encode(f.read()).decode("utf-8")
+ 
+            prompt = f"""
+            You are an expert UI assistant. This is a screenshot of the Instagram DM interface.
+ 
+            Please locate the conversation tile that includes the name "{target_name}" on the left-hand sidebar.
+ 
+            Return a JSON object like:
+            {{
+                "click_target": {{ "x": float, "y": float }},
+                "reasoning": "why you chose this location"
+            }}
+ 
+            Only return JSON. No extra commentary.
+            """
+ 
+            message = self.client.messages.create(
+                model="claude-3-opus-20240229",
+                max_tokens=1024,
+                temperature=0.3,
+                system="You are an expert UI interpreter for Instagram screenshots.",
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "source": {
+                                "type": "base64", "media_type": "image/png", "data": img_b64
+                            }},
+                            {"type": "text", "text": prompt}
+                        ]
+                    }
+                ]
+            )
+ 
+            if hasattr(message, "content"):
+                text = message.content[0].text.strip()
+                logger.info(f"Claude raw response: {text}")
+                match = re.search(r"\{.*\}", text, re.DOTALL)
+                if match:
+                    return json.loads(match.group(0)).get("click_target")
+            return None
+        except Exception as e:
+            logger.error(f"get_click_target_from_screenshot failed: {e}")
+            return None

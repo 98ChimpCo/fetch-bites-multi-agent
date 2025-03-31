@@ -6,7 +6,7 @@ import logging
 import requests
 from typing import Dict, List, Optional
 import anthropic
-from src.services.pdf_helper import generate_pdf_and_return_path
+from src.utils.pdf_utils import generate_pdf_and_return_path
 
 # Set up logging
 logger = logging.getLogger(__name__)

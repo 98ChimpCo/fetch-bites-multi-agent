@@ -9,25 +9,12 @@ import atexit
 from dotenv import load_dotenv
 
 # Import the fixed version of the adapter
-try:
-    # Try standard import path first
-    from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
-    from src.utils.user_state_enhanced import UserStateManager
-    from src.utils.conversation_handler_enhanced import ConversationHandler
-    from src.utils.claude_vision_assistant import ClaudeVisionAssistant
-except ModuleNotFoundError:
-    try:
-        # If that fails, try to import from the current directory
-        from instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
-        from user_state_enhanced import UserStateManager
-        from conversation_handler_enhanced import ConversationHandler
-        from claude_vision_assistant import ClaudeVisionAssistant
-    except ModuleNotFoundError:
-        # As a last resort, try to import from a utils folder in the current directory
-        from utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
-        from utils.user_state_enhanced import UserStateManager
-        from utils.conversation_handler_enhanced import ConversationHandler
-        from utils.claude_vision_assistant import ClaudeVisionAssistant
+from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
+from src.utils.user_state_enhanced import UserStateManager
+from src.utils.conversation_handler_enhanced import ConversationHandler
+from src.utils.claude_vision_assistant import ClaudeVisionAssistant
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 # Create a stop file path
 STOP_FILE = "stop_app.txt"
@@ -113,37 +100,51 @@ class FetchBitesApp:
     
     def handle_message(self, sender: str, content: str):
         """
-        Handle incoming messages from Instagram.
+        Enhanced message handler with better deduplication and message filtering.
         
         Args:
             sender (str): Message sender
             content (str): Message content
         """
         try:
-            # Check if we've already processed this message
-            message_hash = self._create_message_hash(sender, content)
+            # Skip empty messages
+            if not content or len(content.strip()) == 0:
+                logger.info(f"Skipping empty message from {sender}")
+                return
+                
+            # Skip self-messages (messages from our bot)
+            if self._is_self_message(sender, content):
+                logger.info(f"Skipping self-message: '{content[:30]}...'")
+                return
+            
+            # Skip Instagram system UI messages
+            if sender.lower() in ["instagram", "meta", "unknown"] and any(x in content.lower() for x in ["©", "active", "home", "search", "reels", "profile"]):
+                logger.info(f"Skipping Instagram UI message: '{content[:30]}...'")
+                return
+                
+            # Create a robust message hash
+            message_hash = self._create_robust_message_hash(sender, content)
             
             # Skip if already processed at the app level
-            if message_hash in processed_messages:
-                logger.info(f"Skipping already processed message from {sender}")
+            if message_hash in self.processed_messages:
+                logger.info(f"Skipping already processed message: '{content[:30]}...'")
                 return
                 
             # Mark as processed
-            processed_messages.add(message_hash)
+            self.processed_messages.add(message_hash)
             
-            logger.info(f"Received message from {sender}: '{content}'")
+            logger.info(f"Processing new message from {sender}: '{content}'")
             
             # Process the message using conversation handler
             response = self.conversation_handler.process_message(sender, content)
             
             # Send response if available
             if response:
-                # For debugging
-                logger.info(f"Sending response to {sender}: '{response}'")
-                
+                logger.info(f"Sending response to {sender}: '{response[:30]}...'")
                 success = self.send_message(sender, response)
                 if not success:
                     logger.error(f"Failed to send response to {sender}")
+                    
         except Exception as e:
             logger.error(f"Error handling message: {str(e)}")
     

@@ -3,6 +3,7 @@ from src.utils.claude_vision_assistant import ClaudeVisionAssistant
 from src.agents.recipe_extractor import RecipeExtractor
 from src.utils.pdf_utils import generate_pdf_and_return_path
 from src.utils.email_simulator import mock_send_email
+from src.workflows.recipe_from_post import process_post_url
 
 logger = logging.getLogger(__name__)
 
@@ -12,17 +13,13 @@ def handle_incoming_dm(dm_data: dict) -> bool:
     """
     try:
         claude = ClaudeVisionAssistant()
-        result = claude.extract_structured_post_data(
-            message_text=dm_data.get("message", ""),
-            screenshot_path=dm_data.get("screenshot_path", None)
+        result = claude.analyze_instagram_content(
+            image_path=dm_data.get("screenshot_path", None)
         )
+        logger.info(f"Claude Vision result: {result}")
 
-        if post_metadata is None:
-            logger.warning("Skipping message routing — post_metadata is None.")
-            return
-        
         if result.get("post_url"):
-            success = process_post(result["post_url"])
+            success = process_post_url(result["post_url"])
             return success
 
         if result.get("caption_text"):
@@ -31,7 +28,7 @@ def handle_incoming_dm(dm_data: dict) -> bool:
             if recipe:
                 pdf_path = generate_pdf_and_return_path(recipe)
                 if pdf_path:
-                    logger.info(f"PDF generated from caption: {pdf_path}")
+                    logger.info(f"✅ End-to-end success: PDF generated from caption and ready at: {pdf_path}")
                     return True
 
         return False

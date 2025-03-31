@@ -1049,7 +1049,24 @@ class InstagramMessageAdapterVision:
                 
             # Wait longer for conversation to load
             time.sleep(3)
-
+            
+            try:
+                inbox_screenshot = f"{self.screenshot_dir}/dm_focus_view.png"
+                self.driver.save_screenshot(inbox_screenshot)
+                logger.info("📸 Screenshot saved before attempting Claude Vision targeting.")
+                
+                vision_click = self.claude_assistant.get_click_target_from_screenshot(inbox_screenshot)
+                if vision_click and "x" in vision_click and "y" in vision_click:
+                    x_click = int(vision_click["x"] * self.screen_width)
+                    y_click = int(vision_click["y"] * self.screen_height)
+                    logger.info(f"🧠 Claude Vision returned click target: ({x_click}, {y_click}) — clicking...")
+                    self._click_at_coordinates(x_click, y_click)
+                    time.sleep(3)
+                else:
+                    logger.warning("⚠️ Claude Vision did not return a valid click target.")
+            except Exception as e:
+                logger.error(f"Error during Claude Vision post targeting: {str(e)}")
+            
             # Try clicking the shared post preview via DOM
             logger.info("Attempting to click the shared post preview for enhanced vision context...")
             candidate_selectors = [
@@ -1951,28 +1968,41 @@ class InstagramMessageAdapterVision:
         """Destructor to ensure resources are cleaned up."""
         self.cleanup()
 
-    def _process_shared_post_preview(self):
+    def _process_shared_post_preview(self, screenshot_path: str):
         """
-        Focus the Instagram shared post (e.g., video/reel/photo), take a screenshot,
-        analyze it with Claude, then dismiss the overlay.
+        Use Claude Vision to locate and click on the shared post preview.
         """
         try:
-            # Wait to allow the post preview to fully expand
-            time.sleep(2)
- 
-            # Screenshot the focused post
-            focused_screenshot_path = f"{self.screenshot_dir}/focused_post_{int(time.time())}.png"
-            self.driver.save_screenshot(focused_screenshot_path)
-            logger.info(f"Captured focused post screenshot at {focused_screenshot_path}")
- 
-            # Analyze the screenshot using Claude
-            result = self.claude_assistant.analyze_instagram_content(focused_screenshot_path)
-            logger.info(f"Claude analysis result from focused view: {result}")
-            return result
-        except Exception as e:
-            logger.error(f"Error analyzing focused post: {str(e)}")
-            return None
+            logger.info("🧠 Sending screenshot to Claude Vision for shared post analysis...")
+            analysis = self.claude_assistant.get_click_target_from_screenshot("ai_dm_scan.png")
 
+            if analysis is None:
+                logger.warning("Claude Vision analysis returned None.")
+                return False
+
+            logger.info(f"Claude Vision response: {analysis}")
+
+            if analysis.get("click_target"):
+                screen_width = self.driver.execute_script("return window.innerWidth")
+                screen_height = self.driver.execute_script("return window.innerHeight")
+                x_norm = analysis["click_target"]["x"]
+                y_norm = analysis["click_target"]["y"]
+                click_x = int(x_norm * screen_width)
+                click_y = int(y_norm * screen_height)
+
+                logger.info(f"📍 Clicking at ({click_x}, {click_y}) based on Claude’s guidance.")
+                self._click_at_coordinates(click_x, click_y)
+                time.sleep(2.5)  # Let post fully expand
+                return True
+
+            else:
+                logger.warning("Claude Vision did not return a click target.")
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to process shared post preview: {e}")
+            return False
+    
     def _expand_shared_post(self) -> bool:
         """
         Attempt to expand a shared Instagram post in a conversation via DOM and fallback to Claude Vision.

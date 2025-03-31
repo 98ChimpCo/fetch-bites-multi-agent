@@ -24,7 +24,6 @@ def generate_pdf_and_return_path(recipe_dict, output_dir="generated_pdfs"):
 
     safe_title = re.sub(r'[^a-zA-Z0-9_]+', '', title.replace(" ", "_"))
     filename = f"{safe_title}_{timestamp}.pdf"
-    filename = f"{title.replace(' ', '_')}_{timestamp}.pdf"
     filepath = os.path.join(output_dir, filename)
 
     pdf = FPDF()
