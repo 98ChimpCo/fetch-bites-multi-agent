@@ -18,7 +18,6 @@ logger = logging.getLogger("playwright-preview-clicker")
 
 # CONFIGURATION
 INSTAGRAM_URL = "https://www.instagram.com/direct/inbox/"
-TARGET_USERNAME = "Shahin Zangenehpour"  # Username whose DM contains the preview
 
 async def expand_post_preview(playwright):
     load_dotenv()
@@ -27,96 +26,115 @@ async def expand_post_preview(playwright):
     context = await browser.new_context(storage_state="auth_storage.json")
     page = await context.new_page()
 
+    post_was_already_expanded = False
+
     logger.info("Navigating to Instagram DMs...")
     await page.goto(INSTAGRAM_URL, wait_until="domcontentloaded")
     await asyncio.sleep(5)
 
     screenshot_path = os.path.join(SCREENSHOT_DIR, f"screenshot_{int(time.time())}.png")
     await page.screenshot(path=screenshot_path)
+    logger.info(f"✅ Screenshot saved to: {screenshot_path}")
+    await asyncio.sleep(0.5)
 
     claude = ClaudeVisionAssistant(api_key=os.getenv("ANTHROPIC_API_KEY"))
-    click_target = claude.get_click_target_from_screenshot(screenshot_path, target_name=TARGET_USERNAME)
+    click_targets = claude.get_all_unread_thread_targets(screenshot_path)
 
-    if click_target and "x" in click_target and "y" in click_target:
-        viewport = page.viewport_size or {"width": 1280, "height": 720}
-        click_x = int(click_target["x"] * viewport["width"])
-        click_y = int(click_target["y"] * viewport["height"])
-
-        logger.info(f"📍 Claude recommends clicking at ({click_x}, {click_y})")
-        await page.mouse.click(click_x, click_y)
-        await asyncio.sleep(3)  # Allow for some delay after click for post expansion
-
-        await asyncio.sleep(3)
-        chat_screenshot_path = os.path.join(SCREENSHOT_DIR, f"chat_expanded_{int(time.time())}.png")
-        await page.screenshot(path=chat_screenshot_path)
-        logger.info("📸 Captured screenshot of opened DM view.")
-
-        # 🔍 Step 2: Use Claude to find and click on the post preview in the DM thread
-        preview_search_path = os.path.join(SCREENSHOT_DIR, f"post_preview_search_{int(time.time())}.png")
-        await page.screenshot(path=preview_search_path)
-        logger.info("📸 Captured screenshot for post preview search...")
-
-        coords = ClaudeVisionAssistant().find_shared_post_coordinates(preview_search_path)
-        if coords:
-            width = page.viewport_size['width']
-            height = page.viewport_size['height']
-            x = int(coords["x"] * width)
-            y = int(coords["y"] * height)
-            logger.info(f"📍 Claude recommends clicking post preview at ({x}, {y})")
-            await page.mouse.click(x, y)
-            await asyncio.sleep(3)  # Allow for some delay after click for post expansion
-            logger.info("✅ Clicked on shared post preview (expansion triggered)")
-            post_url = page.url
-            logger.info(f"📎 Post URL: {post_url}")
-
-            content = await process_post_url(post_url, browser=browser, context=context, page=page)
-            await extract_recipe_and_generate_pdf(content)
-            
-            await asyncio.sleep(4)
-        else:
-            logger.warning("⚠️ Claude could not find a post preview to click. Skipping...")
-            return
-
-        analysis = claude.analyze_instagram_content(chat_screenshot_path)
-        if analysis:
-            logger.info(f"Claude analysis: {analysis}")
-
-            # Always click post preview if available
-            if "click_target" in analysis and "x" in analysis["click_target"] and "y" in analysis["click_target"]:
-                viewport = page.viewport_size or {"width": 1280, "height": 720}
-                click_x = int(analysis["click_target"]["x"] * viewport["width"])
-                click_y = int(analysis["click_target"]["y"] * viewport["height"])
-                logger.info(f"🖱️ Clicking shared post preview at ({click_x}, {click_y})...")
-                await page.mouse.click(click_x, click_y)
-                await asyncio.sleep(3)
-
-                post_expanded_path = os.path.join(SCREENSHOT_DIR, f"post_expanded_final_{int(time.time())}.png")
-                await page.screenshot(path=post_expanded_path)
-                logger.info("📸 Captured expanded post view.")
-
-                analysis = claude.analyze_instagram_content(post_expanded_path)
-                if analysis:
-                    logger.info(f"📊 Final Claude analysis: {analysis}")
-                else:
-                    logger.warning("❌ Claude did not return a result for the final screenshot.")
-                    return
-
-            # After expansion or no click_target
-            if analysis.get("is_shared_post"):
-                logger.info(f"🎯 Shared post detected with confidence: {analysis.get('confidence', 0)}")
-                logger.info(f"📎 Post URL: {post_url}")  # Ensure we're logging the correct URL here
-                
-                # Explicitly pass the correct post_url to Claude's analysis logic
-                analysis["post_url"] = post_url
-
-            else:
-                logger.warning("⚠️ No valid shared post detected.")
-        else:
-            logger.warning("❌ Claude did not return usable analysis for DM screenshot.")
-
-    else:
-        logger.warning("⚠️ Claude Vision could not locate click target from screenshot.")
+    if not click_targets:
+        logger.warning("⚠️ No unread DM threads found.")
         return
+
+    for click_target in click_targets:
+        if "x" in click_target and "y" in click_target:
+            viewport = page.viewport_size or {"width": 1280, "height": 720}
+            click_x = int(click_target["x"] * viewport["width"])
+            click_y = int(click_target["y"] * viewport["height"])
+
+            logger.info(f"📍 Claude recommends clicking unread thread at ({click_x}, {click_y})")
+            await page.mouse.click(click_x, click_y)
+            await asyncio.sleep(2)
+            if "direct/inbox" in page.url:
+                logger.warning("⚠️ Thread click failed — still on inbox page. Skipping to next.")
+                continue
+
+            await asyncio.sleep(3)
+            chat_screenshot_path = os.path.join(SCREENSHOT_DIR, f"chat_expanded_{int(time.time())}.png")
+            await page.screenshot(path=chat_screenshot_path)
+            logger.info("📸 Captured screenshot of opened DM view.")
+
+            # 🔍 Step 2: Use Claude to find and click on the post preview in the DM thread
+            preview_search_path = os.path.join(SCREENSHOT_DIR, f"post_preview_search_{int(time.time())}.png")
+            await page.screenshot(path=preview_search_path)
+            logger.info("📸 Captured screenshot for post preview search...")
+
+            coords = ClaudeVisionAssistant().find_shared_post_coordinates(preview_search_path)
+            if coords:
+                width = page.viewport_size['width']
+                height = page.viewport_size['height']
+                x = int(coords["x"] * width)
+                y = int(coords["y"] * height)
+                logger.info(f"📍 Claude recommends clicking post preview at ({x}, {y})")
+                await page.mouse.click(x, y)
+                await asyncio.sleep(3)  # Allow for some delay after click for post expansion
+                logger.info("✅ Clicked on shared post preview (expansion triggered)")
+                post_url = page.url
+                logger.info(f"📎 Post URL: {post_url}")
+
+                post_was_already_expanded = True
+
+                content = await process_post_url(post_url, browser=browser, context=context, page=page)
+                if content is None:
+                    continue
+                await extract_recipe_and_generate_pdf(content)
+                
+                await asyncio.sleep(4)
+            else:
+                logger.warning("⚠️ Claude could not find a post preview to click. Skipping...")
+                continue
+
+            analysis = claude.analyze_instagram_content(chat_screenshot_path)
+            if analysis:
+                logger.info(f"Claude analysis: {analysis}")
+
+                # Always click post preview if available
+                if "click_target" in analysis and "x" in analysis["click_target"] and "y" in analysis["click_target"]:
+                    if not post_was_already_expanded:
+                        viewport = page.viewport_size or {"width": 1280, "height": 720}
+                        click_x = int(analysis["click_target"]["x"] * viewport["width"])
+                        click_y = int(analysis["click_target"]["y"] * viewport["height"])
+                        logger.info(f"🖱️ Clicking shared post preview at ({click_x}, {click_y})...")
+                        await page.mouse.click(click_x, click_y)
+                        await asyncio.sleep(3)
+
+                        post_expanded_path = os.path.join(SCREENSHOT_DIR, f"post_expanded_final_{int(time.time())}.png")
+                        await page.screenshot(path=post_expanded_path)
+                        logger.info("📸 Captured expanded post view.")
+
+                        analysis = claude.analyze_instagram_content(post_expanded_path)
+                        if analysis:
+                            logger.info(f"📊 Final Claude analysis: {analysis}")
+                        else:
+                            logger.warning("❌ Claude did not return a result for the final screenshot.")
+                            continue
+                    else:
+                        logger.info("⚠️ Skipping redundant post preview click; post already expanded.")
+
+                # After expansion or no click_target
+                if analysis.get("is_shared_post"):
+                    logger.info(f"🎯 Shared post detected with confidence: {analysis.get('confidence', 0)}")
+                    logger.info(f"📎 Post URL: {post_url}")  # Ensure we're logging the correct URL here
+                    
+                    # Explicitly pass the correct post_url to Claude's analysis logic
+                    analysis["post_url"] = post_url
+
+                else:
+                    logger.warning("⚠️ No valid shared post detected.")
+            else:
+                logger.warning("❌ Claude did not return usable analysis for DM screenshot.")
+
+        else:
+            logger.warning("⚠️ Claude Vision could not locate click target from screenshot.")
+            continue
 
     await asyncio.sleep(5)
     await context.close()
@@ -153,34 +171,6 @@ async def process_post_url(post_url, browser=None, context=None, page=None):
         content = None
 
     return content
-
-async def send_pdf_back_as_dm(page, pdf_path):
-    logger.info("📤 Attempting to send PDF as DM reply...")
-    try:
-        # Step 1: Click the message textarea
-        await page.click('textarea[placeholder="Message..."]')
-        await page.fill('textarea[placeholder="Message..."]', "Here’s your recipe PDF! 📄")
-
-        # Step 2: Attach the PDF via the hidden file input
-        file_input = await page.query_selector('input[type="file"]')
-        if file_input:
-            await file_input.set_input_files(pdf_path)
-            logger.info(f"📎 Attached file: {pdf_path}")
-            await asyncio.sleep(2)  # Allow time for file to attach
-        else:
-            logger.warning("⚠️ File input not found for attaching PDF.")
-
-        # Try pressing Enter to send
-        await page.keyboard.press("Enter")
-        await asyncio.sleep(2)
-
-        # Optional fallback: click the Send button explicitly if Enter doesn't work
-        send_button = await page.query_selector('svg[aria-label="Send"]')
-        if send_button:
-            await send_button.click()
-            logger.info("✅ Clicked 'Send' button manually.")
-    except Exception as e:
-        logger.error(f"❌ Failed to send PDF via DM: {e}")
 
 def extract_from_urls(content, recipe_agent):
     if not content.get('urls'):

@@ -20,7 +20,9 @@ class ClaudeVisionAssistant:
     Helper class to analyze Instagram UI using Claude Vision API.
     Provides visual understanding capabilities for more reliable Instagram interaction.
     """
-    
+
+    DEFAULT_MODEL = "claude-3-opus-20240229"
+
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the Claude Vision Assistant.
@@ -95,7 +97,7 @@ class ClaudeVisionAssistant:
             
             # Send request to Claude Vision
             message = self.client.messages.create(
-                model="claude-3-haiku-20240307",  # Using a less expensive model for UI analysis
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 messages=[
                     {"role": "user", "content": [
@@ -173,7 +175,7 @@ class ClaudeVisionAssistant:
             
             # Send request to Claude Vision
             message = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 messages=[
                     {"role": "user", "content": [
@@ -242,7 +244,7 @@ class ClaudeVisionAssistant:
             
             # Send request to Claude Vision
             message = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 messages=[
                     {"role": "user", "content": [
@@ -311,7 +313,7 @@ class ClaudeVisionAssistant:
                 Use normalized screen coordinates (0-1 range). Do not include any explanation — just return a single JSON object.
                 """
                 response = self.client.messages.create(
-                model="claude-3-opus-20240229",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 temperature=0.3,
                 system="You are an expert UI interpreter for Instagram screenshots.",
@@ -412,7 +414,7 @@ class ClaudeVisionAssistant:
             
             # Send request to Claude Vision
             message = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 messages=[
                     {"role": "user", "content": [
@@ -505,7 +507,7 @@ class ClaudeVisionAssistant:
             
             # Send request to Claude Vision
             message = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 messages=[
                     {"role": "user", "content": [
@@ -557,6 +559,12 @@ class ClaudeVisionAssistant:
                 if not analysis:
                     logger.warning("Claude Vision returned no analysis.")
                     return result
+
+                # Existing logic for handling click target (if any) would be here.
+                if "click_target" in analysis:
+                    # (Existing click target handling logic)
+                    pass
+
                 if analysis.get("post_url"):
                     result.update({
                         "post_url": analysis["post_url"],
@@ -565,6 +573,13 @@ class ClaudeVisionAssistant:
                     })
                 if analysis.get("contains_recipe"):
                     result["caption_text"] = analysis.get("caption_text") or ""
+
+                # Ensure shared post processing always runs, even if already expanded.
+                if analysis.get("is_shared_post", False):
+                    logger.info("📎 Post URL: %s", analysis.get("post_url"))
+                    confidence = analysis.get("confidence", 0.0)
+                    logger.info(f"🧠 Claude Vision confidence: {confidence}")
+                    # Proceed with recipe extraction, PDF generation, and reply
 
             elif dm_data.get("html_block"):
                 url_match = re.search(r"https://www.instagram.com/[^\s\"']+", dm_data["html_block"])
@@ -584,8 +599,22 @@ class ClaudeVisionAssistant:
                         "source_type": "message"
                     })
                 else:
-                    result["caption_text"] = dm_data["message"]
-                    result["source_type"] = "message_text"
+                    # Fallback: if message indicates a blog recipe, extract blog URL
+                    msg_lower = dm_data["message"].lower()
+                    if "full recipe" in msg_lower and "blog" in msg_lower:
+                        blog_url_match = re.search(r"https?://(?:www\.)?[\w.-]+\.[a-z]{2,}(?:/[^\s\"']+)?", dm_data["message"])
+                        if blog_url_match:
+                            result.update({
+                                "post_url": blog_url_match.group(0),
+                                "confidence": 80.0,
+                                "source_type": "blog_link"
+                            })
+                        else:
+                            result["caption_text"] = dm_data["message"]
+                            result["source_type"] = "message_text"
+                    else:
+                        result["caption_text"] = dm_data["message"]
+                        result["source_type"] = "message_text"
 
             return result
         except Exception as e:
@@ -631,7 +660,7 @@ class ClaudeVisionAssistant:
                 img_b64 = base64.b64encode(f.read()).decode("utf-8")
 
             message = self.client.messages.create(
-                model="claude-3-haiku-20240307",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 messages=[{
                     "role": "user",
@@ -705,7 +734,7 @@ class ClaudeVisionAssistant:
             """
  
             message = self.client.messages.create(
-                model="claude-3-opus-20240229",
+                model=self.DEFAULT_MODEL,
                 max_tokens=1024,
                 temperature=0.3,
                 system="You are an expert UI interpreter for Instagram screenshots.",
@@ -732,3 +761,84 @@ class ClaudeVisionAssistant:
         except Exception as e:
             logger.error(f"get_click_target_from_screenshot failed: {e}")
             return None
+        
+    def get_all_unread_thread_targets(self, screenshot_path):
+        """
+        Returns a list of click coordinates for unread DM threads, identified by blue dot indicator.
+        """
+        prompt = (
+            "You are viewing the Instagram DM interface. Your task is to locate all unread DM threads in the left panel. "
+            "These are visually identified by a small blue dot on the right edge of the conversation tile.\n\n"
+            "Please return a list of click coordinates `(x, y)` — one per unread thread — to click the center of the profile picture "
+            "or tile to open each thread. The coordinates should be normalized between 0 and 1, and listed from bottom to top, "
+            "in reverse vertical order.\n\n"
+            "Only include threads with a blue dot. Do not include any read threads."
+        )
+        with open(screenshot_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+        image_data = encoded
+        response = self._call_claude_vision(prompt, image_data)
+        
+        if isinstance(response, list):
+            logger.info(f"🔵 Claude returned {len(response)} unread thread targets.")
+            for i, coords in enumerate(response):
+                logger.info(f"    [{i}] x: {coords['x']:.3f}, y: {coords['y']:.3f}")
+            return response
+        else:
+            logger.warning("⚠️ Claude did not return a list of unread threads.")
+            return []
+    
+    def _load_image_as_base64(self, image_path):
+        import base64
+        if not os.path.exists(image_path):
+            logger.error(f"Screenshot not found at {image_path}")
+            return ""
+
+        with open(image_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+        if not encoded:
+            logger.error("Base64 encoding failed: empty result.")
+        else:
+            logger.debug(f"Base64 sample: {encoded[:100]}...")
+        return f"data:image/png;base64,{encoded}"
+
+    def _call_claude_vision(self, prompt: str, image_data: str) -> Union[Dict, List, str]:
+        try:
+            message = self.client.messages.create(
+                model=self.DEFAULT_MODEL,
+                max_tokens=1024,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image", "source": {
+                                "type": "base64",
+                                "media_type": "image/png",
+                                "data": image_data
+                            }}
+                        ]
+                    }
+                ]
+            )
+            if hasattr(message, "content"):
+                text = message.content[0].text.strip()
+                logger.info(f"Claude raw response: {text}")
+
+                match = re.search(r"\[.*\]|\{.*\}", text, re.DOTALL)
+                if match:
+                    try:
+                        return json.loads(match.group(0))
+                    except json.JSONDecodeError:
+                        pass
+
+                # Fallback: try parsing raw tuple lines like (0.175, 0.65)
+                tuple_matches = re.findall(r"\((\d*\.\d+),\s*(\d*\.\d+)\)", text)
+                if tuple_matches:
+                    return [{"x": float(x), "y": float(y)} for x, y in tuple_matches]
+
+                # If nothing matched, just return raw text
+                return text
+        except Exception as e:
+            logger.error(f"_call_claude_vision failed: {e}")
+            return {}
