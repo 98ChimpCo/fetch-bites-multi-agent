@@ -18,7 +18,7 @@ logger = logging.getLogger("playwright-preview-clicker")
 
 # CONFIGURATION
 INSTAGRAM_URL = "https://www.instagram.com/direct/inbox/"
-TARGET_USERNAME = "Soushiant Zanganehpour"  # Username whose DM contains the preview
+TARGET_USERNAME = "Shahin Zangenehpour"  # Username whose DM contains the preview
 
 async def expand_post_preview(playwright):
     load_dotenv()
