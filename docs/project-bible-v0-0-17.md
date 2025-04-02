@@ -4,7 +4,7 @@
 **Project Name:** Fetch Bites Multi-Agent System  
 **Start Date:** March 10, 2025  
 **Current Version:** v0.0.17  
-**Last Updated:** October 7, 2023
+**Last Updated:** April 1, 2025
 
 ---
 
@@ -86,4 +86,4 @@ System now handles multiple unread DMs using a vision-guided loop and per-thread
 
 ---
 
-_Last Updated: October 7, 2023 — Version 0.0.17_
+_Last Updated: April 1, 2025 — Version 0.0.17_
