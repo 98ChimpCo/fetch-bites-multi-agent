@@ -842,3 +842,61 @@ class ClaudeVisionAssistant:
         except Exception as e:
             logger.error(f"_call_claude_vision failed: {e}")
             return {}
+        
+    def extract_dm_handle(self, image_path):
+        image_data = self._encode_image_base64(image_path)
+        prompt = (
+            "You're looking at an Instagram DM conversation. "
+            "What is the visible username or account handle of the other person in this chat? "
+            "Return only the handle as a plain string, like @chefjohn."
+        )
+        response = self._call_claude_vision(prompt, image_data)
+        if isinstance(response, str):
+            clean = response.strip().split()[0]
+            if clean.startswith("@"):
+                logger.info(f"✅ Extracted DM handle: {clean}")
+                return clean
+            logger.warning(f"⚠️ Unexpected handle format: {response}")
+        else:
+            logger.warning("⚠️ Claude did not return a string for handle extraction.")
+        return None
+
+    def analyze_dm_thread(self, screenshot_path: str) -> Optional[Dict]:
+        """
+        Perform a unified analysis of a DM thread screenshot to extract:
+        - Instagram handle
+        - Shared post preview info
+        - Post URL and caption
+        - Message box and send button locations
+        """
+        prompt = """
+        You are analyzing a screenshot of the Instagram inbox (DM list view).
+
+        Your task is to:
+        1. Identify any unread conversation threads. These are visually marked by a small **blue dot on the right side** of the thread row.
+        2. If multiple unread threads are present, return the **lowest one on the list** (bottom-most unread thread).
+        3. Return the normalized coordinates for clicking — not on the blue dot, but on the **center of the unread conversation tile**, typically where the profile image or name is. Do NOT click the blue dot itself.
+
+        You should also return:
+        - "handle": the username or name next to the blue dot
+        - "is_shared_post": false (in this inbox view it's not visible)
+        - "message_box" and "send_button": null
+        - "post_url" and "caption": null
+        - "confidence": float between 0 and 1 indicating how sure you are that it's an unread thread
+
+        Return only JSON — no explanation or extra text.
+        """
+        try:
+            with open(screenshot_path, "rb") as f:
+                image_data = base64.b64encode(f.read()).decode("utf-8")
+ 
+            response = self._call_claude_vision(prompt, image_data)
+            if isinstance(response, dict):
+                logger.info("✅ Unified thread analysis successful.")
+                return response
+            else:
+                logger.warning("⚠️ Claude thread analysis returned unexpected format.")
+                return None
+        except Exception as e:
+            logger.error(f"analyze_dm_thread failed: {e}")
+            return None
