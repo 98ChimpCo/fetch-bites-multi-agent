@@ -88,6 +88,33 @@ def wait_for_element_func(func, timeout=10, poll_frequency=0.5, description="ele
                 raise
             sleep(poll_frequency)
 
+def minimal_verify_dm_inbox(driver, timeout=10):
+    """
+    Minimal state verification for the DM inbox.
+    Tries to locate the DM inbox indicator using a 10-second timeout.
+    Logs a warning if not found, but does not raise an exception.
+    """
+    try:
+        wait_for_element_func(lambda: driver.find_element("-ios predicate string", "name == 'direct-inbox-view'"), timeout, description="DM inbox indicator")
+        logger.info("DM inbox state verified.")
+    except Exception as e:
+        logger.warning(f"DM inbox indicator not found within {timeout} seconds: {e}")
+
+def strict_verify_dm_inbox(driver, timeout=10):
+    """
+    Strict state verification for the DM inbox.
+    This function first calls minimal_verify_dm_inbox and then checks for the presence of at least one DM thread element.
+    Logs a warning if no threads are found, but does not raise an exception.
+    """
+    try:
+        minimal_verify_dm_inbox(driver, timeout)
+        threads = driver.find_elements("xpath", "//XCUIElementTypeCell")
+        if threads and len(threads) > 0:
+            logger.info("Strict DM inbox verification successful: DM threads found.")
+        else:
+            logger.warning("Strict DM inbox verification: No DM threads found.")
+    except Exception as e:
+        logger.error(f"Strict DM inbox verification failed: {e}")
 # Take screenshot for debugging
 def take_screenshot(driver, name):
     filename = f"screenshots/{name}_{int(time.time())}.png"
@@ -175,9 +202,20 @@ try:
     sleep(5)
 
     logger.info("Navigating to DMs...")
-    dm_button = driver.find_element("-ios predicate string", "name == 'direct-inbox'")
-    dm_button.click()
-    sleep(3)
+    try:
+        dm_button = driver.find_element("-ios predicate string", "name == 'direct-inbox'")
+        dm_button.click()
+        sleep(3)
+        minimal_verify_dm_inbox(driver)
+    except Exception as nav_error:
+        logger.warning(f"DM button not found or click failed, falling back to deep link: {nav_error}")
+        try:
+            driver.get("instagram://direct/inbox")
+            sleep(3)
+            minimal_verify_dm_inbox(driver)
+        except Exception as deep_link_error:
+            logger.error(f"Deep link navigation to DM inbox failed: {deep_link_error}")
+            raise
 
     logger.info("Starting message scanning loop")
     scan_interval = 30  # seconds
@@ -477,26 +515,30 @@ try:
                                 logger.error(traceback.format_exc())
                                 take_screenshot(driver, f"thread_{i+1}_post_processing_error")
                             
-                            logger.info("Returning to inbox...")
+                            logger.info("Returning to inbox using right swipe...")
                             try:
-                                # Try only DM thread back button - this goes back one step
+                                driver.execute_script('mobile: swipe', {'direction': 'right'})
+                                sleep(3)
+                                logger.info("Returned to DM list using right swipe.")
+                            except Exception as swipe_err:
+                                logger.error(f"Error performing right swipe to return to inbox: {swipe_err}")
+                            try:
                                 back_button = driver.find_element(
                                     "-ios class chain",
                                     "**/XCUIElementTypeButton[`name == \"back-button\"`]"
                                 )
                                 back_button.click()
                                 sleep(2)
-                                logger.info("Returned to DM list successfully")
+                                logger.info("Returned to DM list successfully using back button.")
                             except Exception as back_error:
-                                logger.error(f"Error returning to inbox: {back_error}")
+                                logger.error(f"Error returning to inbox using back button: {back_error}")
                                 try:
-                                    # Only use direct navigation as fallback
                                     driver.get("instagram://direct/inbox")
                                     sleep(3)
-                                    logger.info("Direct navigation to inbox attempted.")
+                                    logger.info("Returned to DM list using deep link fallback.")
                                 except Exception as nav_error:
                                     logger.error(f"Direct navigation to inbox failed: {nav_error}")
-                            
+                                                    
                         except Exception as thread_error:
                             logger.error(f"Failed to process thread: {thread_error}")
                             try:
