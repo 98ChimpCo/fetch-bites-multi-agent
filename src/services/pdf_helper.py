@@ -3,7 +3,7 @@ import os
 import re
 from datetime import datetime
 
-def generate_pdf_and_return_path(recipe_dict, output_dir="generated_pdfs"):
+def generate_pdf_and_return_path(recipe_dict, output_dir="pdfs"):
     """
     Generate a PDF from a dictionary containing recipe information.
     

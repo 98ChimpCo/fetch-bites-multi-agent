@@ -41,7 +41,10 @@ screenshots/**
 # Ignore all PDFs, including in nested folders
 *.pdf
 **/*.pdf
+captions/
 
 # Just in case someone changes file extensions
 *.PNG
 *.Pdf
+
+appium_log.txt

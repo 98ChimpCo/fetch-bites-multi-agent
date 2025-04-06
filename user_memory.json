@@ -1,14 +1,12 @@
 {
-  "Shahin Zangenehpour": {
-    "state": "onboarded",
-    "last_updated": "2025-04-02T03:49:43.837142"
-  },
   "docteurzed": {
     "state": "onboarded",
-    "last_updated": "2025-04-05 11:28:30.001301"
+    "last_updated": "2025-04-05 11:28:30.001301",
+    "email": "shahinz@mac.com"
   },
   "audio-call": {
     "state": "onboarded",
-    "last_updated": "2025-04-05 15:47:24.378474"
+    "last_updated": "2025-04-06 13:02:29.134526",
+    "email": "shahinz@mac.com"
   }
 }
