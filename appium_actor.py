@@ -176,27 +176,52 @@ try:
                             thread.click()
                             sleep(2)
                             
+                            # First look for the conversation title/header (which usually contains the username)
                             try:
-                                avatar_button = driver.find_element(
-                                    "-ios class chain",
-                                    "**/XCUIElementTypeOther[`name == \"direct-thread-view\"`]/**/XCUIElementTypeButton[`name == \"avatar-front-image-view\"`]"
-                                )
-                                avatar_button.click()
-                                sleep(2)
+                                # Try to find the conversation title from the navigation bar text
+                                title_elements = driver.find_elements("-ios class chain", 
+                                    "**/XCUIElementTypeNavigationBar/XCUIElementTypeStaticText")
+                                
+                                user_id = None
+                                if title_elements:
+                                    title_text = title_elements[0].get_attribute("value") or title_elements[0].get_attribute("name")
+                                    # Ignore system-generated titles like "audio-call" or similar
+                                    if title_text and not title_text.lower() in ["audio-call", "video-call", "call", "direct"]:
+                                        user_id = title_text
+                                        logger.info(f"User ID identified from title: {user_id}")
+                                
+                                # If we couldn't find a suitable title, try the avatar method
+                                if not user_id or user_id.lower() in ["audio-call", "video-call", "call", "direct"]:
+                                    avatar_button = driver.find_element(
+                                        "-ios class chain",
+                                        "**/XCUIElementTypeOther[`name == \"direct-thread-view\"`]/**/XCUIElementTypeButton[`name == \"avatar-front-image-view\"`]"
+                                    )
+                                    avatar_button.click()
+                                    sleep(2)
+                                    
+                                    # Now look for username elements on profile page
+                                    username_elements = driver.find_elements("-ios class chain", 
+                                        "**/XCUIElementTypeNavigationBar/XCUIElementTypeStaticText")
+                                    if username_elements:
+                                        # The first text element in navigation bar is likely the username
+                                        user_id = username_elements[0].get_attribute("value") or username_elements[0].get_attribute("name")
+                                        logger.info(f"User ID identified from profile: {user_id}")
+                                        
+                                    # Exit the profile view
+                                    profile_back_button = driver.find_element(
+                                        "-ios class chain",
+                                        "**/XCUIElementTypeButton[`name == \"profile-back-button\"`]"
+                                    )
+                                    profile_back_button.click()
+                                    sleep(2)
+                                    
                             except Exception as avatar_error:
                                 logger.error(f"Error getting user ID: {avatar_error}")
-                            
-                            nav_buttons = driver.find_elements(
-                                "-ios class chain",
-                                "**/XCUIElementTypeNavigationBar/XCUIElementTypeButton"
-                            )
-                            user_id = None
-                            for btn in nav_buttons:
-                                btn_name = btn.get_attribute("name")
-                                if btn_name and btn_name != "profile-back-button":
-                                    user_id = btn_name
-                                    logger.info(f"User ID identified: {user_id}")
-                                    break
+                                
+                            # Fallback - use thread ID or timestamp if we couldn't get a proper username
+                            if not user_id or user_id.lower() in ["audio-call", "video-call", "call", "direct"]:
+                                user_id = f"user_{int(time.time())}"
+                                logger.warning(f"Could not identify proper username, using fallback ID: {user_id}")
                             
                             if not user_id:
                                 logger.warning("Could not identify user ID from navigation bar.")
