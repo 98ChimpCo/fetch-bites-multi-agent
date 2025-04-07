@@ -218,7 +218,7 @@ try:
             raise
 
     logger.info("Starting message scanning loop")
-    scan_interval = 30  # seconds
+    scan_interval = 5  # seconds
     last_scan_time = time.time()
 
     # Define onboarding messages once for reuse
@@ -304,6 +304,15 @@ try:
                             thread.click()
                             sleep(2)
                             
+                            logger.info("Scrolling to bottom of conversation to see most recent messages...")
+                            try:
+                                # Scroll to bottom
+                                window_size = driver.get_window_size()
+                                driver.execute_script('mobile: scroll', {'direction': 'down', 'toVisible': True})
+                                sleep(1)  # Short delay after scrolling
+                            except Exception as scroll_error:
+                                logger.error(f"Error scrolling to bottom: {scroll_error}")
+                                
                             logger.info("Checking for shared recipe post...")
                             try:
                                 post_selectors = [
@@ -321,7 +330,21 @@ try:
                                     raise Exception("No shared post found")
                                 
                                 logger.info("Found a shared post, opening it...")
-                                post_element.click()
+                                try:
+                                    # Use a short tap instead of click
+                                    rect = post_element.rect
+                                    x = rect['x'] + rect['width'] // 2
+                                    y = rect['y'] + rect['height'] // 2
+                                    driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})  # Short duration in ms
+                                    logger.info("Tapped on post with mobile: tap command")
+                                except Exception as tap_error:
+                                    logger.error(f"Error with tap action: {tap_error}")
+                                    # Fallback to standard click
+                                    try:
+                                        post_element.click()
+                                        logger.info("Used fallback click() method")
+                                    except Exception as click_error:
+                                        logger.error(f"Fallback click also failed: {click_error}")
                                 sleep(3)
                                 
                                 logger.info("Extracting recipe caption...")
@@ -515,27 +538,58 @@ try:
                                 logger.error(traceback.format_exc())
                                 take_screenshot(driver, f"thread_{i+1}_post_processing_error")
                             
-                            logger.info("Returning to inbox using right swipe...")
+                            logger.info("Returning to inbox using direct thread back button...")
                             try:
-                                driver.execute_script('mobile: swipe', {'direction': 'right'})
-                                sleep(3)
-                                logger.info("Returned to DM list using right swipe.")
-                            except Exception as swipe_err:
-                                logger.error(f"Error performing right swipe to return to inbox: {swipe_err}")
-                            try:
+                                # Use the direct_thread_back_button as shown in screenshot 3
                                 back_button = driver.find_element(
-                                    "-ios class chain",
-                                    "**/XCUIElementTypeButton[`name == \"back-button\"`]"
+                                    "-ios predicate string",
+                                    "name == \"direct_thread_back_button\""
                                 )
                                 back_button.click()
                                 sleep(2)
-                                logger.info("Returned to DM list successfully using back button.")
-                            except Exception as back_error:
-                                logger.error(f"Error returning to inbox using back button: {back_error}")
+                                
+                                # Verify we're in the DM list
                                 try:
-                                    driver.get("instagram://direct/inbox")
-                                    sleep(3)
-                                    logger.info("Returned to DM list using deep link fallback.")
+                                    minimal_verify_dm_inbox(driver, timeout=5)
+                                    logger.info("Successfully returned to DM inbox")
+                                except Exception as verify_err:
+                                    logger.warning(f"Could not verify return to DM inbox: {verify_err}")
+                                    # Try to click direct_thread_back_button one more time if needed
+                                    try:
+                                        back_button = driver.find_element(
+                                            "-ios predicate string",
+                                            "name == \"direct_thread_back_button\""
+                                        )
+                                        back_button.click()
+                                        sleep(2)
+                                        logger.info("Attempted second back button click")
+                                    except Exception as second_back_error:
+                                        logger.error(f"Second back button attempt failed: {second_back_error}")
+                                        # Don't use deep link fallbacks that go to home screen
+                            except Exception as back_error:
+                                logger.error(f"Error returning to inbox using thread back button: {back_error}")
+                                # Take screenshot for debugging
+                                take_screenshot(driver, "return_to_inbox_error")
+                                
+                                # Try alternate button selectors but avoid deep links
+                                try:
+                                    # Try finding button by accessibility ID
+                                    buttons = driver.find_elements("accessibility id", "direct_thread_back_button")
+                                    if buttons:
+                                        buttons[0].click()
+                                        sleep(2)
+                                        logger.info("Used accessibility ID to return to inbox")
+                                    else:
+                                        # Try finding the button using its location relative to navigation bar
+                                        back_buttons = driver.find_elements("-ios class chain", 
+                                            "**/XCUIElementTypeNavigationBar/**/XCUIElementTypeButton[1]")
+                                        if back_buttons:
+                                            back_buttons[0].click()
+                                            sleep(2)
+                                            logger.info("Used first navigation bar button to return to inbox")
+                                except Exception as alt_back_error:
+                                    logger.error(f"Alternative back button approaches failed: {alt_back_error}")
+
                                 except Exception as nav_error:
                                     logger.error(f"Direct navigation to inbox failed: {nav_error}")
                                                     
