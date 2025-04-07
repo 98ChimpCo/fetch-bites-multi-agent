@@ -347,6 +347,66 @@ try:
                                         logger.error(f"Fallback click also failed: {click_error}")
                                 sleep(3)
                                 
+                                logger.info("Checking if caption needs expansion...")
+                                try:
+                                    # Try to find caption expansion elements - multiple selectors for better coverage
+                                    more_button_selectors = [
+                                        "-ios predicate string", "name CONTAINS 'More' AND visible==true",
+                                        "-ios class chain", "**/XCUIElementTypeButton[`name CONTAINS \"More\"`]",
+                                        "-ios class chain", "**/XCUIElementTypeStaticText[`name CONTAINS \"... more\"`]",
+                                        "xpath", "//XCUIElementTypeStaticText[contains(@name, '... more')]"
+                                    ]
+                                    
+                                    more_button = None
+                                    for i in range(0, len(more_button_selectors), 2):
+                                        try:
+                                            finder_method = more_button_selectors[i]
+                                            selector = more_button_selectors[i+1]
+                                            elements = driver.find_elements(finder_method, selector)
+                                            if elements:
+                                                more_button = elements[0]
+                                                logger.info(f"Found caption expansion element using: {finder_method} -> {selector}")
+                                                break
+                                        except Exception as selector_err:
+                                            continue
+                                    
+                                    if more_button:
+                                        logger.info("Tapping on 'More' to expand caption...")
+                                        # Use precise tap instead of click
+                                        rect = more_button.rect
+                                        x = rect['x'] + rect['width'] // 2
+                                        y = rect['y'] + rect['height'] // 2
+                                        driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
+                                        logger.info("Caption expanded successfully")
+                                        sleep(2)  # Wait for expansion animation
+                                    else:
+                                        logger.info("No caption expansion element found - caption may already be expanded")
+                                        
+                                    # Alternative approach - try tapping on the caption text itself
+                                    if not more_button:
+                                        try:
+                                            caption_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
+                                            # Filter to find text elements that look like captions (moderate length)
+                                            potential_captions = [elem for elem in caption_text_elements 
+                                                                if elem.get_attribute("value") and len(elem.get_attribute("value")) > 30]
+                                            
+                                            if potential_captions:
+                                                # Tap on the longest caption text
+                                                potential_captions.sort(key=lambda elem: len(elem.get_attribute("value") or ""), reverse=True)
+                                                caption_elem = potential_captions[0]
+                                                
+                                                rect = caption_elem.rect
+                                                x = rect['x'] + rect['width'] // 2
+                                                y = rect['y'] + rect['height'] // 2
+                                                driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
+                                                logger.info("Tapped on caption text to expand")
+                                                sleep(2)  # Wait for expansion
+                                        except Exception as caption_tap_err:
+                                            logger.warning(f"Failed to tap on caption text: {caption_tap_err}")
+                                            
+                                except Exception as expansion_err:
+                                    logger.warning(f"Error during caption expansion attempt: {expansion_err}")
+
                                 logger.info("Extracting recipe caption...")
                                 static_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
                                 all_texts = []
