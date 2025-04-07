@@ -3,7 +3,7 @@
 ## Overview
 **Project Name:** Fetch Bites Multi-Agent System  
 **Start Date:** March 10, 2025  
-**Current Version:** v0.0.23  
+**Current app Version:** v0.7.0  
 **Last Updated:** April 8, 2025
 
 ---
