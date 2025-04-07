@@ -449,6 +449,34 @@ try:
                                         logger.info(f"Found caption after scroll ({len(caption_text)} chars)")
                                 if caption_text:
                                     save_caption(caption_text, user_id)
+
+                                    logger.info("Exiting expanded post view after caption extraction...")
+                                    try:
+                                        reel_back_button = driver.find_element(
+                                            "-ios class chain",
+                                            "**/XCUIElementTypeButton[`name == \"back-button\" OR name == \"close-button\" OR label == \"Close\"`]"
+                                        )
+                                        reel_back_button.click()
+                                        sleep(2)
+                                        logger.info("Successfully exited post view before recipe processing.")
+                                    except Exception as reel_back_err:
+                                        logger.error(f"Error exiting expanded post view: {reel_back_err}")
+                                        logger.info("Trying fallback method to exit expanded post view...")
+                                        try:
+                                            driver.execute_script('mobile: swipe', {'direction': 'right'})
+                                            sleep(2)
+                                            logger.info("Swipe fallback performed successfully.")
+                                        except Exception as fallback_swipe_err:
+                                            logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
+                                    
+                                    logger.info("Proceeding with recipe extraction from caption...")
+                                    extractor = RecipeExtractor()
+                                    recipe_details = extractor.extract_recipe(caption_text, force=True)
+                                    if not recipe_details:
+                                        logger.error("Recipe extraction failed: No details extracted.")
+                                        raise Exception("Recipe extraction failed")
+                                    logger.info("Recipe extraction successful.")
+
                                     logger.info("Proceeding with recipe extraction from caption...")
                                     extractor = RecipeExtractor()
                                     recipe_details = extractor.extract_recipe(caption_text, force=True)
