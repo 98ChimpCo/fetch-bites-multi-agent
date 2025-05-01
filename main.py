@@ -9,13 +9,13 @@ import time
 from typing import Optional
 from dotenv import load_dotenv
 
-from src.agents.instagram_monitor import InstagramMonitor
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.instagram_monitor import InstagramMonitor
+from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from src.agents.delivery_agent import DeliveryAgent
 from src.utils.user_state import UserStateManager
 from src.utils.conversation_handler import ConversationHandler
-from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapter
+from archive.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapter
 
 # Set up logging
 logging.basicConfig(

@@ -11,7 +11,7 @@ import time
 SCREENSHOT_DIR = "screenshots"
 os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 
 logging.basicConfig(level=logging.INFO)

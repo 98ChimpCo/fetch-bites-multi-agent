@@ -1,6 +1,6 @@
 {
   "docteurzed": {
-    "state": "onboarded",
+    "state": "completed",
     "last_updated": "2025-04-05 11:28:30.001301",
     "email": "shahinz@mac.com"
   },
@@ -8,5 +8,10 @@
     "state": "onboarded",
     "last_updated": "2025-04-07 10:29:17.418426",
     "email": "elham@mac.com"
+  },
+  "thesoush": {
+    "state": "onboarded",
+    "last_updated": "2025-04-30 16:17:42.188278",
+    "email": "python session_summary.py"
   }
 }

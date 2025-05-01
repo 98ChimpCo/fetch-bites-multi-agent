@@ -48,3 +48,4 @@ captions/
 *.Pdf
 
 appium_log.txt
+google-service-account.json

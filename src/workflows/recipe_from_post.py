@@ -2,8 +2,8 @@ import os
 import time
 import logging
 
-from src.agents.instagram_monitor import InstagramMonitor
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.instagram_monitor import InstagramMonitor
+from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from src.utils.pdf_utils import generate_pdf_and_return_path
 from src.utils.recipe_utils import sanitize_recipe_data, extra_sanitize_recipe_data

@@ -14,8 +14,10 @@ from dotenv import load_dotenv
 from appium.options.ios import XCUITestOptions
 from selenium.common.exceptions import InvalidSessionIdException, NoSuchElementException
 from email.message import EmailMessage
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
+from PIL import Image
+from analytics_logger_sheets import log_usage_event
 
 # Set up logging - reduced verbosity
 logging.basicConfig(level=logging.INFO, 
@@ -23,7 +25,63 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.FileHandler("appium_log.txt"), logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
-# Function to initialize the driver
+# -----------------------------------------------------------
+# Utility: Classify user message for smarter onboarding
+# -----------------------------------------------------------
+def classify_user_message(text):
+    if not text:
+        return "unknown"
+    text_lower = text.strip().lower()
+    if any(greet in text_lower for greet in ["hi", "hello", "hey", "what's up"]):
+        return "greeting"
+    if "instagram.com" in text_lower or "http" in text_lower:
+        return "recipe_post"
+    if any(ext in text_lower for ext in ["mp4", "mov", "video"]):
+        return "video"
+    return "unknown"
+
+# -----------------------------------------------------------
+# Utility: Extract last user message for classification
+# -----------------------------------------------------------
+def get_most_recent_user_message(driver):
+    try:
+        elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
+        candidate_texts = []
+        for elem in elements:
+            value = elem.get_attribute("value") or elem.get_attribute("name") or ""
+            if 5 < len(value) < 500:
+                candidate_texts.append((elem.location['y'], value))
+        if candidate_texts:
+            candidate_texts.sort(reverse=True)
+            return candidate_texts[0][1]
+        return None
+    except Exception as e:
+        logger.warning(f"Failed to extract recent user message: {e}")
+        return None
+
+# -----------------------------------------------------------
+# Utility: Extract image from shared post (fallback = screenshot)
+# -----------------------------------------------------------
+def extract_post_image(driver, user_id):
+    try:
+        images = driver.find_elements("class name", "XCUIElementTypeImage")
+        if images:
+            image_elem = images[0]
+            screenshot_path = f"images/post_image_{user_id}.png"
+            os.makedirs("images", exist_ok=True)
+            driver.get_screenshot_as_file(screenshot_path)
+            logger.info(f"Saved post image screenshot for {user_id}")
+            return screenshot_path
+        else:
+            logger.info("No image found in post. Skipping image capture.")
+            return None
+    except Exception as e:
+        logger.warning(f"Image scraping failed: {e}")
+        return None
+    
+# -----------------------------------------------------------
+# Driver Initialization and User Memory Management
+# -----------------------------------------------------------
 def init_driver():
     logger.info("Initializing Appium driver...")
     load_dotenv()
@@ -45,7 +103,6 @@ def init_driver():
         logger.error(traceback.format_exc())
         raise
 
-# Functions to load/save user memory (onboarded users)
 def load_user_memory(path="user_memory.json"):
     try:
         with open(path, "r") as f:
@@ -61,7 +118,9 @@ def save_user_memory(data, path="user_memory.json"):
         json.dump(data, f, indent=2)
     logger.info("User memory saved successfully")
 
-# Helper function to wait for an element using a locator
+# -----------------------------------------------------------
+# Helper Functions for UI Interaction and Waiting
+# -----------------------------------------------------------
 def wait_for_element(find_func, locator, timeout=10, poll_frequency=0.5):
     end_time = time.time() + timeout
     while True:
@@ -74,7 +133,6 @@ def wait_for_element(find_func, locator, timeout=10, poll_frequency=0.5):
                 raise
             sleep(poll_frequency)
 
-# New helper function to wait for an element using a no-argument lambda
 def wait_for_element_func(func, timeout=10, poll_frequency=0.5, description="element"):
     logger.info(f"Waiting for {description}, timeout: {timeout}s")
     end_time = time.time() + timeout
@@ -96,14 +154,13 @@ def minimal_verify_dm_inbox(driver, timeout=10):
     Returns True if found, False otherwise.
     """
     try:
-        wait_for_element_func(lambda: driver.find_element("-ios predicate string", 
-            "name == 'direct-inbox-view'"), timeout, description="DM inbox indicator")
+        wait_for_element_func(lambda: driver.find_element("-ios predicate string", "name == 'direct-inbox-view'"), timeout, description="DM inbox indicator")
         logger.info("DM inbox state verified.")
         return True
     except Exception as e:
         logger.warning(f"DM inbox indicator not found within {timeout} seconds: {e}")
         return False
-    
+
 def strict_verify_dm_inbox(driver, timeout=10):
     """
     Strict state verification for the DM inbox.
@@ -120,14 +177,12 @@ def strict_verify_dm_inbox(driver, timeout=10):
     except Exception as e:
         logger.error(f"Strict DM inbox verification failed: {e}")
 
-# Take screenshot for debugging
 def take_screenshot(driver, name):
     filename = f"screenshots/{name}_{int(time.time())}.png"
     os.makedirs("screenshots", exist_ok=True)
     driver.get_screenshot_as_file(filename)
     return filename
 
-# Save caption to a file
 def save_caption(caption_text, user_id):
     caption_filename = f"captions/caption_{user_id}_{int(time.time())}.txt"
     os.makedirs("captions", exist_ok=True)
@@ -136,7 +191,9 @@ def save_caption(caption_text, user_id):
     logger.info(f"Caption saved to {caption_filename}")
     return caption_filename
 
-# Updated send_pdf_email function with SMTP_SSL fallback
+# -----------------------------------------------------------
+# Email Sending and Extraction Helpers
+# -----------------------------------------------------------
 def send_pdf_email(recipient_email, pdf_path):
     smtp_server = os.getenv("SMTP_SERVER")
     smtp_port = os.getenv("SMTP_PORT")
@@ -170,25 +227,35 @@ def send_pdf_email(recipient_email, pdf_path):
             smtp.send_message(msg)
         logger.info(f"PDF emailed successfully to {recipient_email} using STARTTLS")
 
-# --- Helper Function for Onboarding using DM Row Avatar ---
+def extract_email_from_conversation(driver):
+    """
+    Scan static text elements in the conversation for a valid email address.
+    Returns the first detected valid email, if any.
+    """
+    email_pattern = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+    static_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
+    for element in static_text_elements:
+        text = element.get_attribute("value") or element.get_attribute("name") or element.get_attribute("label") or ""
+        matches = re.findall(email_pattern, text)
+        if matches:
+            logger.info(f"Found email(s) in conversation: {matches}")
+            return matches[0]
+    return None
+
+# -----------------------------------------------------------
+# DM Handling Helpers: Extracting User Handle, Recipe Extraction, and Clicking Threads
+# -----------------------------------------------------------
 def extract_handle_from_thread(thread):
     """
     Extract the Instagram handle from the DM thread by parsing the avatar element's label.
-    Example label might look like: "docteurzed. Profile picture"
-    We'll strip out the trailing ". Profile picture" to isolate the actual handle.
+    For example, if the label is "chef.julia. Profile picture", it removes the trailing text.
     """
     try:
-        # Adjust the locator to match the avatar element in your DM list rows.
         avatar = thread.find_element("-ios class chain", 
                                      "**/XCUIElementTypeOther[`name == \"avatar-front-image-view\"`]")
-        # Instead of get_attribute("name") or get_attribute("value"), use "label" now.
         label_value = avatar.get_attribute("label")
         if label_value:
-            # label_value often looks like "<username>. Profile picture"
-            # We'll remove the trailing ". Profile picture" if it exists.
             handle = label_value.replace(". Profile picture", "").strip()
-            # If your usernames sometimes include periods (e.g., "chef.dwight"), 
-            # this approach will still keep them. Only the trailing substring is removed.
             return handle
         else:
             logger.warning("Avatar element found but label is empty.")
@@ -198,27 +265,19 @@ def extract_handle_from_thread(thread):
         return None
 
 def extract_recipe_from_content(content, recipe_agent):
-    """Process content to extract recipe using multiple strategies"""
-    
-    # Strategy 1: Extract from URLs if present
+    """
+    Process content (usually a caption) to extract recipe details.
+    First, attempt URL extraction; if that fails, fall back to processing the text directly.
+    """
     if 'caption' in content and content['caption']:
-        # Extract URLs with better pattern matching
-        import re
-        # This pattern should capture complete URLs with paths like the original code
-        url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+(?:/[-\w./%]+)*'
+        url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'
         urls = re.findall(url_pattern, content['caption'])
-        
-        # Log URLs for debugging
         if urls:
             logger.info(f"Found {len(urls)} URLs in caption: {urls}")
-            
             for url in urls:
-                # Skip Instagram and common social media URLs
                 if any(domain in url for domain in ['instagram.com', 'facebook.com', 'twitter.com', 'tiktok.com']):
                     continue
-                
                 try:
-                    # Use the recipe_agent's extract_recipe_from_url method
                     logger.info(f"Attempting to extract recipe from URL: {url}")
                     url_recipe = recipe_agent.extract_recipe_from_url(url)
                     if url_recipe:
@@ -226,28 +285,25 @@ def extract_recipe_from_content(content, recipe_agent):
                         return url_recipe
                 except Exception as e:
                     logger.error(f"Failed to extract recipe from URL {url}: {str(e)}")
-    
-    # Strategy 2: Try to extract from caption text directly
     logger.info("Trying to extract recipe from caption text...")
     if 'caption' in content and content['caption']:
         try:
             return recipe_agent.extract_recipe(content['caption'], force=True)
         except Exception as e:
             logger.error(f"Failed to extract recipe from caption: {str(e)}")
-    
     return None
 
 def click_thread_with_fallbacks(driver, thread):
-    """Click on thread with multiple fallback strategies"""
+    """
+    Click on a DM thread using multiple strategies.
+    Tries a direct click, then attempts clicking a name element, and finally a coordinate-based tap.
+    """
     try:
-        # Strategy 1: Direct click on the thread element
         thread.click()
         logger.info("Direct click on thread successful")
         return True
     except Exception as e:
         logger.warning(f"Direct click failed: {str(e)}")
-        
-        # Strategy 2: Find the name inside the thread and click that
         try:
             name_elements = thread.find_elements("-ios class chain", 
                 "**/XCUIElementTypeStaticText[`name CONTAINS \"user-name-label\"`]")
@@ -257,8 +313,6 @@ def click_thread_with_fallbacks(driver, thread):
                 return True
         except Exception as e2:
             logger.warning(f"Name element click failed: {str(e2)}")
-            
-        # Strategy 3: Get coordinates and tap
         try:
             rect = thread.rect
             x = rect['x'] + rect['width'] // 2
@@ -271,53 +325,46 @@ def click_thread_with_fallbacks(driver, thread):
             return False
 
 def is_in_conversation_thread(driver):
-    """Check if we're currently in a conversation thread"""
+    """
+    Determine if the app is currently in a DM conversation thread.
+    It checks for the presence of a visible text input and a back button.
+    """
     try:
-        # Look for message input field
         input_exists = len(driver.find_elements("-ios predicate string", 
             "type == 'XCUIElementTypeTextView' AND visible == 1")) > 0
-            
-        # Look for back button
         back_exists = len(driver.find_elements("-ios predicate string", 
             "name == \"direct_thread_back_button\"")) > 0
-            
         return input_exists and back_exists
     except Exception as e:
         logger.error(f"Error checking conversation thread state: {str(e)}")
         return False
 
 def navigate_back_to_dm_list(driver):
-    """Navigate back to DM list with fallbacks"""
+    """
+    Navigate back to the DM list view using multiple fallback strategies.
+    """
     logger.info("Returning to inbox...")
     try:
-        back_button = driver.find_element("-ios predicate string", 
-            "name == \"direct_thread_back_button\"")
+        back_button = driver.find_element("-ios predicate string", "name == \"direct_thread_back_button\"")
         back_button.click()
         sleep(2)
         logger.info("Successfully returned to DM inbox using back button")
         return True
     except Exception as back_error:
         logger.error(f"Error using back button: {str(back_error)}")
-        
-        # Try alternate selectors
         try:
-            # Try finding by accessibility ID
             buttons = driver.find_elements("accessibility id", "direct_thread_back_button")
             if buttons:
                 buttons[0].click()
                 sleep(2)
                 logger.info("Used accessibility ID to return to inbox")
                 return True
-            
-            # Try first button in navigation bar
-            back_buttons = driver.find_elements("-ios class chain", 
-                "**/XCUIElementTypeNavigationBar/**/XCUIElementTypeButton[1]")
+            back_buttons = driver.find_elements("-ios class chain", "**/XCUIElementTypeNavigationBar/**/XCUIElementTypeButton[1]")
             if back_buttons:
                 back_buttons[0].click()
                 sleep(2)
                 logger.info("Used first navigation bar button to return to inbox")
                 return True
-                
             logger.error("All back button strategies failed")
             return False
         except Exception as alt_back_error:
@@ -325,28 +372,22 @@ def navigate_back_to_dm_list(driver):
             return False
 
 def ensure_in_dm_list(driver):
-    """Make sure we're in the DM list view, navigate there if not"""
+    """
+    Ensure that the app is displaying the DM inbox.
+    If not, attempts navigation via back buttons or deep linking.
+    """
     try:
-        # Check if already in DM list
         if minimal_verify_dm_inbox(driver, timeout=3):
             return True
-            
-        # Try to navigate back to DM list
         try:
-            # Try back button if available
-            back_buttons = driver.find_elements("-ios class chain", 
-                "**/XCUIElementTypeButton[`name CONTAINS \"back\" OR label CONTAINS \"Back\"`]")
+            back_buttons = driver.find_elements("-ios class chain", "**/XCUIElementTypeButton[`name CONTAINS \"back\" OR label CONTAINS \"Back\"`]")
             if back_buttons:
                 back_buttons[0].click()
                 sleep(2)
-                
-                # Check if we're now in the DM list
                 if minimal_verify_dm_inbox(driver, timeout=3):
                     return True
         except Exception as back_error:
             logger.warning(f"Back button navigation failed: {str(back_error)}")
-        
-        # Direct navigation as last resort
         driver.get("instagram://direct/inbox")
         sleep(3)
         return minimal_verify_dm_inbox(driver, timeout=5)
@@ -354,21 +395,28 @@ def ensure_in_dm_list(driver):
         logger.error(f"Failed to ensure in DM list: {str(e)}")
         return False
 
-# Define onboarding messages once for reuse
+# -----------------------------------------------------------
+# Onboarding and Messaging Flow Constants
+# -----------------------------------------------------------
 onboarding_messages = [
     "Hey! I'm your recipe assistant. If you send me a shared recipe post, I'll extract the full recipe and send you back a clean PDF copy.",
     "Just paste or forward any Instagram recipe post. I'll do the rest — no sign-up needed.",
     "Want your recipes saved or emailed to you? Just say \"email me\" and I'll set that up."
 ]
 
+# -----------------------------------------------------------
+# Main Processing Function: process_unread_threads
+# -----------------------------------------------------------
 def process_unread_threads(driver, user_memory):
-    """Find and process unread threads with a more robust approach"""
+    """
+    Scan for unread threads using multiple strategies, process each thread, and handle recipe extraction.
+    Implements state management for onboarding and email collection.
+    """
     logger.info("Scanning for unread messages (every 5 seconds)...")
     
-    # Multiple strategies to find unread threads
     unread_threads = []
     
-    # Strategy 1: Try XPath with Unseen attribute (current approach)
+    # Strategy 1: XPath with Unseen attribute
     try:
         xpath_threads = driver.find_elements("xpath", "//XCUIElementTypeCell[.//*[@name='Unseen']]")
         if xpath_threads:
@@ -377,22 +425,20 @@ def process_unread_threads(driver, user_memory):
     except Exception as e:
         logger.warning(f"XPath strategy failed: {str(e)}")
     
-    # Strategy 2: Look for blue dots using class chain
+    # Strategy 2: Blue dot (class chain)
     if not unread_threads:
         try:
-            blue_dot_threads = driver.find_elements("-ios class chain", 
-                "**/XCUIElementTypeCell[./**/XCUIElementTypeOther[`name CONTAINS \"Unseen\"`]]")
+            blue_dot_threads = driver.find_elements("-ios class chain", "**/XCUIElementTypeCell[./**/XCUIElementTypeOther[`name CONTAINS \"Unseen\"`]]")
             if blue_dot_threads:
                 logger.info(f"Found {len(blue_dot_threads)} unread thread(s) using blue dot class chain")
                 unread_threads = blue_dot_threads
         except Exception as e:
             logger.warning(f"Blue dot strategy failed: {str(e)}")
     
-    # Strategy 3: Look for conversation cells with specific naming patterns
+    # Strategy 3: Name label strategy
     if not unread_threads:
         try:
-            name_threads = driver.find_elements("-ios class chain", 
-                "**/XCUIElementTypeCell[./**/XCUIElementTypeStaticText[`name CONTAINS \"user-name-label\"`]]")
+            name_threads = driver.find_elements("-ios class chain", "**/XCUIElementTypeCell[./**/XCUIElementTypeStaticText[`name CONTAINS \"user-name-label\"`]]")
             if name_threads:
                 logger.info(f"Found {len(name_threads)} thread(s) using name label")
                 unread_threads = name_threads
@@ -404,81 +450,54 @@ def process_unread_threads(driver, user_memory):
         logger.info("No unread messages found. Will scan again in 5 seconds...")
         return
     
-    # Process each thread
     for i, thread in enumerate(unread_threads):
         logger.info(f"Processing thread {i+1} of {len(unread_threads)}")
         try:
-            # Get user ID before clicking the thread
             user_id = extract_handle_from_thread(thread)
-            
-            # Fallback to timestamp-based ID if extraction fails
             if not user_id or user_id.lower() in ["audio-call", "video-call", "call", "direct"]:
                 logger.warning("Could not extract proper user handle; using fallback ID")
                 user_id = f"user_{int(time.time())}"
-            
             logger.info(f"Identified user: {user_id}")
             
-            # Try multiple click strategies to open the thread
             if not click_thread_with_fallbacks(driver, thread):
                 logger.error(f"Failed to click thread {i+1} after multiple attempts")
                 continue
             
             sleep(2)  # Wait for thread to load
-            
-            # Check if the thread opened successfully
             if not is_in_conversation_thread(driver):
                 logger.error("Failed to enter conversation thread. Returning to inbox...")
                 ensure_in_dm_list(driver)
                 continue
             
-            # -- Begin thread content processing --
-            
-            # Check if user is onboarded
-            is_onboarded = user_memory.get(user_id, {}).get("state") == "onboarded"
-            logger.info(f"User {user_id} onboarded: {is_onboarded}")
-            
-            # Handle onboarding if needed
-            if not is_onboarded:
+            # --- Process thread content ---
+            user_record = user_memory.get(user_id, {})
+            if user_record.get("state") not in ["onboarded", "email_captured", "completed"]:
                 logger.info(f"Onboarding user {user_id}...")
                 for msg in onboarding_messages:
                     try:
-                        text_input = driver.find_element(
-                            "-ios predicate string", 
-                            "type == 'XCUIElementTypeTextView' AND visible == 1"
-                        )
+                        text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
                         text_input.send_keys(msg)
                         sleep(1)
-                        send_button = driver.find_element(
-                            "-ios class chain",
-                            "**/XCUIElementTypeButton[`name == \"send button\"`]"
-                        )
+                        send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
                         send_button.click()
                         sleep(2)
                     except Exception as msg_error:
                         logger.error(f"Error sending onboarding message: {msg_error}")
-                
-                # Update user state to onboarded
-                user_memory[user_id] = {
-                    "state": "onboarded",
-                    "last_updated": str(datetime.datetime.now())
-                }
+                user_memory[user_id] = {"state": "onboarded", "last_updated": str(datetime.datetime.now())}
                 save_user_memory(user_memory)
                 logger.info(f"User {user_id} has been onboarded")
             else:
                 logger.info(f"User {user_id} is already onboarded")
             
-            # Scroll to bottom of conversation to see most recent messages
             logger.info("Scrolling to bottom of conversation to see most recent messages...")
             try:
                 driver.execute_script('mobile: scroll', {'direction': 'down', 'toVisible': True})
-                sleep(1)  # Short delay after scrolling
+                sleep(1)
             except Exception as scroll_error:
                 logger.error(f"Error scrolling to bottom: {scroll_error}")
             
-            # Check for shared recipe post
             logger.info("Checking for shared recipe post...")
             try:
-                # Find potential shared posts
                 post_selectors = [
                     "**/XCUIElementTypeCell[`name == \"ig-direct-portrait-xma-message-bubble-view\"`]",
                     "**/XCUIElementTypeCell[`name CONTAINS \"message-bubble\"`]"
@@ -489,17 +508,12 @@ def process_unread_threads(driver, user_memory):
                     if elements:
                         post_element = elements[0]
                         break
-                
                 if not post_element:
                     logger.info("No shared post found in this conversation")
-                    # Navigate back to inbox after processing
                     navigate_back_to_dm_list(driver)
                     continue
-                
-                # Process shared post
                 logger.info("Found a shared post, opening it...")
                 try:
-                    # Use a short tap instead of click
                     rect = post_element.rect
                     x = rect['x'] + rect['width'] // 2
                     y = rect['y'] + rect['height'] // 2
@@ -507,7 +521,6 @@ def process_unread_threads(driver, user_memory):
                     logger.info("Tapped on post with mobile: tap command")
                 except Exception as tap_error:
                     logger.error(f"Error with tap action: {tap_error}")
-                    # Fallback to standard click
                     try:
                         post_element.click()
                         logger.info("Used fallback click() method")
@@ -515,20 +528,16 @@ def process_unread_threads(driver, user_memory):
                         logger.error(f"Fallback click also failed: {click_error}")
                         navigate_back_to_dm_list(driver)
                         continue
+                sleep(3)
                 
-                sleep(3)  # Wait for post to open
-                
-                # Check if caption needs expansion
                 logger.info("Checking if caption needs expansion...")
                 try:
-                    # Try to find caption expansion elements
                     more_button_selectors = [
                         "-ios predicate string", "name CONTAINS 'More' AND visible==true",
                         "-ios class chain", "**/XCUIElementTypeButton[`name CONTAINS \"More\"`]",
                         "-ios class chain", "**/XCUIElementTypeStaticText[`name CONTAINS \"... more\"`]",
                         "xpath", "//XCUIElementTypeStaticText[contains(@name, '... more')]"
                     ]
-                    
                     more_button = None
                     for i in range(0, len(more_button_selectors), 2):
                         try:
@@ -541,44 +550,34 @@ def process_unread_threads(driver, user_memory):
                                 break
                         except Exception as selector_err:
                             continue
-                    
                     if more_button:
                         logger.info("Tapping on 'More' to expand caption...")
-                        # Use precise tap instead of click
                         rect = more_button.rect
                         x = rect['x'] + rect['width'] // 2
                         y = rect['y'] + rect['height'] // 2
                         driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
                         logger.info("Caption expanded successfully")
-                        sleep(2)  # Wait for expansion animation
+                        sleep(2)
                     else:
                         logger.info("No caption expansion element found - caption may already be expanded")
-                        
-                    # Alternative approach - try tapping on the caption text itself
-                    if not more_button:
+                        # Alternative: try tapping on the caption text
                         try:
                             caption_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
-                            potential_captions = [elem for elem in caption_text_elements 
-                                                if elem.get_attribute("value") and len(elem.get_attribute("value")) > 30]
-                            
+                            potential_captions = [elem for elem in caption_text_elements if elem.get_attribute("value") and len(elem.get_attribute("value")) > 30]
                             if potential_captions:
-                                # Tap on the longest caption text
                                 potential_captions.sort(key=lambda elem: len(elem.get_attribute("value") or ""), reverse=True)
                                 caption_elem = potential_captions[0]
-                                
                                 rect = caption_elem.rect
                                 x = rect['x'] + rect['width'] // 2
                                 y = rect['y'] + rect['height'] // 2
                                 driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
                                 logger.info("Tapped on caption text to expand")
-                                sleep(2)  # Wait for expansion
+                                sleep(2)
                         except Exception as caption_tap_err:
                             logger.warning(f"Failed to tap on caption text: {caption_tap_err}")
-                            
                 except Exception as expansion_err:
                     logger.warning(f"Error during caption expansion attempt: {expansion_err}")
                 
-                # Extract recipe caption
                 logger.info("Extracting recipe caption...")
                 static_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
                 all_texts = []
@@ -586,15 +585,12 @@ def process_unread_threads(driver, user_memory):
                     text = element.get_attribute("value") or element.get_attribute("name") or element.get_attribute("label") or ""
                     if len(text) > 10:
                         all_texts.append((len(text), text))
-                
                 caption_text = None
                 if all_texts:
                     all_texts.sort(reverse=True)
                     if all_texts[0][0] > 100:
                         caption_text = all_texts[0][1]
                         logger.info(f"Successfully extracted caption ({len(caption_text)} chars)")
-                
-                # Try scrolling if no caption found
                 if not caption_text:
                     logger.info("Trying to scroll to reveal more content...")
                     try:
@@ -607,7 +603,6 @@ def process_unread_threads(driver, user_memory):
                             logger.info("Alternative scroll executed")
                         except Exception as scroll_error:
                             logger.error(f"Scroll also failed: {scroll_error}")
-                    
                     sleep(2)
                     static_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
                     longest_text = ""
@@ -619,11 +614,9 @@ def process_unread_threads(driver, user_memory):
                         caption_text = longest_text
                         logger.info(f"Found caption after scroll ({len(caption_text)} chars)")
                 
-                # Process caption if found
                 if caption_text:
                     save_caption(caption_text, user_id)
                     
-                    # Exit expanded post view before recipe processing
                     logger.info("Exiting expanded post view after caption extraction...")
                     try:
                         reel_back_button = driver.find_element(
@@ -635,7 +628,6 @@ def process_unread_threads(driver, user_memory):
                         logger.info("Successfully exited post view before recipe processing.")
                     except Exception as reel_back_err:
                         logger.error(f"Error exiting expanded post view: {reel_back_err}")
-                        logger.info("Trying fallback method to exit expanded post view...")
                         try:
                             driver.execute_script('mobile: swipe', {'direction': 'right'})
                             sleep(2)
@@ -643,7 +635,6 @@ def process_unread_threads(driver, user_memory):
                         except Exception as fallback_swipe_err:
                             logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
                     
-                    # Process recipe
                     logger.info("Proceeding with recipe extraction from caption...")
                     extractor = RecipeExtractor()
                     content = {
@@ -651,45 +642,40 @@ def process_unread_threads(driver, user_memory):
                         'urls': re.findall(r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', caption_text)
                     }
                     recipe_details = extract_recipe_from_content(content, extractor)
-
                     if not recipe_details:
                         logger.error("Recipe extraction failed: No details extracted.")
                         navigate_back_to_dm_list(driver)
                         continue
-                    
                     logger.info("Recipe extraction successful.")
                     
-                    # Generate PDF
                     logger.info("Generating PDF from extracted recipe details...")
                     pdf_gen = PDFGenerator(output_dir="./pdfs")
-                    pdf_path = pdf_gen.generate_pdf(recipe_details)
+                    image_path = extract_post_image(driver, user_id)
+                    pdf_path = pdf_gen.generate_pdf(recipe_details, image_path=image_path)
                     logger.info(f"PDF generated at: {pdf_path}")
+                    log_usage_event(
+                        user_id=user_id,
+                        url=content['urls'][0] if content['urls'] else "unknown",
+                        cuisine=recipe_details.get("cuisine", "unknown"),
+                        meal_format=recipe_details.get("meal_format", "unknown")
+                    )
                     
-                    # Email and message handling
                     try:
                         user_record = user_memory.get(user_id, {})
                         user_email = user_record.get("email")
                         
                         if not user_email:
                             logger.info("No email on record for this user. Prompting for email address...")
-                            text_input = driver.find_element(
-                                "-ios predicate string",
-                                "type == 'XCUIElementTypeTextView' AND visible == 1"
-                            )
+                            text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
                             prompt_message = "Please share your email address to receive your recipe PDF."
                             text_input.send_keys(prompt_message)
                             sleep(1)
-                            send_button = driver.find_element(
-                                "-ios class chain",
-                                "**/XCUIElementTypeButton[`name == \"send button\"`]"
-                            )
+                            send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
                             send_button.click()
                             sleep(2)
-                            
-                            # For testing purposes - in production you would implement logic
-                            # to wait for and detect the user's email response
+                            # For demonstration, we ask for the email on the console.
+                            # In production, you would wait for the user to reply in the DM.
                             user_email = input("Enter email address received from DM reply: ").strip()
-                            
                             if user_email:
                                 user_record["email"] = user_email
                                 user_memory[user_id] = user_record
@@ -702,37 +688,26 @@ def process_unread_threads(driver, user_memory):
                             logger.info("Sending PDF to user's email...")
                             send_pdf_email(user_email, pdf_path)
                             logger.info("PDF sent via email successfully.")
-                            
-                            # Send confirmation message
                             try:
-                                text_input = driver.find_element(
-                                    "-ios predicate string",
-                                    "type == 'XCUIElementTypeTextView' AND visible == 1"
-                                )
+                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
                                 confirmation_message = "Your recipe PDF has been emailed to you!"
                                 text_input.send_keys(confirmation_message)
                                 sleep(1)
-                                send_button = driver.find_element(
-                                    "-ios class chain",
-                                    "**/XCUIElementTypeButton[`name == \"send button\"`]"
-                                )
+                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
                                 send_button.click()
                                 sleep(2)
                             except Exception as send_err:
                                 logger.error(f"Error sending confirmation message: {send_err}")
+                            user_record["state"] = "completed"
+                            user_memory[user_id] = user_record
+                            save_user_memory(user_memory)
                         else:
                             try:
-                                text_input = driver.find_element(
-                                    "-ios predicate string",
-                                    "type == 'XCUIElementTypeTextView' AND visible == 1"
-                                )
+                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
                                 fallback_message = "Your recipe PDF is ready! (Please provide your email for the PDF attachment)"
                                 text_input.send_keys(fallback_message)
                                 sleep(1)
-                                send_button = driver.find_element(
-                                    "-ios class chain",
-                                    "**/XCUIElementTypeButton[`name == \"send button\"`]"
-                                )
+                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
                                 send_button.click()
                                 sleep(2)
                             except Exception as fallback_err:
@@ -741,12 +716,8 @@ def process_unread_threads(driver, user_memory):
                         logger.error(f"Error in messaging process: {messaging_error}")
                 else:
                     logger.error("Caption text extraction failed; skipping recipe extraction.")
-                    # Exit expanded post view if no caption was found
                     try:
-                        reel_back_button = driver.find_element(
-                            "-ios class chain",
-                            "**/XCUIElementTypeButton[`name == \"Back\" OR name == \"close-button\" OR label == \"Close\"`]"
-                        )
+                        reel_back_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"Back\" OR name == \"close-button\" OR label == \"Close\"`]")
                         reel_back_button.click()
                         sleep(2)
                     except Exception as exit_err:
@@ -754,23 +725,24 @@ def process_unread_threads(driver, user_memory):
                         try:
                             driver.execute_script('mobile: swipe', {'direction': 'right'})
                             sleep(2)
-                        except:
+                        except Exception:
                             pass
             except Exception as post_error:
                 logger.error(f"Error processing post: {post_error}")
                 logger.error(traceback.format_exc())
                 take_screenshot(driver, f"thread_{i+1}_post_processing_error")
             
-            # -- End thread content processing --
-            
-            # Navigate back to inbox after processing
             navigate_back_to_dm_list(driver)
             
         except Exception as thread_error:
             logger.error(f"Failed to process thread: {str(thread_error)}")
-            # Try to get back to DM list
             ensure_in_dm_list(driver)
+    
+    logger.info("Finished processing current unread threads.")
 
+# -----------------------------------------------------------
+# Main Loop
+# -----------------------------------------------------------
 logger.info("Starting Instagram Recipe Extractor")
 
 try:
@@ -803,21 +775,15 @@ try:
     while True:
         try:
             current_time = time.time()
-            # Check if it's time for a new scan
             if current_time - last_scan_time >= scan_interval:
                 last_scan_time = current_time
                 process_unread_threads(driver, user_memory)
-                
-            # Check for user input without blocking (q to quit)
             if sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
                 user_input = sys.stdin.readline().strip()
                 if user_input.lower() == 'q':
                     logger.info("Exiting scanning loop.")
                     break
-            
-            # Sleep a short amount to prevent CPU hogging
             sleep(1)
-        
         except InvalidSessionIdException:
             logger.error("Session terminated. Reinitializing driver...")
             driver = init_driver()

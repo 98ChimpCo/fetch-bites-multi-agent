@@ -9,7 +9,7 @@ import atexit
 from dotenv import load_dotenv
 
 # Import the fixed version of the adapter
-from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
+from archive.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
 from src.utils.user_state_enhanced import UserStateManager
 from src.utils.conversation_handler_enhanced import ConversationHandler
 from src.utils.claude_vision_assistant import ClaudeVisionAssistant

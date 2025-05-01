@@ -12,8 +12,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 # Import our agents
-from src.agents.instagram_monitor import InstagramMonitor
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.instagram_monitor import InstagramMonitor
+from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 
 # Load environment variables

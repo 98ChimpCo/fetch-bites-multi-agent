@@ -4,22 +4,16 @@ import logging
 import time
 from datetime import datetime
 from typing import Dict, List, Optional
-import tempfile
-import requests
 from io import BytesIO
 from PIL import Image
-
-# Use ReportLab instead of FPDF
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle
 
-# Set up logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-# Create handler if not already configured
 if not logger.handlers:
     handler = logging.StreamHandler()
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -27,159 +21,77 @@ if not logger.handlers:
     logger.addHandler(handler)
 
 class PDFGenerator:
-    """
-    PDF Generator Agent for creating recipe PDF cards using ReportLab
-    """
-    
     def __init__(self, output_dir='pdfs'):
-        """
-        Initialize PDF Generator Agent
-        
-        Args:
-            output_dir (str): Directory to save PDFs
-        """
         self.output_dir = output_dir
-        
-        # Create output directory if it doesn't exist
         os.makedirs(output_dir, exist_ok=True)
-        
-        # Define colors and styles
-        self.accent_color = colors.HexColor('#EB5757')  # Coral red
-        self.text_color = colors.HexColor('#333333')    # Dark gray
-        
-        # Page width (in points - 595.27 for A4)
+        self.accent_color = colors.HexColor('#EB5757')
+        self.text_color = colors.HexColor('#333333')
         self.page_width = A4[0]
-        
-        # Initialize styles
         self.styles = getSampleStyleSheet()
-        
-        # Create custom styles
-        self.styles.add(ParagraphStyle(
-            name='RecipeTitle',
-            fontName='Helvetica-Bold',
-            fontSize=18,
-            alignment=1,  # Center alignment
-            textColor=self.accent_color,
-            spaceAfter=12
-        ))
-        
-        self.styles.add(ParagraphStyle(
-            name='SectionTitle',
-            fontName='Helvetica-Bold',
-            fontSize=14,
-            textColor=self.accent_color,
-            spaceAfter=6
-        ))
-        
-        self.styles.add(ParagraphStyle(
-            name='IngredientItem',
-            fontName='Helvetica',
-            fontSize=10,
-            leftIndent=20,
-            firstLineIndent=-15,  # Hanging indent for bullet
-            spaceAfter=3
-        ))
-        
-        self.styles.add(ParagraphStyle(
-            name='InstructionItem',
-            fontName='Helvetica',
-            fontSize=10,
-            leftIndent=20,
-            firstLineIndent=-15,  # Hanging indent for numbering
-            spaceAfter=6
-        ))
-        
-        self.styles.add(ParagraphStyle(
-            name='Footer',
-            fontName='Helvetica-Oblique',
-            fontSize=8,
-            textColor=colors.gray,
-            alignment=1  # Center alignment
-        ))
-    
-    def generate_pdf(self, recipe_data: Dict) -> str:
-        """
-        Generate a PDF recipe card using ReportLab
-        
-        Args:
-            recipe_data (dict): Structured recipe data
-            
-        Returns:
-            str: Path to generated PDF file
-        """
+        self.styles.add(ParagraphStyle(name='RecipeTitle', fontName='Helvetica-Bold', fontSize=18, alignment=1, textColor=self.accent_color, spaceAfter=12))
+        self.styles.add(ParagraphStyle(name='SectionTitle', fontName='Helvetica-Bold', fontSize=14, textColor=self.accent_color, spaceAfter=6))
+        self.styles.add(ParagraphStyle(name='IngredientItem', fontName='Helvetica', fontSize=10, leftIndent=20, firstLineIndent=-15, spaceAfter=3))
+        self.styles.add(ParagraphStyle(name='InstructionItem', fontName='Helvetica', fontSize=10, leftIndent=20, firstLineIndent=-15, spaceAfter=6))
+        self.styles.add(ParagraphStyle(name='Footer', fontName='Helvetica-Oblique', fontSize=8, textColor=colors.gray, alignment=1))
+
+    def generate_pdf(self, recipe_data: Dict, image_path: Optional[str] = None) -> str:
         try:
             logger.info(f"Generating PDF for recipe: {recipe_data.get('title', 'Untitled Recipe')}")
-            
-            # Create a filename for the PDF
             filename = self._get_filename(recipe_data)
             filepath = os.path.join(self.output_dir, filename)
-            
-            # Create a PDF document
-            doc = SimpleDocTemplate(
-                filepath,
-                pagesize=A4,
-                rightMargin=30,
-                leftMargin=30,
-                topMargin=30,
-                bottomMargin=30
-            )
-            
-            # Content elements
+            doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
             elements = []
-            
-            # Add title
+
+            # Include image if present
+            if image_path and os.path.exists(image_path):
+                try:
+                    img = RLImage(image_path, width=400, height=225)
+                    img.hAlign = 'CENTER'
+                    elements.append(img)
+                    elements.append(Spacer(1, 12))
+                except Exception as img_error:
+                    logger.warning(f"Failed to load image into PDF: {img_error}")
+
             title = recipe_data.get('title', 'Untitled Recipe')
             elements.append(Paragraph(title, self.styles['RecipeTitle']))
             elements.append(Spacer(1, 12))
-            
-            # Add description if available
+
             description = recipe_data.get('description')
             if description:
                 elements.append(Paragraph(description, self.styles['Normal']))
                 elements.append(Spacer(1, 12))
-            
-            # Add recipe info (prep time, cook time, etc.)
+
             info_elements = self._create_recipe_info(recipe_data, doc.width)
             if info_elements:
                 elements.extend(info_elements)
                 elements.append(Spacer(1, 12))
-            
-            # Add ingredients section
+
             elements.append(Paragraph('Ingredients', self.styles['SectionTitle']))
             elements.append(Spacer(1, 6))
-            
             ingredients = recipe_data.get('ingredients', [])
             if ingredients:
                 ingredient_elements = self._create_ingredients_list(ingredients)
                 elements.extend(ingredient_elements)
             else:
                 elements.append(Paragraph('No ingredients listed', self.styles['Normal']))
-            
+
             elements.append(Spacer(1, 12))
-            
-            # Add instructions section
             elements.append(Paragraph('Instructions', self.styles['SectionTitle']))
             elements.append(Spacer(1, 6))
-            
             instructions = recipe_data.get('instructions', [])
             if instructions:
                 instruction_elements = self._create_instructions_list(instructions)
                 elements.extend(instruction_elements)
             else:
                 elements.append(Paragraph('No instructions listed', self.styles['Normal']))
-            
+
             elements.append(Spacer(1, 20))
-            
-            # Add footer
             footer_elements = self._create_footer(recipe_data)
             elements.extend(footer_elements)
-            
-            # Build the PDF
+
             doc.build(elements)
-            
             logger.info(f"PDF generated successfully: {filepath}")
             return filepath
-            
         except Exception as e:
             logger.error(f"Failed to generate PDF: {str(e)}")
             return None

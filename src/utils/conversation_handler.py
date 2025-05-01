@@ -11,8 +11,8 @@ import time
 import traceback
 from typing import Dict, Tuple, Optional
 
-from src.agents.instagram_monitor import InstagramMonitor
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.instagram_monitor import InstagramMonitor
+from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from src.agents.delivery_agent import DeliveryAgent
 from src.utils.message_templates import (

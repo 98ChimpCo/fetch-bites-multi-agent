@@ -1,6 +1,6 @@
 # test_dm_adapter.py
 
-from src.utils.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
+from archive.instagram_message_adapter_vision_fixed_v2 import InstagramMessageAdapterVision
 import os
 from dotenv import load_dotenv
 

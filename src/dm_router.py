@@ -1,6 +1,6 @@
 import logging
 from src.utils.claude_vision_assistant import ClaudeVisionAssistant
-from src.agents.recipe_extractor import RecipeExtractor
+from archive.recipe_extractor import RecipeExtractor
 from src.utils.pdf_utils import generate_pdf_and_return_path
 from src.utils.email_simulator import mock_send_email
 from src.workflows.recipe_from_post import process_post_url
