@@ -17,6 +17,35 @@ from email.message import EmailMessage
 from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from PIL import Image
+from PIL import ImageDraw
+# -----------------------------------------------------------
+# Utility: Verify shared post preview element with screenshot and bounding box
+# -----------------------------------------------------------
+def verify_shared_post_preview_element(driver):
+    """
+    Verifies if the shared recipe preview element is reliably returned using XPath.
+    Logs presence, rect, and captures a screenshot with bounding box overlay.
+    """
+    try:
+        logger.info("Verifying preview element using XPath...")
+        xpath = '(//XCUIElementTypeCell[@name="ig-direct-portrait-xma-message-bubble-view"])[1]/XCUIElementTypeOther'
+        element = driver.find_element("xpath", xpath)
+        rect = element.rect
+        logger.info(f"Found preview element with rect: {rect}")
+
+        # Capture screenshot and draw bounding box
+        os.makedirs("verification", exist_ok=True)
+        screenshot_path = "verification/verification_screenshot.png"
+        driver.get_screenshot_as_file(screenshot_path)
+        img = Image.open(screenshot_path)
+        draw = ImageDraw.Draw(img)
+        box = [rect['x'], rect['y'], rect['x'] + rect['width'], rect['y'] + rect['height']]
+        draw.rectangle(box, outline="red", width=5)
+        boxed_path = "verification/preview_box_overlay.png"
+        img.save(boxed_path)
+        logger.info(f"Saved screenshot with bounding box overlay to: {boxed_path}")
+    except Exception as e:
+        logger.error(f"Failed to verify preview element: {e}")
 from analytics_logger_sheets import log_usage_event
 
 # Set up logging - reduced verbosity
@@ -70,27 +99,55 @@ def is_mostly_black(image, threshold=15, percentage=0.9):
     return (black_pixel_count / total_pixels) >= percentage
 
 # -----------------------------------------------------------
-# Utility: Extract image from shared post (fallback = screenshot)
+# Utility: Extract image from shared post using dynamic preview element rect
 # -----------------------------------------------------------
 def extract_post_image(driver, user_id):
     try:
-        # Screenshot-based fixed crop: run first before any messages shift the screen layout
+        # Take full screenshot before any messages shift layout
         os.makedirs("images", exist_ok=True)
         full_path = f"images/full_screenshot_{user_id}.png"
         driver.get_screenshot_as_file(full_path)
-        from PIL import Image
         img = Image.open(full_path)
-        left = 120
-        top = 1016
-        right = left + 510
-        bottom = top + 912
-        cropped = img.crop((left, top, right, bottom))
+
+        # Dynamically search for all matching preview elements by name attribute
+        elements = driver.find_elements("xpath", "//XCUIElementTypeCell")
+        preview_candidates = []
+        for el in elements:
+            name_attr = el.get_attribute("name") or ""
+            if "ig-direct-portrait-xma-message-bubble-view" in name_attr:
+                rect = el.rect
+                if rect and "y" in rect:
+                    preview_candidates.append((rect["y"], el))
+
+        if not preview_candidates:
+            logger.warning("No preview element found with expected name")
+            return None
+
+        # Select the element with the largest y value (lowest on the screen)
+        preview_candidates.sort(reverse=True)
+        preview_element = preview_candidates[0][1]
+
+        # --- Determine screen scale factor using known iPhone resolution logic ---
+        scale_factor = 3.0  # Hardcoded for iPhone 12 Pro Max @3x
+        logger.info(f"Using fixed screen scale factor: {scale_factor:.2f}")
+
+        # Clamp to safe bounds and scale to pixel values
+        x = int(rect["x"] * scale_factor)
+        y = int(max(0, rect["y"]) * scale_factor)
+        width = int(rect["width"] * scale_factor)
+        height = int(rect["height"] * scale_factor)
+
+        # Debug log for screenshot and element rect
+        logger.info(f"Screenshot taken at {full_path}, preview element rect: {rect}")
+
+        # Crop and save using scaled coordinates
+        cropped = img.crop((x, y, x + width, y + height))
         cropped_path = f"images/post_image_{user_id}.png"
         cropped.save(cropped_path)
-        logger.info(f"Saved fallback hardcoded post image for {user_id}")
+        logger.info(f"Saved cropped post image for {user_id}")
         return cropped_path
     except Exception as e:
-        logger.warning(f"Image scraping failed: {e}")
+        logger.warning(f"Dynamic image scraping failed: {e}")
         return None
     
 # -----------------------------------------------------------
@@ -493,6 +550,7 @@ def process_unread_threads(driver, user_memory):
                 logger.error("Failed to enter conversation thread. Returning to inbox...")
                 ensure_in_dm_list(driver)
                 continue
+            verify_shared_post_preview_element(driver)
             
             # --- Process thread content ---
             user_record = user_memory.get(user_id, {})
