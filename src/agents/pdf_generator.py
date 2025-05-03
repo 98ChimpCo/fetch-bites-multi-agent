@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from io import BytesIO
 from PIL import Image
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import LETTER
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle
@@ -26,7 +26,7 @@ class PDFGenerator:
         os.makedirs(output_dir, exist_ok=True)
         self.accent_color = colors.HexColor('#EB5757')
         self.text_color = colors.HexColor('#333333')
-        self.page_width = A4[0]
+        self.page_width = LETTER[0]
         self.styles = getSampleStyleSheet()
         self.styles.add(ParagraphStyle(name='RecipeTitle', fontName='Helvetica-Bold', fontSize=18, alignment=1, textColor=self.accent_color, spaceAfter=12))
         self.styles.add(ParagraphStyle(name='SectionTitle', fontName='Helvetica-Bold', fontSize=14, textColor=self.accent_color, spaceAfter=6))
@@ -39,13 +39,19 @@ class PDFGenerator:
             logger.info(f"Generating PDF for recipe: {recipe_data.get('title', 'Untitled Recipe')}")
             filename = self._get_filename(recipe_data)
             filepath = os.path.join(self.output_dir, filename)
-            doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+            doc = SimpleDocTemplate(filepath, pagesize=LETTER, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
             elements = []
 
             # Include image if present
             if image_path and os.path.exists(image_path):
                 try:
-                    img = RLImage(image_path, width=400, height=225)
+                    from PIL import Image as PILImage
+                    with PILImage.open(image_path) as pil_img:
+                        width, height = pil_img.size
+                    max_width = doc.width
+                    max_height = doc.height * 0.4  # Allow image to use up to 40% of page height
+                    scale_factor = min(max_width / width, max_height / height, 1.0)
+                    img = RLImage(image_path, width=width * scale_factor, height=height * scale_factor)
                     img.hAlign = 'CENTER'
                     elements.append(img)
                     elements.append(Spacer(1, 12))

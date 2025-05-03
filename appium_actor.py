@@ -60,21 +60,35 @@ def get_most_recent_user_message(driver):
         return None
 
 # -----------------------------------------------------------
+# Utility: Check if image is mostly black
+# -----------------------------------------------------------
+def is_mostly_black(image, threshold=15, percentage=0.9):
+    grayscale = image.convert("L")
+    histogram = grayscale.histogram()
+    black_pixel_count = sum(histogram[:threshold])
+    total_pixels = image.width * image.height
+    return (black_pixel_count / total_pixels) >= percentage
+
+# -----------------------------------------------------------
 # Utility: Extract image from shared post (fallback = screenshot)
 # -----------------------------------------------------------
 def extract_post_image(driver, user_id):
     try:
-        images = driver.find_elements("class name", "XCUIElementTypeImage")
-        if images:
-            image_elem = images[0]
-            screenshot_path = f"images/post_image_{user_id}.png"
-            os.makedirs("images", exist_ok=True)
-            driver.get_screenshot_as_file(screenshot_path)
-            logger.info(f"Saved post image screenshot for {user_id}")
-            return screenshot_path
-        else:
-            logger.info("No image found in post. Skipping image capture.")
-            return None
+        # Screenshot-based fixed crop: run first before any messages shift the screen layout
+        os.makedirs("images", exist_ok=True)
+        full_path = f"images/full_screenshot_{user_id}.png"
+        driver.get_screenshot_as_file(full_path)
+        from PIL import Image
+        img = Image.open(full_path)
+        left = 120
+        top = 1016
+        right = left + 510
+        bottom = top + 912
+        cropped = img.crop((left, top, right, bottom))
+        cropped_path = f"images/post_image_{user_id}.png"
+        cropped.save(cropped_path)
+        logger.info(f"Saved fallback hardcoded post image for {user_id}")
+        return cropped_path
     except Exception as e:
         logger.warning(f"Image scraping failed: {e}")
         return None
@@ -251,8 +265,7 @@ def extract_handle_from_thread(thread):
     For example, if the label is "chef.julia. Profile picture", it removes the trailing text.
     """
     try:
-        avatar = thread.find_element("-ios class chain", 
-                                     "**/XCUIElementTypeOther[`name == \"avatar-front-image-view\"`]")
+        avatar = thread.find_element("-ios predicate string", "name == 'inbox_row_front_avatar' AND label CONTAINS 'Profile picture'")
         label_value = avatar.get_attribute("label")
         if label_value:
             handle = label_value.replace(". Profile picture", "").strip()
@@ -366,9 +379,17 @@ def navigate_back_to_dm_list(driver):
                 logger.info("Used first navigation bar button to return to inbox")
                 return True
             logger.error("All back button strategies failed")
+            # Insert minimal_verify_dm_inbox fallback check
+            if minimal_verify_dm_inbox(driver, timeout=3):
+                logger.info("Inbox already detected despite back button failure.")
+                return True
             return False
         except Exception as alt_back_error:
             logger.error(f"Alternative back button strategies failed: {str(alt_back_error)}")
+            # Insert minimal_verify_dm_inbox fallback check
+            if minimal_verify_dm_inbox(driver, timeout=3):
+                logger.info("Inbox already detected despite back button failure.")
+                return True
             return False
 
 def ensure_in_dm_list(driver):
@@ -456,13 +477,17 @@ def process_unread_threads(driver, user_memory):
             user_id = extract_handle_from_thread(thread)
             if not user_id or user_id.lower() in ["audio-call", "video-call", "call", "direct"]:
                 logger.warning("Could not extract proper user handle; using fallback ID")
-                user_id = f"user_{int(time.time())}"
+                timestamp_id = f"user_{int(time.time())}"
+                user_id = user_id or timestamp_id
             logger.info(f"Identified user: {user_id}")
             
             if not click_thread_with_fallbacks(driver, thread):
                 logger.error(f"Failed to click thread {i+1} after multiple attempts")
                 continue
-            
+
+            # --- Capture preview image as soon as we enter the DM thread ---
+            preview_image_path = extract_post_image(driver, user_id)
+
             sleep(2)  # Wait for thread to load
             if not is_in_conversation_thread(driver):
                 logger.error("Failed to enter conversation thread. Returning to inbox...")
@@ -481,9 +506,16 @@ def process_unread_threads(driver, user_memory):
                         send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
                         send_button.click()
                         sleep(2)
+                        # After sending onboarding message, return to DM list
+                        sleep(2)
+                        navigate_back_to_dm_list(driver)
                     except Exception as msg_error:
                         logger.error(f"Error sending onboarding message: {msg_error}")
-                user_memory[user_id] = {"state": "onboarded", "last_updated": str(datetime.datetime.now())}
+                # Defensive: reload user_record to preserve existing keys before updating state
+                user_record = user_memory.get(user_id, {})
+                user_record["state"] = "onboarded"
+                user_record["last_updated"] = str(datetime.datetime.now())
+                user_memory[user_id] = user_record
                 save_user_memory(user_memory)
                 logger.info(f"User {user_id} has been onboarded")
             else:
@@ -519,6 +551,17 @@ def process_unread_threads(driver, user_memory):
                     y = rect['y'] + rect['height'] // 2
                     driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
                     logger.info("Tapped on post with mobile: tap command")
+                    # Insert prepping message after tapping on post
+                    try:
+                        text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                        prepping_message = "Hey, I see you’ve shared a recipe post. Hang tight — I’m turning it into a recipe card for you!"
+                        text_input.send_keys(prepping_message)
+                        sleep(1)
+                        send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                        send_button.click()
+                        sleep(2)
+                    except Exception as prep_msg_error:
+                        logger.error(f"Failed to send processing message: {prep_msg_error}")
                 except Exception as tap_error:
                     logger.error(f"Error with tap action: {tap_error}")
                     try:
@@ -650,8 +693,7 @@ def process_unread_threads(driver, user_memory):
                     
                     logger.info("Generating PDF from extracted recipe details...")
                     pdf_gen = PDFGenerator(output_dir="./pdfs")
-                    image_path = extract_post_image(driver, user_id)
-                    pdf_path = pdf_gen.generate_pdf(recipe_details, image_path=image_path)
+                    pdf_path = pdf_gen.generate_pdf(recipe_details, image_path=preview_image_path)
                     logger.info(f"PDF generated at: {pdf_path}")
                     log_usage_event(
                         user_id=user_id,
@@ -671,8 +713,13 @@ def process_unread_threads(driver, user_memory):
                             text_input.send_keys(prompt_message)
                             sleep(1)
                             send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                            send_button.click()
-                            sleep(2)
+                            try:
+                                send_button.click()
+                                sleep(2)
+                            except Exception as confirm_err:
+                                logger.error(f"Failed to send confirmation/fallback: {confirm_err}")
+                            # Only navigate back after message sent and no exception
+                            navigate_back_to_dm_list(driver)
                             # For demonstration, we ask for the email on the console.
                             # In production, you would wait for the user to reply in the DM.
                             user_email = input("Enter email address received from DM reply: ").strip()
@@ -694,8 +741,13 @@ def process_unread_threads(driver, user_memory):
                                 text_input.send_keys(confirmation_message)
                                 sleep(1)
                                 send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                                send_button.click()
-                                sleep(2)
+                                try:
+                                    send_button.click()
+                                    sleep(2)
+                                except Exception as confirm_err:
+                                    logger.error(f"Failed to send confirmation/fallback: {confirm_err}")
+                                # Only navigate back after message sent and no exception
+                                navigate_back_to_dm_list(driver)
                             except Exception as send_err:
                                 logger.error(f"Error sending confirmation message: {send_err}")
                             user_record["state"] = "completed"
@@ -708,8 +760,13 @@ def process_unread_threads(driver, user_memory):
                                 text_input.send_keys(fallback_message)
                                 sleep(1)
                                 send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                                send_button.click()
-                                sleep(2)
+                                try:
+                                    send_button.click()
+                                    sleep(2)
+                                except Exception as confirm_err:
+                                    logger.error(f"Failed to send confirmation/fallback: {confirm_err}")
+                                # Only navigate back after message sent and no exception
+                                navigate_back_to_dm_list(driver)
                             except Exception as fallback_err:
                                 logger.error(f"Error sending fallback message: {fallback_err}")
                     except Exception as messaging_error:

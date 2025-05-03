@@ -33,12 +33,15 @@ def log_usage_event(user_id, url, cuisine=None, meal_format=None):
 
     # Also send to Google Sheet
     try:
+        print(f"[Analytics] Attempting to use Google creds from: {GOOGLE_CREDS_PATH}")
+        print(f"[Analytics] Using Google Sheet: {GOOGLE_SHEET_NAME}")
         creds = Credentials.from_service_account_file(
             GOOGLE_CREDS_PATH,
             scopes=["https://www.googleapis.com/auth/spreadsheets"]
         )
         gc = gspread.authorize(creds)
         sheet = gc.open(GOOGLE_SHEET_NAME).sheet1
+        print(f"[Analytics] Successfully opened sheet. Appending row...")
         sheet.append_row([
             event["timestamp"],
             event["user_id"],
@@ -46,5 +49,6 @@ def log_usage_event(user_id, url, cuisine=None, meal_format=None):
             event["cuisine"],
             event["meal_format"]
         ])
+        print(f"[Analytics] Row appended successfully.")
     except Exception as e:
         print(f"[Analytics] Google Sheets logging failed: {e}")

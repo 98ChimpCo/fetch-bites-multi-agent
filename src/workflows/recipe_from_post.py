@@ -2,11 +2,13 @@ import os
 import time
 import logging
 
+from classify_cuisine import classify_cuisine_and_format
 from archive.instagram_monitor import InstagramMonitor
 from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from src.utils.pdf_utils import generate_pdf_and_return_path
 from src.utils.recipe_utils import sanitize_recipe_data, extra_sanitize_recipe_data
+from src.utils.pdf_cache import load_pdf_cache, save_pdf_cache
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,12 @@ def process_post_url(post_url: str) -> bool:
     Processes a single Instagram post URL to extract recipe content and generate a PDF.
     Returns True if successful, False otherwise.
     """
+    pdf_cache = load_pdf_cache()
+    if post_url in pdf_cache:
+        logger.info(f"Using cached PDF for: {post_url}")
+        logger.info(f"PDF path: {pdf_cache[post_url]}")
+        return True
+
     logger.info(f"Processing post: {post_url}")
     monitor = InstagramMonitor()
     recipe_agent = RecipeExtractor()
@@ -69,6 +77,9 @@ def process_post_url(post_url: str) -> bool:
     logger.info(f"Recipe extracted: {recipe_data.get('title', 'Untitled')}")
 
     sanitized = sanitize_recipe_data(recipe_data)
+    classification = classify_cuisine_and_format(recipe_data.get("title", "") + "\n" + recipe_data.get("instructions", ""))
+    sanitized["cuisine"] = classification["cuisine"]
+    sanitized["meal_format"] = classification["meal_format"]
     pdf_path = generate_pdf_and_return_path(sanitized)
 
     if not pdf_path:
@@ -81,4 +92,6 @@ def process_post_url(post_url: str) -> bool:
         return False
 
     logger.info(f"Recipe PDF created at: {pdf_path}")
+    pdf_cache[post_url] = pdf_path
+    save_pdf_cache(pdf_cache)
     return True
