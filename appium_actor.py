@@ -765,17 +765,7 @@ def process_unread_threads(driver, user_memory):
                             user_email = user_record.get("email")
                             if user_email:
                                 send_pdf_email(user_email, cached_pdf_path)
-                        try:
-                            text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                            confirmation_message = "Your recipe PDF has been emailed to you!"
-                            text_input.send_keys(confirmation_message)
-                            sleep(1)
-                            send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                            send_button.click()
-                            sleep(2)
-                        except Exception as send_err:
-                            logger.error(f"Error sending confirmation message: {send_err}")
-                        # --- Always exit post view after sending cached PDF and confirmation ---
+                        # --- Always exit post view after sending cached PDF ---
                         logger.info("Exiting post view after sending cached PDF...")
                         try:
                             reel_back_button = driver.find_element(
@@ -794,6 +784,35 @@ def process_unread_threads(driver, user_memory):
                             except Exception as fallback_swipe_err:
                                 logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
 
+                        # After exiting post view, ensure we're back in DM thread and send confirmation message
+                        # This avoids sending reply-style messages inside the expanded post
+                        attempt = 0
+                        max_attempts = 3
+                        while attempt < max_attempts:
+                            if is_in_conversation_thread(driver):
+                                try:
+                                    text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                                    confirmation_message = "Your recipe PDF has been emailed to you!"
+                                    text_input.send_keys(confirmation_message)
+                                    sleep(1)
+                                    send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                                    send_button.click()
+                                    sleep(2)
+                                except Exception as send_err:
+                                    logger.error(f"Error sending confirmation message: {send_err}")
+                                break
+                            else:
+                                # Try to swipe or wait a bit, then retry
+                                attempt += 1
+                                if attempt < max_attempts:
+                                    logger.warning(f"Still stuck after attempt {attempt}, retrying swipe to exit post view...")
+                                    try:
+                                        driver.execute_script('mobile: swipe', {'direction': 'right'})
+                                        sleep(2)
+                                    except Exception as e_swipe:
+                                        logger.error(f"Swipe to exit post view failed: {e_swipe}")
+                                else:
+                                    logger.warning("Max attempts reached, could not confirm in-thread state to send confirmation message.")
                         # Ensure we return to DM thread list after exiting post view
                         if is_in_conversation_thread(driver):
                             logger.info("Still inside DM thread — navigating back to DM list...")

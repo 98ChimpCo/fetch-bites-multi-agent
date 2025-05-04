@@ -3,7 +3,7 @@
 ## Overview
 **Project Name:** Fetch Bites Multi-Agent System  
 **Start Date:** March 10, 2025  
-**Current app Version:** v0.7.0  
+**Current app Version:** v0.7.1  
 **Last Updated:** May 04, 2025
 ---
 ## ✅ Current Milestone: URL-Based Recipe Extraction Enhancement
@@ -64,6 +64,13 @@ The recipe extraction pipeline now follows this sequence:
 3. Fall back to caption-based extraction if URL extraction fails
 4. Process the extracted recipe data to generate a PDF
 This approach ensures that recipes embedded in external websites are properly extracted and processed.
+
+### 3. Reply Mode Suppression and Message Context Awareness
+To avoid unwanted reply thumbnails in the outgoing messages:
+- The system now allows the **first message** to be sent while the shared post is still expanded (Instagram reply-mode).
+- The **confirmation message** (e.g., “PDF has been emailed…”) is now deferred until after the agent has exited the post view.
+- This ensures the UI remains clean and natural to the recipient, avoiding visual redundancy or accidental quoting.
+
 ## 🔨 System Improvements
 | Area | Improvements |
 |------|--------------|
@@ -71,12 +78,16 @@ This approach ensures that recipes embedded in external websites are properly ex
 | Recipe Processing | Prioritized URL-based extraction for better recipe detail capture |
 | Error Handling | Added more detailed logging for URL extraction attempts |
 | Maintainability | Avoided hardcoded URLs for better adaptability to different recipes |
+| DM Message UX | Split outgoing messages into reply-mode and clean bubbles based on screen context |
+
 ## 🛣 Next Up
 - [ ] Enhance recipe URL detection with better context matching
 - [ ] Implement caching for previously processed recipe URLs
 - [ ] Add support for parsing more complex recipe websites
 - [ ] Improve extraction robustness for non-standard recipe formats
 - [ ] Integrate analytics to track extraction success rates by source
+- [ ] Add tests to verify reply context suppression and thread state transitions
+
 ## 🧪 Testing Insights
 - ✅ Successfully extracts recipes from hungryhappens.net and similar recipe websites
 - ✅ Properly handles posts with multiple URLs, prioritizing recipe-specific URLs
@@ -104,4 +115,4 @@ While the system has been improved, some limitations remain:
 3. **Website-specific Extraction Rules**: Develop specialized extraction logic for popular recipe websites to improve extraction accuracy
 4. **Performance Optimization**: Implement parallel processing for URL extraction to reduce processing time
 
-_Last Updated: May 02, 2025 — Bible Version 0.0.27_
+_Last Updated: May 04, 2025 — Bible Version 0.0.27_
