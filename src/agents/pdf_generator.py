@@ -3,13 +3,14 @@ import os
 import logging
 import time
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from io import BytesIO
 from PIL import Image
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle
+from src.agents.pdf_cache import PDFCache
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -33,9 +34,20 @@ class PDFGenerator:
         self.styles.add(ParagraphStyle(name='IngredientItem', fontName='Helvetica', fontSize=10, leftIndent=20, firstLineIndent=-15, spaceAfter=3))
         self.styles.add(ParagraphStyle(name='InstructionItem', fontName='Helvetica', fontSize=10, leftIndent=20, firstLineIndent=-15, spaceAfter=6))
         self.styles.add(ParagraphStyle(name='Footer', fontName='Helvetica-Oblique', fontSize=8, textColor=colors.gray, alignment=1))
+        self.cache = PDFCache()
 
-    def generate_pdf(self, recipe_data: Dict, image_path: Optional[str] = None) -> str:
+    def generate_pdf(self, recipe_data: Dict, image_path: Optional[str] = None, post_url: Optional[str] = None) -> Tuple[str, bool]:
         try:
+            layout_version = "v1"  # Update when layout template changes
+            creator = recipe_data.get("source", {}).get("creator", "")
+            caption = recipe_data.get("source", {}).get("caption", "")
+            from src.agents.pdf_cache import get_post_hash
+            post_hash = get_post_hash(caption, creator, layout_version)
+            cached_path = self.cache.get(post_hash)
+            if cached_path and os.path.exists(cached_path):
+                logger.info(f"Using cached PDF for post_hash {post_hash}")
+                return cached_path, True
+
             logger.info(f"Generating PDF for recipe: {recipe_data.get('title', 'Untitled Recipe')}")
             filename = self._get_filename(recipe_data)
             filepath = os.path.join(self.output_dir, filename)
@@ -96,11 +108,13 @@ class PDFGenerator:
             elements.extend(footer_elements)
 
             doc.build(elements)
+            self.cache.set(post_hash, creator, caption, recipe_data, filepath)
+            logger.info(f"PDF cache set for post_hash {post_hash}")
             logger.info(f"PDF generated successfully: {filepath}")
-            return filepath
+            return filepath, False
         except Exception as e:
             logger.error(f"Failed to generate PDF: {str(e)}")
-            return None
+            return None, False
     
     def _create_recipe_info(self, recipe_data, page_width):
         """

@@ -1,3 +1,4 @@
+from src.agents.pdf_cache import PDFCache, get_post_hash
 import os
 import json
 import time
@@ -18,9 +19,13 @@ from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from PIL import Image
 from PIL import ImageDraw
+
 # -----------------------------------------------------------
+# Global set to keep track of processed post hashes
+post_hash_set = set()
 # Utility: Verify shared post preview element with screenshot and bounding box
 # -----------------------------------------------------------
+
 def verify_shared_post_preview_element(driver):
     """
     Verifies if the shared recipe preview element is reliably returned using XPath.
@@ -126,6 +131,7 @@ def extract_post_image(driver, user_id):
         # Select the element with the largest y value (lowest on the screen)
         preview_candidates.sort(reverse=True)
         preview_element = preview_candidates[0][1]
+        rect = preview_element.rect
 
         # --- Determine screen scale factor using known iPhone resolution logic ---
         scale_factor = 3.0  # Hardcoded for iPhone 12 Pro Max @3x
@@ -230,6 +236,7 @@ def minimal_verify_dm_inbox(driver, timeout=10):
         return True
     except Exception as e:
         logger.warning(f"DM inbox indicator not found within {timeout} seconds: {e}")
+        take_screenshot(driver, "dm_inbox_failure")
         return False
 
 def strict_verify_dm_inbox(driver, timeout=10):
@@ -440,6 +447,18 @@ def navigate_back_to_dm_list(driver):
             if minimal_verify_dm_inbox(driver, timeout=3):
                 logger.info("Inbox already detected despite back button failure.")
                 return True
+            # --- Deep-link fallback ---
+            logger.info("Attempting deep-link fallback to DM inbox...")
+            try:
+                driver.get("instagram://direct/inbox")
+                sleep(3)
+                if minimal_verify_dm_inbox(driver, timeout=3):
+                    logger.info("Deep-link fallback succeeded.")
+                    return True
+                else:
+                    logger.warning("Deep-link fallback failed to verify inbox.")
+            except Exception as deep_link_err:
+                logger.error(f"Deep-link attempt failed: {deep_link_err}")
             return False
         except Exception as alt_back_error:
             logger.error(f"Alternative back button strategies failed: {str(alt_back_error)}")
@@ -447,6 +466,18 @@ def navigate_back_to_dm_list(driver):
             if minimal_verify_dm_inbox(driver, timeout=3):
                 logger.info("Inbox already detected despite back button failure.")
                 return True
+            # --- Deep-link fallback ---
+            logger.info("Attempting deep-link fallback to DM inbox...")
+            try:
+                driver.get("instagram://direct/inbox")
+                sleep(3)
+                if minimal_verify_dm_inbox(driver, timeout=3):
+                    logger.info("Deep-link fallback succeeded.")
+                    return True
+                else:
+                    logger.warning("Deep-link fallback failed to verify inbox.")
+            except Exception as deep_link_err:
+                logger.error(f"Deep-link attempt failed: {deep_link_err}")
             return False
 
 def ensure_in_dm_list(driver):
@@ -528,6 +559,7 @@ def process_unread_threads(driver, user_memory):
         logger.info("No unread messages found. Will scan again in 5 seconds...")
         return
     
+    pdf_cache = PDFCache()
     for i, thread in enumerate(unread_threads):
         logger.info(f"Processing thread {i+1} of {len(unread_threads)}")
         try:
@@ -564,9 +596,6 @@ def process_unread_threads(driver, user_memory):
                         send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
                         send_button.click()
                         sleep(2)
-                        # After sending onboarding message, return to DM list
-                        sleep(2)
-                        navigate_back_to_dm_list(driver)
                     except Exception as msg_error:
                         logger.error(f"Error sending onboarding message: {msg_error}")
                 # Defensive: reload user_record to preserve existing keys before updating state
@@ -576,6 +605,9 @@ def process_unread_threads(driver, user_memory):
                 user_memory[user_id] = user_record
                 save_user_memory(user_memory)
                 logger.info(f"User {user_id} has been onboarded")
+                # Return to DM list after onboarding
+                navigate_back_to_dm_list(driver)
+                continue
             else:
                 logger.info(f"User {user_id} is already onboarded")
             
@@ -612,7 +644,7 @@ def process_unread_threads(driver, user_memory):
                     # Insert prepping message after tapping on post
                     try:
                         text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                        prepping_message = "Hey, I see you’ve shared a recipe post. Hang tight — I’m turning it into a recipe card for you!"
+                        prepping_message = "Hey, I see you've shared a recipe post. Hang tight — I'm turning it into a recipe card for you!"
                         text_input.send_keys(prepping_message)
                         sleep(1)
                         send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -717,7 +749,37 @@ def process_unread_threads(driver, user_memory):
                 
                 if caption_text:
                     save_caption(caption_text, user_id)
+
+                    # --- Hash-based deduplication and PDF cache logic ---
+                    layout_version = "v1"
+                    post_hash = get_post_hash(caption_text, user_id, layout_version)
                     
+                    # Fixed exists() call - removed unnecessary layout_version parameter
+                    if pdf_cache.exists(post_hash):
+                        logger.info(f"Post hash {post_hash} already processed. Skipping extraction.")
+                        # Load from PDF cache using correct instance method
+                        cached_pdf_path = pdf_cache.load_pdf_path(post_hash)
+                        if cached_pdf_path:
+                            logger.info(f"Sending cached PDF: {cached_pdf_path}")
+                            user_record = user_memory.get(user_id, {})
+                            user_email = user_record.get("email")
+                            if user_email:
+                                send_pdf_email(user_email, cached_pdf_path)
+                            try:
+                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                                confirmation_message = "Your recipe PDF has been emailed to you!"
+                                text_input.send_keys(confirmation_message)
+                                sleep(1)
+                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                                send_button.click()
+                                sleep(2)
+                            except Exception as send_err:
+                                logger.error(f"Error sending confirmation message: {send_err}")
+                            navigate_back_to_dm_list(driver)
+                            continue
+                        else:
+                            logger.warning(f"No cached PDF found for {post_hash}, continuing with full extraction.")
+
                     logger.info("Exiting expanded post view after caption extraction...")
                     try:
                         reel_back_button = driver.find_element(
@@ -735,35 +797,65 @@ def process_unread_threads(driver, user_memory):
                             logger.info("Swipe fallback performed successfully.")
                         except Exception as fallback_swipe_err:
                             logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
-                    
+
                     logger.info("Proceeding with recipe extraction from caption...")
                     extractor = RecipeExtractor()
                     content = {
                         'caption': caption_text,
                         'urls': re.findall(r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', caption_text)
                     }
-                    recipe_details = extract_recipe_from_content(content, extractor)
-                    if not recipe_details:
-                        logger.error("Recipe extraction failed: No details extracted.")
-                        navigate_back_to_dm_list(driver)
-                        continue
-                    logger.info("Recipe extraction successful.")
                     
+                    # Only try to load cached recipe if it exists
+                    if pdf_cache.exists(post_hash):
+                        logger.info(f"Loaded recipe details from cache for hash {post_hash}")
+                        recipe_details = pdf_cache.load_recipe_details(post_hash)
+                    else:
+                        recipe_details = extract_recipe_from_content(content, extractor)
+                        if not recipe_details:
+                            logger.error("Recipe extraction failed: No details extracted.")
+                            navigate_back_to_dm_list(driver)
+                            continue
+                    
+                    logger.info("Recipe extraction successful.")
+
                     logger.info("Generating PDF from extracted recipe details...")
                     pdf_gen = PDFGenerator(output_dir="./pdfs")
-                    pdf_path = pdf_gen.generate_pdf(recipe_details, image_path=preview_image_path)
+                    
+                    # Handle the return value from generate_pdf correctly
+                    pdf_path_result = pdf_gen.generate_pdf(recipe_details, image_path=preview_image_path)
+                    
+                    # Check if result is a tuple (path, is_cached) or just a string path
+                    if isinstance(pdf_path_result, tuple):
+                        pdf_path, is_cached = pdf_path_result
+                    else:
+                        pdf_path = pdf_path_result
+                        is_cached = False
+                    
+                    # Immediately after generating the PDF, check validity
+                    if not isinstance(pdf_path, str) or not os.path.isfile(pdf_path):
+                        logger.error(f"PDF path is invalid: {pdf_path}")
+                        continue
+                    
                     logger.info(f"PDF generated at: {pdf_path}")
+                    
+                    # Store in cache if not already cached
+                    if not is_cached and not pdf_cache.exists(post_hash):
+                        pdf_cache.set(post_hash, user_id, caption_text, recipe_details, pdf_path)
+                        pdf_cache.save()
+                    
                     log_usage_event(
                         user_id=user_id,
                         url=content['urls'][0] if content['urls'] else "unknown",
                         cuisine=recipe_details.get("cuisine", "unknown"),
                         meal_format=recipe_details.get("meal_format", "unknown")
                     )
-                    
+
+                    # Add to processed post hash set after successful PDF generation and send
+                    post_hash_set.add(post_hash)
                     try:
                         user_record = user_memory.get(user_id, {})
                         user_email = user_record.get("email")
-                        
+
                         if not user_email:
                             logger.info("No email on record for this user. Prompting for email address...")
                             text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
@@ -788,7 +880,7 @@ def process_unread_threads(driver, user_memory):
                                 logger.info(f"User {user_id} email updated: {user_email}")
                             else:
                                 logger.warning("No email address provided. Skipping email sending.")
-                        
+
                         if user_email:
                             logger.info("Sending PDF to user's email...")
                             send_pdf_email(user_email, pdf_path)

@@ -1,0 +1,72 @@
+{
+  "1ce406d0f669631e32213a151071f1798409e3ce28d731254eb7d16390c676be": {
+    "user_id": "docteurzed",
+    "caption": "Steak Tacos with Avocado Salsa\u2026 easy, delicious and absolutely bursting with flavour. The tacos are loaded with juicy, marinated, cooked-to-perfection steak topped with a fresh, creamy, tangy and slightly spicy avocado salsa. I used flap steak here (highly underrated cut IMO) but you can sub skirt, flank or ribeye. The marinade is also amazing on chicken. For the salsa, if you like it spicy, add more jalape\u00f1o or serrano. If you want it mild, remove the seeds or just omit the chiles altogether. Serve on your favourite warmed tortillas, top with some fresh cilantro + onion and charred scallions on the side\n.\nComment the word \u201ctaco\u201d below to get the full recipe sent directly to your DMs. Or visit my blog www.cookprimalgourmet.com by clicking the link in my bio",
+    "recipe": {
+      "title": "Steak Tacos with Avocado Salsa",
+      "description": "Easy, delicious and absolutely bursting with flavour. The tacos are loaded with juicy, marinated, cooked-to-perfection steak topped with a fresh, creamy, tangy and slightly spicy avocado salsa.",
+      "ingredients": [
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "flap steak (can substitute skirt, flank or ribeye)"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "marinade ingredients (not specified)"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "avocado"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "jalape\u00f1o or serrano chiles (optional, to taste)"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "tortillas"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "fresh cilantro"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "onion"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "scallions (for charring)"
+        }
+      ],
+      "instructions": [
+        "Marinate the steak (flap, skirt, flank, or ribeye).",
+        "Cook the steak to desired doneness.",
+        "Prepare the avocado salsa by combining avocado with jalape\u00f1o or serrano chiles (adjust amount for desired spiciness).",
+        "Warm the tortillas.",
+        "Slice the cooked steak.",
+        "Assemble tacos with steak on tortillas.",
+        "Top with avocado salsa.",
+        "Garnish with fresh cilantro and onion.",
+        "Serve with charred scallions on the side."
+      ],
+      "prep_time": null,
+      "cook_time": null,
+      "total_time": null,
+      "servings": null,
+      "dietary_info": [],
+      "difficulty": "easy"
+    },
+    "pdf_path": "./pdfs/Steak_Tacos_with_Avocado_Salsa_1746382658.pdf",
+    "layout_version": "v1",
+    "cached_at": "2025-05-04T18:17:38.408155"
+  }
+}
