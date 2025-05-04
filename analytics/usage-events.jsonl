@@ -40,3 +40,16 @@
 {"timestamp": "2025-05-04T01:18:37.672980Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown"}
 {"timestamp": "2025-05-04T16:39:31.848545Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown"}
 {"timestamp": "2025-05-04T18:17:38.408523Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown"}
+{"timestamp": "2025-05-04T20:37:18.513269Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:38:23.536705Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:41:49.215956Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:48:13.215327Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:49:55.623493Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:52:44.357572Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:55:51.892188Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:58:42.157043Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T20:58:48.181638Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T21:02:04.895671Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T21:05:57.182372Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T21:15:46.762344Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
+{"timestamp": "2025-05-04T21:34:35.932106Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "cached", "cuisine": "cached", "meal_format": "cached", "tags": []}
