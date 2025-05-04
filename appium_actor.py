@@ -765,20 +765,42 @@ def process_unread_threads(driver, user_memory):
                             user_email = user_record.get("email")
                             if user_email:
                                 send_pdf_email(user_email, cached_pdf_path)
+                        try:
+                            text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                            confirmation_message = "Your recipe PDF has been emailed to you!"
+                            text_input.send_keys(confirmation_message)
+                            sleep(1)
+                            send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                            send_button.click()
+                            sleep(2)
+                        except Exception as send_err:
+                            logger.error(f"Error sending confirmation message: {send_err}")
+                        # --- Always exit post view after sending cached PDF and confirmation ---
+                        logger.info("Exiting post view after sending cached PDF...")
+                        try:
+                            reel_back_button = driver.find_element(
+                                "-ios class chain",
+                                "**/XCUIElementTypeButton[`name == \"back-button\" OR name == \"close-button\" OR label == \"Close\"`]"
+                            )
+                            reel_back_button.click()
+                            sleep(2)
+                            logger.info("Successfully exited post view.")
+                        except Exception as reel_back_err:
+                            logger.error(f"Error exiting expanded post view: {reel_back_err}")
                             try:
-                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                confirmation_message = "Your recipe PDF has been emailed to you!"
-                                text_input.send_keys(confirmation_message)
-                                sleep(1)
-                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                                send_button.click()
+                                driver.execute_script('mobile: swipe', {'direction': 'right'})
                                 sleep(2)
-                            except Exception as send_err:
-                                logger.error(f"Error sending confirmation message: {send_err}")
+                                logger.info("Swipe fallback performed successfully.")
+                            except Exception as fallback_swipe_err:
+                                logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
+
+                        # Ensure we return to DM thread list after exiting post view
+                        if is_in_conversation_thread(driver):
+                            logger.info("Still inside DM thread — navigating back to DM list...")
                             navigate_back_to_dm_list(driver)
-                            continue
                         else:
-                            logger.warning(f"No cached PDF found for {post_hash}, continuing with full extraction.")
+                            logger.info("Already back in DM inbox.")
+                        continue
 
                     logger.info("Exiting expanded post view after caption extraction...")
                     try:
