@@ -991,6 +991,71 @@ def process_unread_threads(driver, user_memory):
     logger.info("Finished processing current unread threads.")
 
 # -----------------------------------------------------------
+# DB Code
+# -----------------------------------------------------------
+
+from sqlalchemy import create_engine, Column, String, Integer, DateTime, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from datetime import datetime
+import os
+
+DB_PATH = os.getenv("SQLITE_DB_PATH", "fetch_bites.sqlite")
+engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+Base = declarative_base()
+Session = sessionmaker(bind=engine)
+
+class User(Base):
+    __tablename__ = 'users'
+    id = Column(Integer, primary_key=True)
+    handle = Column(String, unique=True, nullable=False)
+    email = Column(String)
+    onboarded_at = Column(DateTime, default=datetime.utcnow)
+
+class Message(Base):
+    __tablename__ = 'messages'
+    id = Column(Integer, primary_key=True)
+    user_handle = Column(String)
+    content = Column(Text)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    type = Column(String)  # e.g., 'text', 'recipe', 'link'
+
+class Recipe(Base):
+    __tablename__ = 'recipes'
+    id = Column(Integer, primary_key=True)
+    user_handle = Column(String)
+    recipe_title = Column(String)
+    pdf_path = Column(String)
+    post_hash = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+def init_db():
+    Base.metadata.create_all(engine)
+
+def get_or_create_user(handle, email=None):
+    session = Session()
+    user = session.query(User).filter_by(handle=handle).first()
+    if not user:
+        user = User(handle=handle, email=email)
+        session.add(user)
+        session.commit()
+    return user
+
+def log_message(handle, content, msg_type="text"):
+    session = Session()
+    msg = Message(user_handle=handle, content=content, type=msg_type)
+    session.add(msg)
+    session.commit()
+    return msg
+
+def record_recipe(handle, title, path, post_hash):
+    session = Session()
+    recipe = Recipe(user_handle=handle, recipe_title=title, pdf_path=path, post_hash=post_hash)
+    session.add(recipe)
+    session.commit()
+    return recipe
+
+# -----------------------------------------------------------
 # Main Loop
 # -----------------------------------------------------------
 logger.info("Starting Instagram Recipe Extractor")
