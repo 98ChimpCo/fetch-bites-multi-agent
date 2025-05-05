@@ -68,5 +68,280 @@
     "pdf_path": "./pdfs/Steak_Tacos_with_Avocado_Salsa_1746382658.pdf",
     "layout_version": "v1",
     "cached_at": "2025-05-04T18:17:38.408155"
+  },
+  "fe2be910d78a4609c9f4b99684a2da30c515da5218de3cb960c1523b9cd0650e": {
+    "user_id": "docteurzed",
+    "caption": "Chicken taco bowl recipes \u2b07\ufe0f\n\nMade this for dinner & meal preps last week and it was \ud83e\udd0c\ud83c\udffc\n\nCilantro lime rice\ud83c\udf5a\n1 C long-grain jasmine rice, rinsed and drained\n1\u00bd cups water\n1 tsp garlic, minced (or could use garlic powder)\n1 tsp lime zest\n1\u00bd Tbsp fresh lime juice\n\u00bd C finely chopped fresh cilantro\n1 tsp chicken bouillon\n\nAdd all ingredients to a pot or rice cooker & cook rice as normal. Fluff & enjoy! \n\nChicken marinade\ud83c\udf57\n*for 1-1.5 lbs chicken thighs\n4 Tbsp orange juice\n1\u00bd Tbsp fresh lime juice\n3 cloves garlic, minced\n1\u00bd Tbsp chili powder\n2 tsp dried oregano\n2 tsp paprika\n1 teaspoon salt\n1/2 tsp pepper\n\nMarinate boneless, skinless chicken thighs for 1 hour, up to overnight. Grill or smoke the chicken until cooked through. I love throwing them on the @traegergrills because they stay so moist! Let rest and then chop into bite sized pieces. \n\nCilantro lime crema\ud83c\udf3f\n1 C full fat greek yogurt\n2 Tbsp mayo\n1 Tbsp fresh lime juice\n\u00bc  tsp garlic powder\n\u00bd tsp salt\n\u00bc tsp onion powder\n\u00bd C fresh cilantro\nOptional: 1/4 jalape\u00f1o \n\nBlend, thin with milk or water as needed to reach your desired consistency. \n\nThe rest:\n\u2022pickled onions (thinly sliced red onion, covered in lime juice & a pinch of salt then refrigerated for a couple of hours)\n\u2022red bell pepper (thinly sliced, saut\u00e9ed with salt & pepper in a bit of avocado oil) \n\u2022black beans (rinsed & drained)\n\nWhat\u2019s your go to dinner at the moment? Please share in the comments! \ud83d\udcac\n\n\u2728Follow @nourishment.nutrition for simple & nourishing recipes & meal ideas! \n\n\u2705 Looking for guidance & accountability to hit your nutrition goals in 2025? Comment \u201cPROGRAM\u201d and I will send you the details for our 1:1 nutrition coaching program! \n\n#utahdietitian #dinnerrecipe #easydinner #healthymeals #healthgoals #dinnerideas #easydinner #highproteindinner #traegerrecipes #treagergrills #wieiad",
+    "recipe": {
+      "title": "Chicken Taco Bowl",
+      "description": "A flavorful chicken taco bowl with cilantro lime rice, marinated chicken thighs, cilantro lime crema, and fresh toppings.",
+      "ingredients": [
+        {
+          "section": "Cilantro Lime Rice",
+          "items": [
+            {
+              "quantity": "1",
+              "unit": "cup",
+              "name": "long-grain jasmine rice, rinsed and drained"
+            },
+            {
+              "quantity": "1.5",
+              "unit": "cups",
+              "name": "water"
+            },
+            {
+              "quantity": "1",
+              "unit": "tsp",
+              "name": "garlic, minced (or could use garlic powder)"
+            },
+            {
+              "quantity": "1",
+              "unit": "tsp",
+              "name": "lime zest"
+            },
+            {
+              "quantity": "1.5",
+              "unit": "Tbsp",
+              "name": "fresh lime juice"
+            },
+            {
+              "quantity": "0.5",
+              "unit": "cup",
+              "name": "finely chopped fresh cilantro"
+            },
+            {
+              "quantity": "1",
+              "unit": "tsp",
+              "name": "chicken bouillon"
+            }
+          ]
+        },
+        {
+          "section": "Chicken Marinade",
+          "items": [
+            {
+              "quantity": "1-1.5",
+              "unit": "lbs",
+              "name": "chicken thighs, boneless, skinless"
+            },
+            {
+              "quantity": "4",
+              "unit": "Tbsp",
+              "name": "orange juice"
+            },
+            {
+              "quantity": "1.5",
+              "unit": "Tbsp",
+              "name": "fresh lime juice"
+            },
+            {
+              "quantity": "3",
+              "unit": "cloves",
+              "name": "garlic, minced"
+            },
+            {
+              "quantity": "1.5",
+              "unit": "Tbsp",
+              "name": "chili powder"
+            },
+            {
+              "quantity": "2",
+              "unit": "tsp",
+              "name": "dried oregano"
+            },
+            {
+              "quantity": "2",
+              "unit": "tsp",
+              "name": "paprika"
+            },
+            {
+              "quantity": "1",
+              "unit": "tsp",
+              "name": "salt"
+            },
+            {
+              "quantity": "0.5",
+              "unit": "tsp",
+              "name": "pepper"
+            }
+          ]
+        },
+        {
+          "section": "Cilantro Lime Crema",
+          "items": [
+            {
+              "quantity": "1",
+              "unit": "cup",
+              "name": "full fat greek yogurt"
+            },
+            {
+              "quantity": "2",
+              "unit": "Tbsp",
+              "name": "mayo"
+            },
+            {
+              "quantity": "1",
+              "unit": "Tbsp",
+              "name": "fresh lime juice"
+            },
+            {
+              "quantity": "0.25",
+              "unit": "tsp",
+              "name": "garlic powder"
+            },
+            {
+              "quantity": "0.5",
+              "unit": "tsp",
+              "name": "salt"
+            },
+            {
+              "quantity": "0.25",
+              "unit": "tsp",
+              "name": "onion powder"
+            },
+            {
+              "quantity": "0.5",
+              "unit": "cup",
+              "name": "fresh cilantro"
+            },
+            {
+              "quantity": "0.25",
+              "unit": "",
+              "name": "jalape\u00f1o (optional)"
+            }
+          ]
+        },
+        {
+          "section": "Additional Toppings",
+          "items": [
+            {
+              "quantity": null,
+              "unit": null,
+              "name": "red onion, thinly sliced (for pickled onions)"
+            },
+            {
+              "quantity": null,
+              "unit": null,
+              "name": "lime juice (for pickled onions)"
+            },
+            {
+              "quantity": null,
+              "unit": null,
+              "name": "salt (for pickled onions)"
+            },
+            {
+              "quantity": null,
+              "unit": null,
+              "name": "red bell pepper, thinly sliced"
+            },
+            {
+              "quantity": null,
+              "unit": null,
+              "name": "avocado oil (for saut\u00e9ing)"
+            },
+            {
+              "quantity": null,
+              "unit": null,
+              "name": "black beans, rinsed & drained"
+            }
+          ]
+        }
+      ],
+      "instructions": [
+        "For the Cilantro Lime Rice: Add all rice ingredients to a pot or rice cooker and cook rice as normal. Fluff and enjoy when done.",
+        "For the Chicken Marinade: Combine all marinade ingredients and marinate boneless, skinless chicken thighs for 1 hour, up to overnight.",
+        "Grill or smoke the chicken until cooked through. Let rest and then chop into bite-sized pieces.",
+        "For the Cilantro Lime Crema: Blend all crema ingredients together. Thin with milk or water as needed to reach your desired consistency.",
+        "For the Pickled Onions: Cover thinly sliced red onion in lime juice with a pinch of salt, then refrigerate for a couple of hours.",
+        "For the Bell Peppers: Saut\u00e9 thinly sliced red bell pepper with salt and pepper in a bit of avocado oil.",
+        "Prepare black beans by rinsing and draining them.",
+        "Assemble the taco bowls with rice as the base, topped with chicken, black beans, saut\u00e9ed bell peppers, pickled onions, and cilantro lime crema."
+      ],
+      "prep_time": null,
+      "cook_time": null,
+      "total_time": null,
+      "servings": null,
+      "dietary_info": [],
+      "difficulty": "medium"
+    },
+    "pdf_path": "./pdfs/Chicken_Taco_Bowl_1746395828.pdf",
+    "layout_version": "v1",
+    "cached_at": "2025-05-04T21:57:08.297027"
+  },
+  "4daed0f96b7e876e05ca2ffa3efbc01bcdf98d60acabe8a0b03d32496e882138": {
+    "user_id": "docteurzed",
+    "caption": "This soy garlic chicken is one of my families all time favorite recipes. It\u2019s a simpler version  of my mom\u2019s soy garlic fried chicken.  The chicken is pan-fried until super crispy and then glazed with this 5 ingredient sauce. Make sure to double the glaze amount below if you want some extra sauce to put on your rice. Follow me for more simple recipes like this.\n\nPlease see recipe below:\nFor the chicken \n-4 boneless skin on chicken thighs lightly salted \n-1/4C cornstarch\n-2tbs neutral oil for pan-frying\n\nSauce:\n-3tbs butter\n-3tbs minced garlic\n-1tbs minced ginger\n-4tbs light brown sugar\n-4tbs kikoman light soy sauce \n\nGarnish with scallion greens thinly sliced",
+    "recipe": {
+      "title": "Soy Garlic Chicken",
+      "description": "A simpler version of soy garlic fried chicken. The chicken is pan-fried until super crispy and then glazed with a 5 ingredient sauce.",
+      "ingredients": [
+        {
+          "quantity": "4",
+          "unit": "",
+          "name": "boneless skin on chicken thighs, lightly salted"
+        },
+        {
+          "quantity": "1/4",
+          "unit": "cup",
+          "name": "cornstarch"
+        },
+        {
+          "quantity": "2",
+          "unit": "tablespoons",
+          "name": "neutral oil for pan-frying"
+        },
+        {
+          "quantity": "3",
+          "unit": "tablespoons",
+          "name": "butter"
+        },
+        {
+          "quantity": "3",
+          "unit": "tablespoons",
+          "name": "minced garlic"
+        },
+        {
+          "quantity": "1",
+          "unit": "tablespoon",
+          "name": "minced ginger"
+        },
+        {
+          "quantity": "4",
+          "unit": "tablespoons",
+          "name": "light brown sugar"
+        },
+        {
+          "quantity": "4",
+          "unit": "tablespoons",
+          "name": "Kikkoman light soy sauce"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "scallion greens, thinly sliced (for garnish)"
+        }
+      ],
+      "instructions": [
+        "Lightly salt the boneless skin-on chicken thighs",
+        "Coat the chicken thighs with cornstarch",
+        "Heat neutral oil in a pan for frying",
+        "Pan-fry the chicken until super crispy",
+        "For the sauce, melt butter in a pan",
+        "Add minced garlic and ginger to the melted butter",
+        "Add light brown sugar and Kikkoman light soy sauce",
+        "Glaze the crispy chicken with the sauce",
+        "Garnish with thinly sliced scallion greens",
+        "Serve (double the glaze amount if you want extra sauce for rice)"
+      ],
+      "prep_time": null,
+      "cook_time": null,
+      "total_time": null,
+      "servings": null,
+      "dietary_info": [],
+      "difficulty": "easy"
+    },
+    "pdf_path": "./pdfs/Soy_Garlic_Chicken_1746395896.pdf",
+    "layout_version": "v1",
+    "cached_at": "2025-05-04T21:58:16.458734"
   }
 }

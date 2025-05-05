@@ -53,3 +53,5 @@
 {"timestamp": "2025-05-04T21:05:57.182372Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
 {"timestamp": "2025-05-04T21:15:46.762344Z", "user_id": "test_user", "event": "recipe_shared", "url": "https://www.instagram.com/reel/test_recipe/", "cuisine": "mexican", "meal_format": "reel"}
 {"timestamp": "2025-05-04T21:34:35.932106Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "cached", "cuisine": "cached", "meal_format": "cached", "tags": []}
+{"timestamp": "2025-05-04T21:57:08.297729Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown", "tags": []}
+{"timestamp": "2025-05-04T21:58:16.459588Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown", "tags": ["fe2be910d78a4609c9f4b99684a2da30c515da5218de3cb960c1523b9cd0650e"]}
