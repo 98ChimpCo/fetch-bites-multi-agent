@@ -191,36 +191,54 @@ class PDFGenerator:
     def _create_ingredients_list(self, ingredients):
         """
         Create a formatted list of ingredients
-        
+
         Args:
-            ingredients (list): List of ingredients
-            
+            ingredients (list): List of ingredients or sections
+
         Returns:
             list: Elements for ingredients list
         """
         elements = []
-        
-        for ingredient in ingredients:
-            if isinstance(ingredient, dict):
-                # Extract ingredient components
-                quantity = ingredient.get('quantity', '')
-                unit = ingredient.get('unit', '')
-                name = ingredient.get('name', '')
-                
-                # Format ingredient text
-                if quantity and unit:
-                    ingredient_text = f"• {quantity} {unit} {name}"
-                elif quantity:
-                    ingredient_text = f"• {quantity} {name}"
+
+        if ingredients and isinstance(ingredients[0], dict) and 'section' in ingredients[0]:
+            # Sectioned ingredients
+            for section in ingredients:
+                section_title = section.get('section', '').strip()
+                items = section.get('items', [])
+                if section_title:
+                    elements.append(Paragraph(section_title, self.styles['SectionTitle']))
+                for item in items:
+                    quantity = item.get('quantity', '')
+                    unit = item.get('unit', '')
+                    name = item.get('name', '')
+
+                    if quantity and unit:
+                        text = f"• {quantity} {unit} {name}"
+                    elif quantity:
+                        text = f"• {quantity} {name}"
+                    else:
+                        text = f"• {name}"
+
+                    elements.append(Paragraph(text, self.styles['IngredientItem']))
+                elements.append(Spacer(1, 6))
+        else:
+            # Flat list
+            for ingredient in ingredients:
+                if isinstance(ingredient, dict):
+                    quantity = ingredient.get('quantity', '')
+                    unit = ingredient.get('unit', '')
+                    name = ingredient.get('name', '')
+                    if quantity and unit:
+                        ingredient_text = f"• {quantity} {unit} {name}"
+                    elif quantity:
+                        ingredient_text = f"• {quantity} {name}"
+                    else:
+                        ingredient_text = f"• {name}"
                 else:
-                    ingredient_text = f"• {name}"
-            else:
-                # Handle string ingredients
-                ingredient_text = f"• {ingredient}"
-            
-            # Add as paragraph
-            elements.append(Paragraph(ingredient_text, self.styles['IngredientItem']))
-        
+                    ingredient_text = f"• {ingredient}"
+
+                elements.append(Paragraph(ingredient_text, self.styles['IngredientItem']))
+
         return elements
     
     def _create_instructions_list(self, instructions):

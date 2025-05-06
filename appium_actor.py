@@ -395,7 +395,7 @@ def click_thread_with_fallbacks(driver, thread):
             rect = thread.rect
             x = rect['x'] + rect['width'] // 2
             y = rect['y'] + rect['height'] // 2
-            driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
+            driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
             logger.info("Tap on thread coordinates successful")
             return True
         except Exception as e3:
@@ -640,7 +640,7 @@ def process_unread_threads(driver, user_memory):
                     rect = post_element.rect
                     x = rect['x'] + rect['width'] // 2
                     y = rect['y'] + rect['height'] // 2
-                    driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
+                    driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
                     logger.info("Tapped on post with mobile: tap command")
                     # Insert prepping message after tapping on post
                     try:
@@ -689,7 +689,7 @@ def process_unread_threads(driver, user_memory):
                         rect = more_button.rect
                         x = rect['x'] + rect['width'] // 2
                         y = rect['y'] + rect['height'] // 2
-                        driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
+                        driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
                         logger.info("Caption expanded successfully")
                         sleep(2)
                     else:
@@ -704,7 +704,7 @@ def process_unread_threads(driver, user_memory):
                                 rect = caption_elem.rect
                                 x = rect['x'] + rect['width'] // 2
                                 y = rect['y'] + rect['height'] // 2
-                                driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 50})
+                                driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
                                 logger.info("Tapped on caption text to expand")
                                 sleep(2)
                         except Exception as caption_tap_err:
@@ -774,8 +774,6 @@ def process_unread_threads(driver, user_memory):
                                 logger.info(f"Usage event logged successfully for user={user_id} (cached)")
                             except Exception as e:
                                 logger.error(f"Failed to log usage event for cached PDF: {e}")
-                            user_record = user_memory.get(user_id, {})
-                            user_email = user_record.get("email")
 
                             # Exit post view before any messaging
                             logger.info("Exiting post view before confirmation messaging...")
@@ -796,23 +794,29 @@ def process_unread_threads(driver, user_memory):
                                 except Exception as fallback_swipe_err:
                                     logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
 
-                            # Send confirmation only if inside conversation
-                            if is_in_conversation_thread(driver):
-                                try:
-                                    text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                    confirmation_message = "Your recipe PDF has been emailed to you!"
-                                    text_input.send_keys(confirmation_message)
-                                    sleep(1)
-                                    send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                                    send_button.click()
-                                    sleep(2)
-                                    logger.info("Confirmation message sent.")
-                                except Exception as send_err:
-                                    logger.error(f"Error sending confirmation message: {send_err}")
-                            else:
-                                logger.warning("Not in DM thread view. Skipping confirmation message.")
+                            # Handle email sending
+                            try:
+                                user_record = user_memory.get(user_id, {})
+                                user_email = user_record.get("email")
 
-                            # Return to DM list
+                                if user_email:
+                                    logger.info("Sending PDF to user's email...")
+                                    send_pdf_email(user_email, cached_pdf_path)
+                                    logger.info("PDF sent via email successfully.")
+                                    if is_in_conversation_thread(driver):
+                                        text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                                        confirmation_message = "Your recipe PDF has been emailed to you!"
+                                        text_input.send_keys(confirmation_message)
+                                        sleep(1)
+                                        send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                                        send_button.click()
+                                        sleep(2)
+                                        logger.info("Confirmation message sent.")
+                                else:
+                                    logger.info("No email on record for this user. Skipping email.")
+                            except Exception as email_err:
+                                logger.error(f"Error during email confirmation: {email_err}")
+
                             navigate_back_to_dm_list(driver)
                             continue
 
