@@ -343,5 +343,154 @@
     "pdf_path": "./pdfs/Soy_Garlic_Chicken_1746395896.pdf",
     "layout_version": "v1",
     "cached_at": "2025-05-04T21:58:16.458734"
+  },
+  "c47b397744c615bdd8aad0996c52a8eb685a5ae2fa538192af4970ab6f6fea0e": {
+    "user_id": "docteurzed",
+    "caption": "Lemon and Blueberry Focaccia!\ud83c\udf4b\ud83e\uded0 RECIPE pinned in the comments \ud83d\udc47 Sweet focaccia\u2019s are definitely having a moment right now and this might be my favorite! It has a delicious lemon glaze, a streusel crumble and a fresh blueberry compote!\n\n#blueberryfocaccia #sweetfocaccia #lemonblueberry #focaccia #desserts",
+    "recipe": {
+      "title": "Blueberry Focaccia",
+      "description": "A sweet focaccia bread with blueberry compote, crumble topping, and lemon icing",
+      "ingredients": [
+        {
+          "section": "Focaccia Dough",
+          "items": [
+            {
+              "quantity": "740",
+              "unit": "grams",
+              "name": "all purpose flour"
+            },
+            {
+              "quantity": "1",
+              "unit": "pinch",
+              "name": "salt"
+            },
+            {
+              "quantity": "12",
+              "unit": "grams",
+              "name": "sugar"
+            },
+            {
+              "quantity": "2",
+              "unit": "packets",
+              "name": "rapid rise instant yeast"
+            },
+            {
+              "quantity": "540",
+              "unit": "grams",
+              "name": "warm water"
+            }
+          ]
+        },
+        {
+          "section": "Blueberry Compote",
+          "items": [
+            {
+              "quantity": "3",
+              "unit": "cups",
+              "name": "blueberries"
+            },
+            {
+              "quantity": "1",
+              "unit": "",
+              "name": "lemon (juice)"
+            },
+            {
+              "quantity": "1",
+              "unit": "tbsp",
+              "name": "water"
+            },
+            {
+              "quantity": "3/4",
+              "unit": "cup",
+              "name": "white sugar"
+            },
+            {
+              "quantity": "1",
+              "unit": "tsp",
+              "name": "vanilla extract"
+            },
+            {
+              "quantity": "1",
+              "unit": "tbsp",
+              "name": "corn starch"
+            },
+            {
+              "quantity": "1 1/2",
+              "unit": "tbsp",
+              "name": "water (for cornstarch slurry)"
+            }
+          ]
+        },
+        {
+          "section": "Crumble",
+          "items": [
+            {
+              "quantity": "2/3",
+              "unit": "cup",
+              "name": "flour"
+            },
+            {
+              "quantity": "2/3",
+              "unit": "cup",
+              "name": "sugar"
+            },
+            {
+              "quantity": "1/4",
+              "unit": "cup",
+              "name": "melted butter"
+            }
+          ]
+        },
+        {
+          "section": "Icing",
+          "items": [
+            {
+              "quantity": "1",
+              "unit": "cup",
+              "name": "powdered sugar"
+            },
+            {
+              "quantity": "1",
+              "unit": "",
+              "name": "lemon (zest)"
+            },
+            {
+              "quantity": "1/2",
+              "unit": "",
+              "name": "lemon (juice)"
+            }
+          ]
+        },
+        {
+          "section": "Other",
+          "items": [
+            {
+              "quantity": "3",
+              "unit": "tbsp",
+              "name": "melted butter (for the pan)"
+            }
+          ]
+        }
+      ],
+      "instructions": [
+        "First make your blueberry compote by combining blueberries, lemon juice, water, vanilla, and sugar in a skillet and cook on medium for 5 minutes until the berries have released their juice and the mixture is bubbling.",
+        "Mix your corn starch and water then pour them into the blueberry mixture and cook for another couple minutes until thickened.",
+        "Remove the compote from the heat and allow it to cool.",
+        "For the dough, mix all the dough ingredients together in a stand mixer (or by hand in a bowl), and knead for about 5-10 minutes until dough comes together and is smooth.",
+        "If using instant yeast, you don't need to bloom it first. If using another kind of yeast, bloom it in the warm water until it becomes frothy (about 5 minutes) before mixing in the dry ingredients.",
+        "Melt 3 tbsp of butter and pour it onto the bottom of a sheet pan (half sheet pan or full size).",
+        "For the crumble, combine flour, sugar, and melted butter.",
+        "For the icing, mix powdered sugar, lemon zest, and lemon juice (adjust lemon juice for desired consistency)."
+      ],
+      "prep_time": null,
+      "cook_time": null,
+      "total_time": null,
+      "servings": null,
+      "dietary_info": [],
+      "difficulty": "medium"
+    },
+    "pdf_path": "./pdfs/Blueberry_Focaccia_1746575606.pdf",
+    "layout_version": "v1",
+    "cached_at": "2025-05-06T23:53:26.420669"
   }
 }

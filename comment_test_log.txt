@@ -1,0 +1,683 @@
+2025-05-06 14:25:28,730 - INFO - Starting Instagram comment detection test
+2025-05-06 14:25:32,403 - INFO - Driver initialized successfully
+2025-05-06 14:26:04,356 - INFO - Opening post URL: https://www.instagram.com/reel/DHBQ7J1R7Zt/?igsh=MWkwbGxkdGRrcTNybg==
+2025-05-06 14:26:09,986 - INFO - Attempting to open comments section...
+2025-05-06 14:26:09,986 - INFO - Looking for comments button...
+2025-05-06 14:26:10,886 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 14:26:12,498 - INFO - Tapped on comments button
+2025-05-06 14:26:15,013 - INFO - Comments section opened successfully
+2025-05-06 14:26:18,481 - INFO - Analyzing UI for comment elements...
+2025-05-06 14:26:19,852 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 14:26:20,021 - INFO - Found 1 collection views
+2025-05-06 14:26:20,130 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 14:26:20,409 - INFO - Collection view 0 has 1 cells
+2025-05-06 14:26:20,535 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 14:26:21,164 - INFO -   Cell 0 has 3 text elements
+2025-05-06 14:26:21,248 - INFO -     Text element 0: 'More, button, tap to see the whole caption'
+2025-05-06 14:26:21,341 - INFO -     Text element 1: '1899 comments'
+2025-05-06 14:26:21,439 - INFO -     Text element 2: '144109 shares'
+2025-05-06 14:26:21,937 - INFO - Found 5 total text elements in the UI
+2025-05-06 14:26:22,395 - INFO - Testing complete. Check the logs and debug_screenshots folder for results.
+2025-05-06 14:26:57,381 - INFO - Starting Instagram comment detection test
+2025-05-06 14:26:59,604 - INFO - Driver initialized successfully
+2025-05-06 14:27:01,897 - INFO - Opening post URL: (venv) shahin.zangenehpour@Shahins-MacBook-Pro-3 fetch-bites-multi-agent % python comment_detection_tester.py 
+2025-05-06 14:27:01,904 - ERROR - Test failed: Message: An unknown server-side error occurred while processing the command. Original error: Url or Uri must start with <scheme>://
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Url or Uri must start with <scheme>://
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:514:15
+    at Layer.handle [as handle_request] (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+    at next (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:284:15
+    at param (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:365:14)
+    at param (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:421:3)
+    at next (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+    at logger (/opt/homebrew/lib/node_modules/appium/node_modules/morgan/index.js:144:5)
+    at Layer.handle [as handle_request] (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:328:13)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:346:12)
+    at next (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+    at invokeCallback (/opt/homebrew/lib/node_modules/appium/node_modules/raw-body/index.js:238:16)
+    at done (/opt/homebrew/lib/node_modules/appium/node_modules/raw-body/index.js:227:7)
+2025-05-06 14:27:32,580 - INFO - Starting Instagram comment detection test
+2025-05-06 14:27:34,734 - INFO - Driver initialized successfully
+2025-05-06 14:27:38,569 - INFO - Opening post URL: https://www.instagram.com/reel/DHBQ7J1R7Zt/?igsh=MWkwbGxkdGRrcTNybg==
+2025-05-06 14:27:44,165 - INFO - Attempting to open comments section...
+2025-05-06 14:27:44,165 - INFO - Looking for comments button...
+2025-05-06 14:27:45,071 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 14:27:46,724 - INFO - Tapped on comments button
+2025-05-06 14:27:49,142 - INFO - Comments section opened successfully
+2025-05-06 14:27:52,611 - INFO - Analyzing UI for comment elements...
+2025-05-06 14:27:53,990 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 14:27:54,139 - INFO - Found 1 collection views
+2025-05-06 14:27:54,247 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 14:27:54,524 - INFO - Collection view 0 has 1 cells
+2025-05-06 14:27:54,635 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 14:27:55,036 - INFO -   Cell 0 has 3 text elements
+2025-05-06 14:27:55,125 - INFO -     Text element 0: 'More, button, tap to see the whole caption'
+2025-05-06 14:27:55,220 - INFO -     Text element 1: '1899 comments'
+2025-05-06 14:27:55,307 - INFO -     Text element 2: '144109 shares'
+2025-05-06 14:27:55,728 - INFO - Found 5 total text elements in the UI
+2025-05-06 14:27:56,184 - INFO - Testing complete. Check the logs and debug_screenshots folder for results.
+2025-05-06 14:36:12,505 - INFO - Starting Instagram comment detection test
+2025-05-06 14:36:14,832 - INFO - Driver initialized successfully
+2025-05-06 14:36:17,944 - INFO - Opening post URL: https://www.instagram.com/reel/DHBQ7J1R7Zt/?igsh=MWkwbGxkdGRrcTNybg==
+2025-05-06 14:36:23,529 - INFO - Attempting to open comments section...
+2025-05-06 14:36:23,529 - INFO - Looking for comments button...
+2025-05-06 14:36:24,666 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 14:36:26,338 - INFO - Tapped on comments button
+2025-05-06 14:36:28,920 - INFO - Comments section opened successfully
+2025-05-06 14:36:32,373 - INFO - Analyzing UI for comment elements...
+2025-05-06 14:36:33,833 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 14:36:34,036 - INFO - Found 1 collection views
+2025-05-06 14:36:34,157 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 14:36:34,508 - INFO - Collection view 0 has 1 cells
+2025-05-06 14:36:34,660 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 14:36:35,102 - INFO -   Cell 0 has 3 text elements
+2025-05-06 14:36:35,187 - INFO -     Text element 0: 'More, button, tap to see the whole caption'
+2025-05-06 14:36:35,297 - INFO -     Text element 1: '1899 comments'
+2025-05-06 14:36:35,415 - INFO -     Text element 2: '144196 shares'
+2025-05-06 14:36:35,912 - INFO - Found 5 total text elements in the UI
+2025-05-06 14:36:36,359 - INFO - Testing complete. Check the logs and debug_screenshots folder for results.
+2025-05-06 14:37:52,283 - INFO - Starting Instagram comment detection test
+2025-05-06 14:37:54,486 - INFO - Driver initialized successfully
+2025-05-06 14:37:55,715 - INFO - Opening post URL: import logging
+2025-05-06 14:37:55,719 - ERROR - Test failed: Message: An unknown server-side error occurred while processing the command. Original error: Url or Uri must start with <scheme>://
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Url or Uri must start with <scheme>://
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:514:15
+    at Layer.handle [as handle_request] (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+    at next (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:284:15
+    at param (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:365:14)
+    at param (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:376:14)
+    at Function.process_params (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:421:3)
+    at next (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+    at logger (/opt/homebrew/lib/node_modules/appium/node_modules/morgan/index.js:144:5)
+    at Layer.handle [as handle_request] (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:328:13)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:346:12)
+    at next (/opt/homebrew/lib/node_modules/appium/node_modules/express/lib/router/index.js:280:10)
+    at /opt/homebrew/lib/node_modules/appium/node_modules/body-parser/lib/read.js:137:5
+    at AsyncResource.runInAsyncScope (node:async_hooks:214:14)
+    at invokeCallback (/opt/homebrew/lib/node_modules/appium/node_modules/raw-body/index.js:238:16)
+    at done (/opt/homebrew/lib/node_modules/appium/node_modules/raw-body/index.js:227:7)
+2025-05-06 14:38:52,947 - INFO - Starting Instagram comment detection test
+2025-05-06 14:38:55,046 - INFO - Driver initialized successfully
+2025-05-06 14:39:06,181 - INFO - Opening post URL: https://www.instagram.com/reel/DHBQ7J1R7Zt/?igsh=MWkwbGxkdGRrcTNybg==
+2025-05-06 14:39:11,793 - INFO - Attempting to open comments section...
+2025-05-06 14:39:11,794 - INFO - Looking for comments button...
+2025-05-06 14:39:12,665 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 14:39:14,257 - INFO - Tapped on comments button
+2025-05-06 14:39:16,825 - INFO - Comments section opened successfully
+2025-05-06 14:39:20,264 - INFO - Analyzing UI for comment elements...
+2025-05-06 14:39:21,533 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 14:39:21,693 - INFO - Found 1 collection views
+2025-05-06 14:39:21,789 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 14:39:22,028 - INFO - Collection view 0 has 1 cells
+2025-05-06 14:39:22,124 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 14:39:22,606 - INFO -   Cell 0 has 3 text elements
+2025-05-06 14:39:22,677 - INFO -     Text element 0: 'More, button, tap to see the whole caption'
+2025-05-06 14:39:22,760 - INFO -     Text element 1: '1899 comments'
+2025-05-06 14:39:22,814 - INFO -     Text element 2: '144196 shares'
+2025-05-06 14:39:23,125 - INFO - Found 5 total text elements in the UI
+2025-05-06 14:39:23,562 - INFO - Testing complete. Check the logs and debug_screenshots folder for results.
+2025-05-06 14:42:09,429 - INFO - Starting Instagram comment detection test
+2025-05-06 14:42:12,640 - INFO - Driver initialized successfully
+2025-05-06 14:42:17,523 - INFO - Opening post URL: https://www.instagram.com/reel/DHBQ7J1R7Zt/
+2025-05-06 14:42:23,304 - INFO - Attempting to open comments section...
+2025-05-06 14:42:23,304 - INFO - Looking for comments button...
+2025-05-06 14:42:24,346 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 14:42:26,177 - INFO - Tapped on comments button
+2025-05-06 14:42:28,569 - INFO - Comments section opened successfully
+2025-05-06 14:42:31,942 - INFO - Analyzing UI for comment elements...
+2025-05-06 14:42:34,462 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 14:42:34,680 - INFO - Found 2 collection views
+2025-05-06 14:42:34,766 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 14:42:34,989 - INFO - Collection view 0 has 1 cells
+2025-05-06 14:42:35,070 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 14:42:35,561 - INFO -   Cell 0 has 3 text elements
+2025-05-06 14:42:35,628 - INFO -     Text element 0: 'More, button, tap to see the whole caption'
+2025-05-06 14:42:35,690 - INFO -     Text element 1: '1899 comments'
+2025-05-06 14:42:35,747 - INFO -     Text element 2: '144196 shares'
+2025-05-06 14:42:35,814 - INFO - Collection view 1: Size 428x635 at position (0,291)
+2025-05-06 14:42:36,023 - INFO - Collection view 1 has 1 cells
+2025-05-06 14:42:36,105 - INFO -   Cell 0: Size 428x769 at position (0,335)
+2025-05-06 14:42:36,348 - INFO -   Cell 0 has 2 text elements
+2025-05-06 14:42:36,408 - INFO -     Text element 0: 'Reply'
+2025-05-06 14:42:36,465 - INFO -     Text element 1: 'yummyliciousdelicious said, Recipe
+For focaccia do...'
+2025-05-06 14:42:36,465 - INFO -     POTENTIAL RECIPE FOUND in collection view 1, cell 0, text element 1
+2025-05-06 14:42:36,465 - INFO -     Text length: 1548 characters
+2025-05-06 14:42:36,465 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv1_cell0_elem1.txt
+2025-05-06 14:42:37,035 - INFO - Found 7 total text elements in the UI
+2025-05-06 14:42:37,358 - INFO - POTENTIAL RECIPE FOUND in standalone text element 4
+2025-05-06 14:42:37,358 - INFO - Text length: 1548 characters
+2025-05-06 14:42:37,358 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem4.txt
+2025-05-06 14:42:37,498 - INFO - Testing complete. Check the logs and debug_screenshots folder for results.
+2025-05-06 16:33:48,947 - INFO - Starting Instagram Recipe Extractor
+2025-05-06 16:33:48,947 - INFO - Initializing Appium driver...
+2025-05-06 16:33:52,281 - INFO - Driver initialized successfully.
+2025-05-06 16:33:52,281 - INFO - Loaded memory for 4 users
+2025-05-06 16:33:52,281 - INFO - Waiting for Instagram app to load...
+2025-05-06 16:33:57,286 - INFO - Navigating to DMs...
+2025-05-06 16:34:01,367 - INFO - Waiting for DM inbox indicator, timeout: 10s
+2025-05-06 16:34:01,785 - INFO - DM inbox indicator found successfully
+2025-05-06 16:34:01,785 - INFO - DM inbox state verified.
+2025-05-06 16:34:01,785 - INFO - Starting message scanning loop
+2025-05-06 16:34:06,804 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 16:34:07,321 - INFO - Found 1 unread thread(s) using XPath
+2025-05-06 16:34:07,322 - INFO - Found 1 thread(s) in total
+2025-05-06 16:34:07,322 - INFO - Processing thread 1 of 1
+2025-05-06 16:34:07,930 - INFO - Identified user: docteurzed
+2025-05-06 16:34:08,765 - INFO - Direct click on thread successful
+2025-05-06 16:34:11,125 - INFO - Using fixed screen scale factor: 3.00
+2025-05-06 16:34:11,125 - INFO - Screenshot taken at images/full_screenshot_docteurzed.png, preview element rect: {'y': 525, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 16:34:11,178 - INFO - Saved cropped post image for docteurzed
+2025-05-06 16:34:13,864 - INFO - Verifying preview element using XPath...
+2025-05-06 16:34:14,368 - INFO - Found preview element with rect: {'y': -59, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 16:34:14,783 - INFO - Saved screenshot with bounding box overlay to: verification/preview_box_overlay.png
+2025-05-06 16:34:14,783 - INFO - User docteurzed is already onboarded
+2025-05-06 16:34:14,783 - INFO - Scrolling to bottom of conversation to see most recent messages...
+2025-05-06 16:34:23,190 - INFO - Checking for shared recipe post...
+2025-05-06 16:34:23,900 - INFO - Found a shared post, opening it...
+2025-05-06 16:34:24,767 - INFO - Tapped on post with mobile: tap command
+2025-05-06 16:34:35,665 - INFO - Checking if caption needs expansion...
+2025-05-06 16:34:35,980 - INFO - Found caption expansion element using: -ios predicate string -> name CONTAINS 'More' AND visible==true
+2025-05-06 16:34:35,980 - INFO - Tapping on 'More' to expand caption...
+2025-05-06 16:34:36,787 - INFO - Caption expanded successfully
+2025-05-06 16:34:38,792 - INFO - Extracting recipe caption...
+2025-05-06 16:34:39,757 - INFO - Successfully extracted caption (305 chars)
+2025-05-06 16:34:39,757 - INFO - Caption saved to captions/caption_docteurzed_1746574479.txt
+2025-05-06 16:34:39,757 - INFO - Extracting caption and comments using unified parser...
+2025-05-06 16:34:39,757 - ERROR - Unified caption+comment extraction failed: name 'extract_caption' is not defined
+2025-05-06 16:34:39,757 - INFO - Trying to extract recipe from pinned comment block...
+2025-05-06 16:34:39,757 - INFO - Looking for comments button...
+2025-05-06 16:34:40,706 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 16:34:42,455 - INFO - Tapped on comments button
+2025-05-06 16:34:44,806 - INFO - Analyzing UI for comment elements...
+2025-05-06 16:34:48,296 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 16:34:48,556 - INFO - Found 2 collection views
+2025-05-06 16:34:48,664 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 16:34:48,951 - INFO - Collection view 0 has 1 cells
+2025-05-06 16:34:49,034 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 16:34:49,517 - INFO -   Cell 0 has 4 text elements
+2025-05-06 16:34:49,584 - INFO -     Text element 0: '1899 comments'
+2025-05-06 16:34:49,654 - INFO -     Text element 1: '144220 shares'
+2025-05-06 16:34:49,728 - INFO -     Text element 2: 'March 10'
+2025-05-06 16:34:49,786 - INFO -     Text element 3: 'Lemon and Blueberry Focaccia!🍋🫐 RECIPE pinned in t...'
+2025-05-06 16:34:49,786 - INFO -     POTENTIAL RECIPE FOUND in collection view 0, cell 0, text element 3
+2025-05-06 16:34:49,786 - INFO -     Text length: 305 characters
+2025-05-06 16:34:49,786 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv0_cell0_elem3.txt
+2025-05-06 16:34:49,863 - INFO - Collection view 1: Size 428x635 at position (0,291)
+2025-05-06 16:34:50,047 - INFO - Collection view 1 has 1 cells
+2025-05-06 16:34:50,120 - INFO -   Cell 0: Size 428x769 at position (0,335)
+2025-05-06 16:34:50,535 - INFO -   Cell 0 has 2 text elements
+2025-05-06 16:34:50,607 - INFO -     Text element 0: 'Reply'
+2025-05-06 16:34:50,681 - INFO -     Text element 1: 'yummyliciousdelicious said, Recipe
+For focaccia do...'
+2025-05-06 16:34:50,681 - INFO -     POTENTIAL RECIPE FOUND in collection view 1, cell 0, text element 1
+2025-05-06 16:34:50,681 - INFO -     Text length: 1548 characters
+2025-05-06 16:34:50,682 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv1_cell0_elem1.txt
+2025-05-06 16:34:51,781 - INFO - Found 12 total text elements in the UI
+2025-05-06 16:34:52,482 - INFO - POTENTIAL RECIPE FOUND in standalone text element 7
+2025-05-06 16:34:52,482 - INFO - Text length: 1548 characters
+2025-05-06 16:34:52,483 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem7.txt
+2025-05-06 16:34:52,772 - INFO - POTENTIAL RECIPE FOUND in standalone text element 11
+2025-05-06 16:34:52,772 - INFO - Text length: 305 characters
+2025-05-06 16:34:52,772 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem11.txt
+2025-05-06 16:34:52,773 - INFO - No suitable comment text found for Claude fallback.
+2025-05-06 16:34:52,773 - ERROR - No recipe found in caption or pinned comment.
+2025-05-06 16:34:52,773 - INFO - Attempting to exit post/comment view...
+2025-05-06 16:34:58,687 - WARNING - Skipped sending fallback message — not in conversation thread.
+2025-05-06 16:34:58,687 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 16:35:02,149 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:35:02,149 - WARNING - DM inbox indicator not found within 3 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:35:02,822 - INFO - Strict DM inbox verification successful: DM threads found.
+2025-05-06 16:35:08,288 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 16:35:11,887 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:35:11,887 - WARNING - DM inbox indicator not found within 3 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:35:15,274 - INFO - Waiting for DM inbox indicator, timeout: 5s
+2025-05-06 16:35:19,683 - INFO - DM inbox indicator found successfully
+2025-05-06 16:35:19,684 - INFO - DM inbox state verified.
+2025-05-06 16:35:20,687 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 16:35:20,951 - INFO - Found 0 thread(s) in total
+2025-05-06 16:35:20,952 - INFO - No unread messages found. Will scan again in 5 seconds...
+2025-05-06 16:40:40,705 - INFO - Starting Instagram Recipe Extractor
+2025-05-06 16:40:40,706 - INFO - Initializing Appium driver...
+2025-05-06 16:40:43,920 - INFO - Driver initialized successfully.
+2025-05-06 16:40:43,920 - INFO - Loaded memory for 4 users
+2025-05-06 16:40:43,920 - INFO - Waiting for Instagram app to load...
+2025-05-06 16:40:48,922 - INFO - Navigating to DMs...
+2025-05-06 16:40:53,629 - INFO - Waiting for DM inbox indicator, timeout: 10s
+2025-05-06 16:40:54,109 - INFO - DM inbox indicator found successfully
+2025-05-06 16:40:54,109 - INFO - DM inbox state verified.
+2025-05-06 16:40:54,109 - INFO - Starting message scanning loop
+2025-05-06 16:40:59,131 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 16:40:59,483 - INFO - Found 1 unread thread(s) using XPath
+2025-05-06 16:40:59,483 - INFO - Found 1 thread(s) in total
+2025-05-06 16:40:59,483 - INFO - Processing thread 1 of 1
+2025-05-06 16:40:59,922 - INFO - Identified user: docteurzed
+2025-05-06 16:41:00,724 - INFO - Direct click on thread successful
+2025-05-06 16:41:03,348 - INFO - Using fixed screen scale factor: 3.00
+2025-05-06 16:41:03,349 - INFO - Screenshot taken at images/full_screenshot_docteurzed.png, preview element rect: {'y': 525, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 16:41:03,393 - INFO - Saved cropped post image for docteurzed
+2025-05-06 16:41:06,259 - INFO - Verifying preview element using XPath...
+2025-05-06 16:41:06,831 - INFO - Found preview element with rect: {'y': -88, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 16:41:07,220 - INFO - Saved screenshot with bounding box overlay to: verification/preview_box_overlay.png
+2025-05-06 16:41:07,220 - INFO - User docteurzed is already onboarded
+2025-05-06 16:41:07,220 - INFO - Scrolling to bottom of conversation to see most recent messages...
+2025-05-06 16:41:15,701 - INFO - Checking for shared recipe post...
+2025-05-06 16:41:16,350 - INFO - Found a shared post, opening it...
+2025-05-06 16:41:17,207 - INFO - Tapped on post with mobile: tap command
+2025-05-06 16:41:27,983 - INFO - Checking if caption needs expansion...
+2025-05-06 16:41:28,296 - INFO - Found caption expansion element using: -ios predicate string -> name CONTAINS 'More' AND visible==true
+2025-05-06 16:41:28,296 - INFO - Tapping on 'More' to expand caption...
+2025-05-06 16:41:29,124 - INFO - Caption expanded successfully
+2025-05-06 16:41:31,128 - INFO - Extracting recipe caption...
+2025-05-06 16:41:32,132 - INFO - Successfully extracted caption (305 chars)
+2025-05-06 16:41:32,133 - INFO - Caption saved to captions/caption_docteurzed_1746574892.txt
+2025-05-06 16:41:32,133 - INFO - Extracting caption and comments using unified parser...
+2025-05-06 16:41:32,133 - ERROR - Unified caption+comment extraction failed: name 'extract_caption' is not defined
+2025-05-06 16:41:32,133 - INFO - Trying to extract recipe from pinned comment block...
+2025-05-06 16:41:32,133 - INFO - Looking for comments button...
+2025-05-06 16:41:33,090 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 16:41:34,849 - INFO - Tapped on comments button
+2025-05-06 16:41:37,218 - INFO - Analyzing UI for comment elements...
+2025-05-06 16:41:40,784 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 16:41:41,057 - INFO - Found 2 collection views
+2025-05-06 16:41:41,167 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 16:41:41,456 - INFO - Collection view 0 has 1 cells
+2025-05-06 16:41:41,551 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 16:41:42,020 - INFO -   Cell 0 has 4 text elements
+2025-05-06 16:41:42,082 - INFO -     Text element 0: '1899 comments'
+2025-05-06 16:41:42,149 - INFO -     Text element 1: '144220 shares'
+2025-05-06 16:41:42,209 - INFO -     Text element 2: 'March 10'
+2025-05-06 16:41:42,279 - INFO -     Text element 3: 'Lemon and Blueberry Focaccia!🍋🫐 RECIPE pinned in t...'
+2025-05-06 16:41:42,279 - INFO -     POTENTIAL RECIPE FOUND in collection view 0, cell 0, text element 3
+2025-05-06 16:41:42,279 - INFO -     Text length: 305 characters
+2025-05-06 16:41:42,280 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv0_cell0_elem3.txt
+2025-05-06 16:41:42,349 - INFO - Collection view 1: Size 428x635 at position (0,291)
+2025-05-06 16:41:42,551 - INFO - Collection view 1 has 1 cells
+2025-05-06 16:41:42,629 - INFO -   Cell 0: Size 428x769 at position (0,335)
+2025-05-06 16:41:42,920 - INFO -   Cell 0 has 2 text elements
+2025-05-06 16:41:42,990 - INFO -     Text element 0: 'Reply'
+2025-05-06 16:41:43,057 - INFO -     Text element 1: 'yummyliciousdelicious said, Recipe
+For focaccia do...'
+2025-05-06 16:41:43,057 - INFO -     POTENTIAL RECIPE FOUND in collection view 1, cell 0, text element 1
+2025-05-06 16:41:43,057 - INFO -     Text length: 1548 characters
+2025-05-06 16:41:43,058 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv1_cell0_elem1.txt
+2025-05-06 16:41:44,043 - INFO - Found 12 total text elements in the UI
+2025-05-06 16:41:44,718 - INFO - POTENTIAL RECIPE FOUND in standalone text element 7
+2025-05-06 16:41:44,719 - INFO - Text length: 1548 characters
+2025-05-06 16:41:44,719 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem7.txt
+2025-05-06 16:41:44,984 - INFO - POTENTIAL RECIPE FOUND in standalone text element 11
+2025-05-06 16:41:44,984 - INFO - Text length: 305 characters
+2025-05-06 16:41:44,985 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem11.txt
+2025-05-06 16:41:44,985 - INFO - No suitable comment text found for Claude fallback.
+2025-05-06 16:41:44,985 - ERROR - No recipe found in caption or pinned comment.
+2025-05-06 16:41:44,985 - INFO - Attempting to exit post/comment view...
+2025-05-06 16:41:51,004 - WARNING - Skipped sending fallback message — not in conversation thread.
+2025-05-06 16:41:51,004 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 16:41:54,526 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:41:54,526 - WARNING - DM inbox indicator not found within 3 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:41:55,248 - INFO - Strict DM inbox verification successful: DM threads found.
+2025-05-06 16:42:00,716 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 16:42:04,304 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:42:04,304 - WARNING - DM inbox indicator not found within 3 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:42:07,723 - INFO - Waiting for DM inbox indicator, timeout: 5s
+2025-05-06 16:42:13,257 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:42:13,257 - WARNING - DM inbox indicator not found within 5 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:42:14,727 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 16:42:15,034 - INFO - Found 0 thread(s) in total
+2025-05-06 16:42:15,034 - INFO - No unread messages found. Will scan again in 5 seconds...
+2025-05-06 16:52:00,844 - INFO - Starting Instagram Recipe Extractor
+2025-05-06 16:52:00,844 - INFO - Initializing Appium driver...
+2025-05-06 16:52:04,068 - INFO - Driver initialized successfully.
+2025-05-06 16:52:04,069 - INFO - Loaded memory for 4 users
+2025-05-06 16:52:04,069 - INFO - Waiting for Instagram app to load...
+2025-05-06 16:52:09,074 - INFO - Navigating to DMs...
+2025-05-06 16:52:13,119 - INFO - Waiting for DM inbox indicator, timeout: 10s
+2025-05-06 16:52:13,535 - INFO - DM inbox indicator found successfully
+2025-05-06 16:52:13,535 - INFO - DM inbox state verified.
+2025-05-06 16:52:13,535 - INFO - Starting message scanning loop
+2025-05-06 16:52:18,558 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 16:52:19,023 - INFO - Found 1 unread thread(s) using XPath
+2025-05-06 16:52:19,023 - INFO - Found 1 thread(s) in total
+2025-05-06 16:52:19,025 - INFO - Processing thread 1 of 1
+2025-05-06 16:52:19,563 - INFO - Identified user: docteurzed
+2025-05-06 16:52:20,345 - INFO - Direct click on thread successful
+2025-05-06 16:52:22,673 - INFO - Using fixed screen scale factor: 3.00
+2025-05-06 16:52:22,673 - INFO - Screenshot taken at images/full_screenshot_docteurzed.png, preview element rect: {'y': 525, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 16:52:22,719 - INFO - Saved cropped post image for docteurzed
+2025-05-06 16:52:25,367 - INFO - Verifying preview element using XPath...
+2025-05-06 16:52:25,779 - INFO - Found preview element with rect: {'y': -88, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 16:52:26,168 - INFO - Saved screenshot with bounding box overlay to: verification/preview_box_overlay.png
+2025-05-06 16:52:26,168 - INFO - User docteurzed is already onboarded
+2025-05-06 16:52:26,168 - INFO - Scrolling to bottom of conversation to see most recent messages...
+2025-05-06 16:52:34,515 - INFO - Checking for shared recipe post...
+2025-05-06 16:52:35,266 - INFO - Found a shared post, opening it...
+2025-05-06 16:52:36,292 - INFO - Tapped on post with mobile: tap command
+2025-05-06 16:52:46,898 - INFO - Checking if caption needs expansion...
+2025-05-06 16:52:47,224 - INFO - Found caption expansion element using: -ios predicate string -> name CONTAINS 'More' AND visible==true
+2025-05-06 16:52:47,225 - INFO - Tapping on 'More' to expand caption...
+2025-05-06 16:52:48,071 - INFO - Caption expanded successfully
+2025-05-06 16:52:50,076 - INFO - Extracting recipe caption...
+2025-05-06 16:52:51,139 - INFO - Successfully extracted caption (305 chars)
+2025-05-06 16:52:51,140 - INFO - Caption saved to captions/caption_docteurzed_1746575571.txt
+2025-05-06 16:52:51,140 - INFO - Extracting caption and comments using unified parser...
+2025-05-06 16:52:51,140 - ERROR - Unified caption+comment extraction failed: name 'extract_caption' is not defined
+2025-05-06 16:52:51,140 - INFO - Trying to extract recipe from pinned comment block...
+2025-05-06 16:52:51,140 - INFO - Looking for comments button...
+2025-05-06 16:52:52,050 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 16:52:53,846 - INFO - Tapped on comments button
+2025-05-06 16:52:56,187 - INFO - Analyzing UI for comment elements...
+2025-05-06 16:52:59,804 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 16:53:00,066 - INFO - Found 2 collection views
+2025-05-06 16:53:00,172 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 16:53:00,463 - INFO - Collection view 0 has 1 cells
+2025-05-06 16:53:00,566 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 16:53:01,004 - INFO -   Cell 0 has 4 text elements
+2025-05-06 16:53:01,099 - INFO -     Text element 0: '1899 comments'
+2025-05-06 16:53:01,180 - INFO -     Text element 1: '144220 shares'
+2025-05-06 16:53:01,247 - INFO -     Text element 2: 'March 10'
+2025-05-06 16:53:01,309 - INFO -     Text element 3: 'Lemon and Blueberry Focaccia!🍋🫐 RECIPE pinned in t...'
+2025-05-06 16:53:01,309 - INFO -     POTENTIAL RECIPE FOUND in collection view 0, cell 0, text element 3
+2025-05-06 16:53:01,309 - INFO -     Text length: 305 characters
+2025-05-06 16:53:01,310 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv0_cell0_elem3.txt
+2025-05-06 16:53:01,378 - INFO - Collection view 1: Size 428x635 at position (0,291)
+2025-05-06 16:53:03,319 - INFO - Collection view 1 has 1 cells
+2025-05-06 16:53:03,869 - INFO -   Cell 0: Size 428x769 at position (0,335)
+2025-05-06 16:53:04,194 - INFO -   Cell 0 has 2 text elements
+2025-05-06 16:53:04,274 - INFO -     Text element 0: 'Reply'
+2025-05-06 16:53:04,347 - INFO -     Text element 1: 'yummyliciousdelicious said, Recipe
+For focaccia do...'
+2025-05-06 16:53:04,347 - INFO -     POTENTIAL RECIPE FOUND in collection view 1, cell 0, text element 1
+2025-05-06 16:53:04,347 - INFO -     Text length: 1548 characters
+2025-05-06 16:53:04,348 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv1_cell0_elem1.txt
+2025-05-06 16:53:05,304 - INFO - Found 12 total text elements in the UI
+2025-05-06 16:53:06,273 - INFO - POTENTIAL RECIPE FOUND in standalone text element 7
+2025-05-06 16:53:06,273 - INFO - Text length: 1548 characters
+2025-05-06 16:53:06,273 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem7.txt
+2025-05-06 16:53:06,572 - INFO - POTENTIAL RECIPE FOUND in standalone text element 11
+2025-05-06 16:53:06,572 - INFO - Text length: 305 characters
+2025-05-06 16:53:06,572 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem11.txt
+2025-05-06 16:53:06,573 - INFO - [DEBUG] Submitting extracted comment to Claude:
+
+yummyliciousdelicious said, Recipe
+For focaccia dough
+740 grams all purpose flour
+A pinch of salt
+12 grams sugar
+2 packets rapid rise instant yeast 
+540 g warm water 
+
+For blueberry compote 
+3 cups blueberries
+Juice of 1 lemon
+1 tbsp water
+3/4 cup white sugar
+1 tsp vanilla extract 
+Cornstarch slurry (1 tbsp corn starch + 1 1/2 tbsp water mixed together)
+
+For crumble 
+2/3 cup flour
+2/3 cup sugar 
+1/4 cup melted butter 
+
+For icing
+1 cup powdered sugar
+Zest of 1 lemon
+Juice of 1/2 lemon or more if you want a thinner consistency 
+3 tbsp melted butter for the pan
+First make your blueberry compote by combining blueberries, lemon juice, water, vanilla, and sugar in a skillet and cook on medium for 5 minutes until the berries have released their juice and the mixture is bubbling. Mix your corn starch and water then pour them into the blueberry mixture and cook for another couple minutes until thickened. Remove it from the heat and allow it to cool.
+For the dough, mix all the dough ingredients together in a stand mixer (or by hand in a a bowl), and kneed for about 5-10 minutes until dough comes together and is smooth. You don’t need to bloom the yeast if you are using instant yeast but if you are using another kind, bloom it first in the warm water until it becomes frothy (about 5 minutes) before mixing in the dry ingredients.
+Melt the 3 tbsp of butter than pour it onto the bottom of a sheet pan (I used a half sheet pan but you could use a full size and stretch it out more) Comment was written by the post author. Comment is pinned.
+
+2025-05-06 16:53:06,650 - INFO - Extracting recipe from text...
+2025-05-06 16:53:20,572 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-05-06 16:53:20,579 - INFO - Successfully extracted recipe: Blueberry Focaccia
+2025-05-06 16:53:20,579 - INFO - [DEBUG] Claude returned recipe object: {'title': 'Blueberry Focaccia', 'description': 'A sweet focaccia bread with blueberry compote, crumble topping, and lemon icing', 'ingredients': [{'section': 'Focaccia Dough', 'items': [{'quantity': '740', 'unit': 'grams', 'name': 'all purpose flour'}, {'quantity': '1', 'unit': 'pinch', 'name': 'salt'}, {'quantity': '12', 'unit': 'grams', 'name': 'sugar'}, {'quantity': '2', 'unit': 'packets', 'name': 'rapid rise instant yeast'}, {'quantity': '540', 'unit': 'grams', 'name': 'warm water'}]}, {'section': 'Blueberry Compote', 'items': [{'quantity': '3', 'unit': 'cups', 'name': 'blueberries'}, {'quantity': '1', 'unit': '', 'name': 'lemon (juice)'}, {'quantity': '1', 'unit': 'tbsp', 'name': 'water'}, {'quantity': '3/4', 'unit': 'cup', 'name': 'white sugar'}, {'quantity': '1', 'unit': 'tsp', 'name': 'vanilla extract'}, {'quantity': '1', 'unit': 'tbsp', 'name': 'corn starch'}, {'quantity': '1 1/2', 'unit': 'tbsp', 'name': 'water (for cornstarch slurry)'}]}, {'section': 'Crumble', 'items': [{'quantity': '2/3', 'unit': 'cup', 'name': 'flour'}, {'quantity': '2/3', 'unit': 'cup', 'name': 'sugar'}, {'quantity': '1/4', 'unit': 'cup', 'name': 'melted butter'}]}, {'section': 'Icing', 'items': [{'quantity': '1', 'unit': 'cup', 'name': 'powdered sugar'}, {'quantity': '1', 'unit': '', 'name': 'lemon (zest)'}, {'quantity': '1/2', 'unit': '', 'name': 'lemon (juice)'}]}, {'section': 'Other', 'items': [{'quantity': '3', 'unit': 'tbsp', 'name': 'melted butter (for the pan)'}]}], 'instructions': ['First make your blueberry compote by combining blueberries, lemon juice, water, vanilla, and sugar in a skillet and cook on medium for 5 minutes until the berries have released their juice and the mixture is bubbling.', 'Mix your corn starch and water then pour them into the blueberry mixture and cook for another couple minutes until thickened.', 'Remove the compote from the heat and allow it to cool.', 'For the dough, mix all the dough ingredients together in a stand mixer (or by hand in a bowl), and knead for about 5-10 minutes until dough comes together and is smooth.', "If using instant yeast, you don't need to bloom it first. If using another kind of yeast, bloom it in the warm water until it becomes frothy (about 5 minutes) before mixing in the dry ingredients.", 'Melt 3 tbsp of butter and pour it onto the bottom of a sheet pan (half sheet pan or full size).', 'For the crumble, combine flour, sugar, and melted butter.', 'For the icing, mix powdered sugar, lemon zest, and lemon juice (adjust lemon juice for desired consistency).'], 'prep_time': None, 'cook_time': None, 'total_time': None, 'servings': None, 'dietary_info': [], 'difficulty': 'medium'}
+2025-05-06 16:53:20,579 - INFO - Exiting expanded post view after caption extraction...
+2025-05-06 16:53:26,161 - INFO - Successfully exited post view before recipe processing.
+2025-05-06 16:53:26,161 - INFO - Proceeding with recipe extraction from Claude output...
+2025-05-06 16:53:26,161 - INFO - Recipe extraction successful.
+2025-05-06 16:53:26,161 - INFO - Generating PDF from extracted recipe details...
+2025-05-06 16:53:26,163 - INFO - Generating PDF for recipe: Blueberry Focaccia
+2025-05-06 16:53:26,419 - INFO - PDF cache set for post_hash 3bfc269594ef649228e9a74bab00f042efc91d5acc6fbee31a382e80d42388fe
+2025-05-06 16:53:26,420 - INFO - PDF generated successfully: ./pdfs/Blueberry_Focaccia_1746575606.pdf
+2025-05-06 16:53:26,420 - INFO - PDF generated at: ./pdfs/Blueberry_Focaccia_1746575606.pdf
+2025-05-06 16:53:26,421 - INFO - Logging usage event for user=docteurzed
+2025-05-06 16:53:28,979 - INFO - Usage event logged successfully for user=docteurzed
+2025-05-06 16:53:28,979 - INFO - Sending PDF to user's email...
+2025-05-06 16:53:29,339 - ERROR - SMTP_SSL failed: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1028), trying SMTP with STARTTLS
+2025-05-06 16:53:33,159 - INFO - PDF emailed successfully to shahinz@mac.com using STARTTLS
+2025-05-06 16:53:33,160 - INFO - PDF sent via email successfully.
+2025-05-06 16:53:43,434 - INFO - Returning to inbox...
+2025-05-06 16:53:43,663 - ERROR - Error using back button: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:53:43,934 - ERROR - All back button strategies failed
+2025-05-06 16:53:43,934 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 16:53:47,054 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:53:47,055 - WARNING - DM inbox indicator not found within 3 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:53:47,261 - INFO - Attempting deep-link fallback to DM inbox...
+2025-05-06 16:53:50,376 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 16:53:53,963 - ERROR - Timeout waiting for DM inbox indicator
+2025-05-06 16:53:53,963 - WARNING - DM inbox indicator not found within 3 seconds: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:53:54,466 - WARNING - Deep-link fallback failed to verify inbox.
+2025-05-06 16:53:54,476 - INFO - User memory saved successfully
+2025-05-06 16:53:54,476 - INFO - Returning to inbox...
+2025-05-06 16:53:54,671 - ERROR - Error using back button: Message: An element could not be located on the page using the given search parameters.; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#no-such-element-exception
+Stacktrace:
+NoSuchElementError: An element could not be located on the page using the given search parameters.
+    at XCUITestDriver.doNativeFind (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:143:13)
+    at processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at XCUITestDriver.findNativeElementOrElements (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:97:12)
+    at XCUITestDriver.findElOrEls (/Users/shahin/.appium/node_modules/appium-xcuitest-driver/lib/commands/find.js:24:14)
+    at XCUITestDriver.findElOrElsWithProcessing (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:60:12)
+    at XCUITestDriver.findElement (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/basedriver/commands/find.ts:75:12)
+2025-05-06 16:53:54,863 - ERROR - All back button strategies failed
+2025-05-06 16:53:54,863 - INFO - Waiting for DM inbox indicator, timeout: 3s
+2025-05-06 17:11:38,330 - INFO - Starting Instagram Recipe Extractor
+2025-05-06 17:11:38,331 - INFO - Initializing Appium driver...
+2025-05-06 17:11:41,622 - INFO - Driver initialized successfully.
+2025-05-06 17:11:41,623 - INFO - Loaded memory for 4 users
+2025-05-06 17:11:41,623 - INFO - Waiting for Instagram app to load...
+2025-05-06 17:11:46,633 - INFO - Navigating to DMs...
+2025-05-06 17:11:50,796 - INFO - Waiting for DM inbox indicator, timeout: 10s
+2025-05-06 17:11:58,811 - INFO - DM inbox indicator found successfully
+2025-05-06 17:11:58,811 - INFO - DM inbox state verified.
+2025-05-06 17:11:58,811 - INFO - Starting message scanning loop
+2025-05-06 17:12:03,828 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 17:12:04,114 - INFO - Found 0 thread(s) in total
+2025-05-06 17:12:04,114 - INFO - No unread messages found. Will scan again in 5 seconds...
+2025-05-06 17:12:09,133 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 17:12:09,585 - INFO - Found 1 unread thread(s) using XPath
+2025-05-06 17:12:09,585 - INFO - Found 1 thread(s) in total
+2025-05-06 17:12:09,586 - INFO - Processing thread 1 of 1
+2025-05-06 17:12:10,268 - INFO - Identified user: docteurzed
+2025-05-06 17:12:10,980 - INFO - Direct click on thread successful
+2025-05-06 17:12:12,861 - INFO - Using fixed screen scale factor: 3.00
+2025-05-06 17:12:12,862 - INFO - Screenshot taken at images/full_screenshot_docteurzed.png, preview element rect: {'y': 525, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 17:12:12,910 - INFO - Saved cropped post image for docteurzed
+2025-05-06 17:12:15,531 - INFO - Verifying preview element using XPath...
+2025-05-06 17:12:15,962 - INFO - Found preview element with rect: {'y': -59, 'x': 56, 'width': 160, 'height': 288}
+2025-05-06 17:12:16,387 - INFO - Saved screenshot with bounding box overlay to: verification/preview_box_overlay.png
+2025-05-06 17:12:16,387 - INFO - User docteurzed is already onboarded
+2025-05-06 17:12:16,387 - INFO - Scrolling to bottom of conversation to see most recent messages...
+2025-05-06 17:12:24,605 - INFO - Checking for shared recipe post...
+2025-05-06 17:12:25,332 - INFO - Found a shared post, opening it...
+2025-05-06 17:12:26,257 - INFO - Tapped on post with mobile: tap command
+2025-05-06 17:12:36,997 - INFO - Checking if caption needs expansion...
+2025-05-06 17:12:37,312 - INFO - Found caption expansion element using: -ios predicate string -> name CONTAINS 'More' AND visible==true
+2025-05-06 17:12:37,312 - INFO - Tapping on 'More' to expand caption...
+2025-05-06 17:12:38,147 - INFO - Caption expanded successfully
+2025-05-06 17:12:40,153 - INFO - Extracting recipe caption...
+2025-05-06 17:12:41,311 - INFO - Successfully extracted caption (305 chars)
+2025-05-06 17:12:41,312 - INFO - Caption saved to captions/caption_docteurzed_1746576761.txt
+2025-05-06 17:12:41,312 - INFO - Extracting caption and comments using unified parser...
+2025-05-06 17:12:41,312 - ERROR - Unified caption+comment extraction failed: name 'extract_caption' is not defined
+2025-05-06 17:12:41,312 - INFO - Trying to extract recipe from pinned comment block...
+2025-05-06 17:12:41,312 - INFO - Looking for comments button...
+2025-05-06 17:12:43,255 - INFO - Found comment button using -ios class chain: **/XCUIElementTypeButton[`name CONTAINS "comment" OR label CONTAINS "comment"`]
+2025-05-06 17:12:45,578 - INFO - Tapped on comments button
+2025-05-06 17:12:47,920 - INFO - Analyzing UI for comment elements...
+2025-05-06 17:12:51,457 - INFO - UI hierarchy saved to ui_hierarchy.txt
+2025-05-06 17:12:51,704 - INFO - Found 2 collection views
+2025-05-06 17:12:51,807 - INFO - Collection view 0: Size 428x845 at position (0,0)
+2025-05-06 17:12:52,090 - INFO - Collection view 0 has 1 cells
+2025-05-06 17:12:52,214 - INFO -   Cell 0: Size 428x843 at position (0,0)
+2025-05-06 17:12:52,647 - INFO -   Cell 0 has 4 text elements
+2025-05-06 17:12:52,723 - INFO -     Text element 0: '1901 comments'
+2025-05-06 17:12:52,806 - INFO -     Text element 1: '144311 shares'
+2025-05-06 17:12:52,885 - INFO -     Text element 2: 'March 10'
+2025-05-06 17:12:52,960 - INFO -     Text element 3: 'Lemon and Blueberry Focaccia!🍋🫐 RECIPE pinned in t...'
+2025-05-06 17:12:52,960 - INFO -     POTENTIAL RECIPE FOUND in collection view 0, cell 0, text element 3
+2025-05-06 17:12:52,960 - INFO -     Text length: 305 characters
+2025-05-06 17:12:52,962 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv0_cell0_elem3.txt
+2025-05-06 17:12:53,048 - INFO - Collection view 1: Size 428x635 at position (0,291)
+2025-05-06 17:12:53,274 - INFO - Collection view 1 has 1 cells
+2025-05-06 17:12:53,371 - INFO -   Cell 0: Size 428x769 at position (0,335)
+2025-05-06 17:12:53,680 - INFO -   Cell 0 has 2 text elements
+2025-05-06 17:12:53,766 - INFO -     Text element 0: 'Reply'
+2025-05-06 17:12:53,851 - INFO -     Text element 1: 'yummyliciousdelicious said, Recipe
+For focaccia do...'
+2025-05-06 17:12:53,851 - INFO -     POTENTIAL RECIPE FOUND in collection view 1, cell 0, text element 1
+2025-05-06 17:12:53,851 - INFO -     Text length: 1548 characters
+2025-05-06 17:12:53,852 - INFO -     Recipe text saved to debug_screenshots/potential_recipe_cv1_cell0_elem1.txt
+2025-05-06 17:12:54,889 - INFO - Found 12 total text elements in the UI
+2025-05-06 17:12:55,520 - INFO - POTENTIAL RECIPE FOUND in standalone text element 7
+2025-05-06 17:12:55,520 - INFO - Text length: 1548 characters
+2025-05-06 17:12:55,520 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem7.txt
+2025-05-06 17:12:55,809 - INFO - POTENTIAL RECIPE FOUND in standalone text element 11
+2025-05-06 17:12:55,809 - INFO - Text length: 305 characters
+2025-05-06 17:12:55,810 - INFO - Recipe text saved to debug_screenshots/potential_recipe_standalone_elem11.txt
+2025-05-06 17:12:55,810 - INFO - [DEBUG] Submitting extracted comment to Claude:
+
+yummyliciousdelicious said, Recipe
+For focaccia dough
+740 grams all purpose flour
+A pinch of salt
+12 grams sugar
+2 packets rapid rise instant yeast 
+540 g warm water 
+
+For blueberry compote 
+3 cups blueberries
+Juice of 1 lemon
+1 tbsp water
+3/4 cup white sugar
+1 tsp vanilla extract 
+Cornstarch slurry (1 tbsp corn starch + 1 1/2 tbsp water mixed together)
+
+For crumble 
+2/3 cup flour
+2/3 cup sugar 
+1/4 cup melted butter 
+
+For icing
+1 cup powdered sugar
+Zest of 1 lemon
+Juice of 1/2 lemon or more if you want a thinner consistency 
+3 tbsp melted butter for the pan
+First make your blueberry compote by combining blueberries, lemon juice, water, vanilla, and sugar in a skillet and cook on medium for 5 minutes until the berries have released their juice and the mixture is bubbling. Mix your corn starch and water then pour them into the blueberry mixture and cook for another couple minutes until thickened. Remove it from the heat and allow it to cool.
+For the dough, mix all the dough ingredients together in a stand mixer (or by hand in a a bowl), and kneed for about 5-10 minutes until dough comes together and is smooth. You don’t need to bloom the yeast if you are using instant yeast but if you are using another kind, bloom it first in the warm water until it becomes frothy (about 5 minutes) before mixing in the dry ingredients.
+Melt the 3 tbsp of butter than pour it onto the bottom of a sheet pan (I used a half sheet pan but you could use a full size and stretch it out more) Comment was written by the post author. Comment is pinned.
+
+2025-05-06 17:12:55,877 - INFO - Extracting recipe from text...
+2025-05-06 17:13:07,706 - INFO - HTTP Request: POST https://api.anthropic.com/v1/messages "HTTP/1.1 200 OK"
+2025-05-06 17:13:07,715 - INFO - Successfully extracted recipe: Blueberry Focaccia
+2025-05-06 17:13:07,715 - INFO - [DEBUG] Claude returned recipe object: {'title': 'Blueberry Focaccia', 'description': 'A sweet focaccia bread with blueberry compote, crumble topping, and lemon icing', 'ingredients': [{'quantity': '740', 'unit': 'grams', 'name': 'all purpose flour'}, {'quantity': '1', 'unit': 'pinch', 'name': 'salt'}, {'quantity': '12', 'unit': 'grams', 'name': 'sugar'}, {'quantity': '2', 'unit': 'packets', 'name': 'rapid rise instant yeast'}, {'quantity': '540', 'unit': 'grams', 'name': 'warm water'}, {'quantity': '3', 'unit': 'cups', 'name': 'blueberries'}, {'quantity': '1', 'unit': '', 'name': 'lemon (juice)'}, {'quantity': '1', 'unit': 'tbsp', 'name': 'water'}, {'quantity': '3/4', 'unit': 'cup', 'name': 'white sugar'}, {'quantity': '1', 'unit': 'tsp', 'name': 'vanilla extract'}, {'quantity': '1', 'unit': 'tbsp', 'name': 'corn starch'}, {'quantity': '1 1/2', 'unit': 'tbsp', 'name': 'water (for cornstarch slurry)'}, {'quantity': '2/3', 'unit': 'cup', 'name': 'flour (for crumble)'}, {'quantity': '2/3', 'unit': 'cup', 'name': 'sugar (for crumble)'}, {'quantity': '1/4', 'unit': 'cup', 'name': 'melted butter (for crumble)'}, {'quantity': '1', 'unit': 'cup', 'name': 'powdered sugar'}, {'quantity': '1', 'unit': '', 'name': 'lemon (zest)'}, {'quantity': '1/2', 'unit': '', 'name': 'lemon (juice for icing)'}, {'quantity': '3', 'unit': 'tbsp', 'name': 'melted butter (for the pan)'}], 'instructions': ['First make your blueberry compote by combining blueberries, lemon juice, water, vanilla, and sugar in a skillet and cook on medium for 5 minutes until the berries have released their juice and the mixture is bubbling.', 'Mix your corn starch and water then pour them into the blueberry mixture and cook for another couple minutes until thickened. Remove it from the heat and allow it to cool.', 'For the dough, mix all the dough ingredients together in a stand mixer (or by hand in a bowl), and kneed for about 5-10 minutes until dough comes together and is smooth.', "You don't need to bloom the yeast if you are using instant yeast but if you are using another kind, bloom it first in the warm water until it becomes frothy (about 5 minutes) before mixing in the dry ingredients.", 'Melt the 3 tbsp of butter then pour it onto the bottom of a sheet pan (half sheet pan or full size).', 'For the crumble, combine flour, sugar, and melted butter.', 'For the icing, mix powdered sugar, lemon zest, and lemon juice.'], 'prep_time': None, 'cook_time': None, 'total_time': None, 'servings': None, 'dietary_info': [], 'difficulty': 'medium'}
+2025-05-06 17:13:10,707 - INFO - Dismissed comments sheet successfully.
+2025-05-06 17:13:10,709 - INFO - Post hash c47b397744c615bdd8aad0996c52a8eb685a5ae2fa538192af4970ab6f6fea0e already processed. Skipping extraction.
+2025-05-06 17:13:10,709 - INFO - Sending cached PDF: ./pdfs/Blueberry_Focaccia_1746575606.pdf
+2025-05-06 17:13:10,709 - INFO - Logging usage event for user=docteurzed, url=cached
+2025-05-06 17:13:13,257 - INFO - Usage event logged successfully for user=docteurzed (cached)
+2025-05-06 17:13:13,259 - INFO - Exiting post view before confirmation messaging...
+2025-05-06 17:13:16,320 - INFO - Successfully exited post view.
+2025-05-06 17:13:16,320 - INFO - Sending PDF to user's email...
+2025-05-06 17:13:16,776 - ERROR - SMTP_SSL failed: [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1028), trying SMTP with STARTTLS
+2025-05-06 17:13:19,987 - INFO - PDF emailed successfully to shahinz@mac.com using STARTTLS
+2025-05-06 17:13:19,988 - INFO - PDF sent via email successfully.
+2025-05-06 17:13:27,427 - INFO - Confirmation message sent.
+2025-05-06 17:13:27,428 - INFO - Returning to inbox...
+2025-05-06 17:13:33,235 - INFO - Successfully returned to DM inbox using back button
+2025-05-06 17:13:33,237 - INFO - Finished processing current unread threads.
+2025-05-06 17:13:34,239 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-05-06 17:13:34,652 - INFO - Found 0 thread(s) in total
+2025-05-06 17:13:34,653 - INFO - No unread messages found. Will scan again in 5 seconds...

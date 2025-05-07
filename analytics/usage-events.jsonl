@@ -62,3 +62,5 @@
 {"timestamp": "2025-05-06T00:11:42.420346Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "cached", "cuisine": "cached", "meal_format": "cached", "tags": []}
 {"timestamp": "2025-05-06T00:16:01.830928Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown", "tags": []}
 {"timestamp": "2025-05-06T00:20:39.437984Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "cached", "cuisine": "cached", "meal_format": "cached", "tags": []}
+{"timestamp": "2025-05-06T23:53:26.421781Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "unknown", "cuisine": "unknown", "meal_format": "unknown", "tags": []}
+{"timestamp": "2025-05-07T00:13:10.709818Z", "user_id": "docteurzed", "event": "recipe_shared", "url": "cached", "cuisine": "cached", "meal_format": "cached", "tags": []}

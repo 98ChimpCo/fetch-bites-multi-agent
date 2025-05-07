@@ -1,4 +1,6 @@
 from src.agents.pdf_cache import PDFCache, get_post_hash
+# from dm_post_parser import extract_caption, is_potential_recipe, find_pinned_recipe_comment, open_comments_section as dm_open_comments_section
+from comment_detection_tester import open_comments_section, find_comment_elements
 import os
 import json
 import time
@@ -13,12 +15,13 @@ from time import sleep
 from appium import webdriver
 from dotenv import load_dotenv
 from appium.options.ios import XCUITestOptions
-from selenium.common.exceptions import InvalidSessionIdException, NoSuchElementException
 from email.message import EmailMessage
 from archive.recipe_extractor import RecipeExtractor
 from src.agents.pdf_generator import PDFGenerator
 from PIL import Image
 from PIL import ImageDraw
+from appium.webdriver.common.appiumby import AppiumBy
+from pytesseract import image_to_string
 
 # -----------------------------------------------------------
 # Global set to keep track of processed post hashes
@@ -205,7 +208,7 @@ def wait_for_element(find_func, locator, timeout=10, poll_frequency=0.5):
         try:
             element = find_func(locator)
             return element
-        except NoSuchElementException:
+        except Exception:
             if time.time() > end_time:
                 logger.error(f"Timeout waiting for element: {locator}")
                 raise
@@ -219,7 +222,7 @@ def wait_for_element_func(func, timeout=10, poll_frequency=0.5, description="ele
             element = func()
             logger.info(f"{description} found successfully")
             return element
-        except NoSuchElementException:
+        except Exception:
             if time.time() > end_time:
                 logger.error(f"Timeout waiting for {description}")
                 raise
@@ -270,6 +273,24 @@ def save_caption(caption_text, user_id):
     logger.info(f"Caption saved to {caption_filename}")
     return caption_filename
 
+def scroll_modal_down(driver, start_y=600, end_y=300, duration=0.5):
+    """Simulates a downward swipe inside a modal by dragging from Y1 to Y2."""
+    try:
+        size = driver.get_window_size()
+        x = size['width'] // 2
+        driver.execute_script('mobile: dragFromToForDuration', {
+            'duration': duration,
+            'fromX': x,
+            'fromY': start_y,
+            'toX': x,
+            'toY': end_y
+        })
+        logger.info("Performed modal scroll swipe")
+        return True
+    except Exception as e:
+        logger.error(f"Modal swipe failed: {e}")
+        return False
+
 # -----------------------------------------------------------
 # Email Sending and Extraction Helpers
 # -----------------------------------------------------------
@@ -314,7 +335,11 @@ def extract_email_from_conversation(driver):
     email_pattern = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
     static_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
     for element in static_text_elements:
-        text = element.get_attribute("value") or element.get_attribute("name") or element.get_attribute("label") or ""
+        try:
+            text = element.get_attribute("value") or element.get_attribute("name") or element.get_attribute("label") or ""
+        except Exception as e:
+            logger.warning(f"Failed to process text element: {e}")
+            continue
         matches = re.findall(email_pattern, text)
         if matches:
             logger.info(f"Found email(s) in conversation: {matches}")
@@ -395,7 +420,7 @@ def click_thread_with_fallbacks(driver, thread):
             rect = thread.rect
             x = rect['x'] + rect['width'] // 2
             y = rect['y'] + rect['height'] // 2
-            driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
+            driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 0.1})
             logger.info("Tap on thread coordinates successful")
             return True
         except Exception as e3:
@@ -487,7 +512,7 @@ def ensure_in_dm_list(driver):
     If not, attempts navigation via back buttons or deep linking.
     """
     try:
-        if minimal_verify_dm_inbox(driver, timeout=3):
+        if strict_verify_dm_inbox(driver, timeout=3):
             return True
         try:
             back_buttons = driver.find_elements("-ios class chain", "**/XCUIElementTypeButton[`name CONTAINS \"back\" OR label CONTAINS \"Back\"`]")
@@ -640,7 +665,7 @@ def process_unread_threads(driver, user_memory):
                     rect = post_element.rect
                     x = rect['x'] + rect['width'] // 2
                     y = rect['y'] + rect['height'] // 2
-                    driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
+                    driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 0.1})
                     logger.info("Tapped on post with mobile: tap command")
                     # Insert prepping message after tapping on post
                     try:
@@ -689,7 +714,7 @@ def process_unread_threads(driver, user_memory):
                         rect = more_button.rect
                         x = rect['x'] + rect['width'] // 2
                         y = rect['y'] + rect['height'] // 2
-                        driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
+                        driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 0.1})
                         logger.info("Caption expanded successfully")
                         sleep(2)
                     else:
@@ -704,7 +729,7 @@ def process_unread_threads(driver, user_memory):
                                 rect = caption_elem.rect
                                 x = rect['x'] + rect['width'] // 2
                                 y = rect['y'] + rect['height'] // 2
-                                driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 5})
+                                driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 0.1})
                                 logger.info("Tapped on caption text to expand")
                                 sleep(2)
                         except Exception as caption_tap_err:
@@ -751,11 +776,113 @@ def process_unread_threads(driver, user_memory):
                 if caption_text:
                     save_caption(caption_text, user_id)
 
+                    # --- Claude-based recipe extraction: Try unified caption/comment parser ---
+                    def extract_recipe_with_claude(text):
+                        try:
+                            extractor = RecipeExtractor()
+                            return extractor.extract_recipe(text, force=True)
+                        except Exception as e:
+                            logger.error(f"Claude extraction failed: {e}")
+                            return None
+
+                    post = {
+                        "caption": caption_text
+                    }
+
+                    # Unified caption and comment extraction and selection
+                    logger.info("Extracting caption and comments using unified parser...")
+                    recipe = None
+                    try:
+                        caption_text, comments = extract_caption(driver)
+                        logger.info(f"[DEBUG] Unified caption extraction result: {caption_text[:160]}...")
+                        logger.info(f"[DEBUG] Extracted {len(comments)} top comments")
+
+                        # Pick top comment if it looks like a recipe
+                        top_comment = comments[0] if comments else None
+                        if top_comment and is_potential_recipe(top_comment):
+                            logger.info("[DEBUG] Top comment chosen as recipe source.")
+                            post["top_comment"] = top_comment
+                            recipe = extract_recipe_with_claude(top_comment)
+                        else:
+                            logger.info("[DEBUG] Falling back to caption for recipe source.")
+                            recipe = extract_recipe_with_claude(caption_text)
+                    except Exception as new_parser_error:
+                        logger.error(f"Unified caption+comment extraction failed: {new_parser_error}")
+
+                    # Try to extract from pinned comment using new robust method
+                    if not recipe:
+                        try:
+                            logger.info("Trying to extract recipe from pinned comment block...")
+                            try:
+                                open_comments_section(driver)
+                            except Exception as e:
+                                logger.warning(f"Failed to open comments section: {e}")
+                            comment_text = find_comment_elements(driver)
+                            if comment_text:
+                                logger.info(f"[DEBUG] Submitting extracted comment to Claude:\n\n{comment_text}\n")
+                                post["comment_text"] = comment_text
+                                recipe = extract_recipe_with_claude(comment_text)
+                                if recipe is None:
+                                    logger.warning("Claude response did not yield a valid recipe.")
+                                else:
+                                    logger.info(f"[DEBUG] Claude returned recipe object: {recipe}")
+                            else:
+                                logger.info("No suitable comment text found for Claude fallback.")
+                        except Exception as fallback_comment_error:
+                            logger.error(f"Error during comment text fallback extraction: {fallback_comment_error}")
+
+                    # --- Dismiss the comments sheet/modal if visible ---
+                    # Attempt to dismiss the comment sheet if visible
+                    try:
+                        dismiss_button = driver.find_element("-ios predicate string", "label == 'Dismiss' AND name == 'Button'")
+                        dismiss_button.click()
+                        sleep(2)
+                        logger.info("Dismissed comments sheet successfully.")
+                    except Exception as dismiss_err:
+                        logger.warning(f"Dismiss button not found or click failed: {dismiss_err}")
+
+                    # Post-failure safety: ensure comment view and fullscreen reel are exited before returning to DM thread
+                    if not recipe:
+                        logger.error("No recipe found in caption or pinned comment.")
+                        # Step 1: Try to exit comment and reel views
+                        try:
+                            logger.info("Attempting to exit post/comment view...")
+                            reel_back_button = driver.find_element(
+                                "-ios class chain",
+                                "**/XCUIElementTypeButton[`name == \"back-button\" OR name == \"close-button\" OR label == \"Close\"`]"
+                            )
+                            reel_back_button.click()
+                            sleep(2)
+                        except Exception as reel_back_err:
+                            logger.error(f"Error exiting expanded post view: {reel_back_err}")
+                            try:
+                                driver.execute_script('mobile: swipe', {'direction': 'right'})
+                                sleep(2)
+                                logger.info("Swipe fallback performed successfully.")
+                            except Exception as fallback_swipe_err:
+                                logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
+
+                        # Step 2: Only send fallback message if back in thread
+                        if is_in_conversation_thread(driver):
+                            try:
+                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                                fallback_message = "Sorry, I couldn't find a recipe in the post caption or comment. Please try another post and I'll do my best!"
+                                text_input.send_keys(fallback_message)
+                                sleep(1)
+                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                                send_button.click()
+                                sleep(2)
+                            except Exception as fallback_msg_err:
+                                logger.error(f"Failed to send fallback message: {fallback_msg_err}")
+                        else:
+                            logger.warning("Skipped sending fallback message — not in conversation thread.")
+                        ensure_in_dm_list(driver)
+                        return
+
                     # --- Hash-based deduplication and PDF cache logic ---
                     layout_version = "v1"
                     post_hash = get_post_hash(caption_text, user_id, layout_version)
                     
-                    # Fixed exists() call - removed unnecessary layout_version parameter
                     if pdf_cache.exists(post_hash):
                         logger.info(f"Post hash {post_hash} already processed. Skipping extraction.")
                         cached_pdf_path = pdf_cache.load_pdf_path(post_hash)
@@ -838,24 +965,25 @@ def process_unread_threads(driver, user_memory):
                         except Exception as fallback_swipe_err:
                             logger.error(f"Fallback swipe also failed: {fallback_swipe_err}")
 
-                    logger.info("Proceeding with recipe extraction from caption...")
-                    extractor = RecipeExtractor()
-                    content = {
-                        'caption': caption_text,
-                        'urls': re.findall(r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', caption_text)
-                    }
-                    
-                    # Only try to load cached recipe if it exists
-                    if pdf_cache.exists(post_hash):
-                        logger.info(f"Loaded recipe details from cache for hash {post_hash}")
-                        recipe_details = pdf_cache.load_recipe_details(post_hash)
-                    else:
-                        recipe_details = extract_recipe_from_content(content, extractor)
-                        if not recipe_details:
-                            logger.error("Recipe extraction failed: No details extracted.")
-                            navigate_back_to_dm_list(driver)
-                            continue
-                    
+                    logger.info("Proceeding with recipe extraction from Claude output...")
+                    # Use the recipe dict returned by Claude
+                    recipe_details = recipe
+                    if not recipe_details:
+                        logger.error("Recipe extraction failed: No details extracted.")
+                        try:
+                            if is_in_conversation_thread(driver):
+                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                                fallback_message = "Oops — I couldn’t find a recipe in this post. If it’s in the comments or audio, I might have missed it. Try another one and I’ll do my best!"
+                                text_input.send_keys(fallback_message)
+                                sleep(1)
+                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                                send_button.click()
+                                sleep(2)
+                        except Exception as fallback_msg_err:
+                            logger.error(f"Failed to send fallback message: {fallback_msg_err}")
+                        ensure_in_dm_list(driver)
+                        continue
+
                     logger.info("Recipe extraction successful.")
 
                     logger.info("Generating PDF from extracted recipe details...")
@@ -884,11 +1012,11 @@ def process_unread_threads(driver, user_memory):
                         pdf_cache.save()
                     
                     # Log usage event with info and error handling
-                    logger.info(f"Logging usage event for user={user_id}, url={content['urls'][0] if content['urls'] else 'unknown'}")
+                    logger.info(f"Logging usage event for user={user_id}")
                     try:
                         log_usage_event(
                             user_id=user_id,
-                            url=content['urls'][0] if content['urls'] else "unknown",
+                            url="unknown",
                             cuisine=recipe_details.get("cuisine", "unknown"),
                             meal_format=recipe_details.get("meal_format", "unknown"),
                             tags=list(post_hash_set)
@@ -1103,20 +1231,11 @@ try:
                     logger.info("Exiting scanning loop.")
                     break
             sleep(1)
-        except InvalidSessionIdException:
-            logger.error("Session terminated. Reinitializing driver...")
-            driver = init_driver()
-            logger.info("Navigating to DMs after reinitialization...")
-            try:
-                dm_button = driver.find_element("-ios predicate string", "name == 'direct-inbox'")
-                dm_button.click()
-                sleep(3)
-            except Exception as nav_error:
-                logger.error(f"Failed to navigate to DMs after reinitialization: {nav_error}")
-        except Exception as e:
-            logger.error(f"Unexpected error in scanning loop: {e}")
+        except Exception as loop_err:
+            logger.error(f"Unexpected error in scanning loop: {loop_err}")
             logger.error(traceback.format_exc())
-            sleep(10)
+            driver = init_driver()
+            sleep(5)
     
     logger.info("Exiting application...")
     try:
