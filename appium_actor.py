@@ -672,7 +672,7 @@ def process_unread_threads(driver, user_memory):
                     # Insert prepping message after tapping on post
                     try:
                         text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                        prepping_message = "Hey, I see you've shared a recipe post. Hang tight — I'm turning it into a recipe card for you!"
+                        prepping_message = "Hey, I see you’ve shared a post! Let me check it out — if it’s a recipe, I’ll turn it into a card for you!"
                         text_input.send_keys(prepping_message)
                         sleep(1)
                         send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -1064,7 +1064,7 @@ def process_unread_threads(driver, user_memory):
                         if is_in_conversation_thread(driver):
                             try:
                                 text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                fallback_message = "Sorry, I couldn't find a recipe in the post caption or comment. Please try another post and I'll do my best!"
+                                fallback_message = "I looked through the caption, comments, and structure but couldn’t find a valid recipe. It might be in a language I’m still learning to read, buried in video or voice, or just not detailed enough. Feel free to try another post — I’m ready when you are!"
                                 text_input.send_keys(fallback_message)
                                 sleep(1)
                                 send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
