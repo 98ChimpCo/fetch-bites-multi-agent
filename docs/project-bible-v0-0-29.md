@@ -1,19 +1,25 @@
-# Project Bible: Instagram Recipe Multi-Agent System (v0.0.28)
+# Project Bible: Instagram Recipe Multi-Agent System (v0.0.29)
 
 ## Overview
 **Project Name:** Fetch Bites Multi-Agent System  
 **Start Date:** March 10, 2025  
 **Current app Version:** v0.8.0  
-**Last Updated:** May 06, 2025
+**Last Updated:** May 10, 2025
 ---
-## ✅ Current Milestone: Comment-Based Recipe Extraction Success
-We've made significant progress in enhancing the Instagram Recipe Multi-Agent System's ability to extract recipes from pinned comments using Appium. This improvement addresses a key issue where recipes embedded in comments were previously inaccessible.
+## ✅ Current Milestone: QR Code URL Extraction + PDF Enhancements
+The system now reliably extracts the Instagram post URL from the QR code modal and embeds it in the generated PDF footer. Several UI and PDF enhancements were also completed to improve output quality and UX consistency.
+
 ### Key Achievements:
-1. Successfully extracted recipes from pinned comments using Appium
-2. Multi-strategy UI scraping logic confirmed to work across different post formats
-3. Intelligent fallback between caption and comment parsing implemented
-4. First comment recipe blocks now prioritized and evaluated with Claude
-5. PDF delivery, email confirmation, and UI navigation all working smoothly
+1. Switched from OCR to true QR code decoding using pyzbar
+2. Embedded canonical Instagram URL as clickable link in PDF footer
+3. Stripped tracking parameters from URLs (e.g., `?utm_source=qr`)
+4. Removed "Difficulty" label from PDF content
+5. Ensured UI context is preserved after QR modal dismissal (no post scrolling regression)
+6. Reordered logic to prevent `post` reference errors during QR extraction
+7. Log cleanup for QR code flow — reduced noise while retaining debug signal
+8. `layout_version` is now .env-configurable
+
+_Last Updated: May 10, 2025 — Bible Version 0.0.29_
 ## 🧠 Technical Highlights
 ### 1. URL Extraction and Processing
 The system now implements a more sophisticated approach to URL extraction and processing:
@@ -116,4 +122,4 @@ While the system has been improved, some limitations remain:
 3. **Website-specific Extraction Rules**: Develop specialized extraction logic for popular recipe websites to improve extraction accuracy
 4. **Performance Optimization**: Implement parallel processing for URL extraction to reduce processing time
 
-_Last Updated: May 06, 2025 — Bible Version 0.0.28_
+_Last Updated: May 10, 2025 — Bible Version 0.0.29_

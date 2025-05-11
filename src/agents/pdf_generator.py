@@ -104,7 +104,7 @@ class PDFGenerator:
                 elements.append(Paragraph('No instructions listed', self.styles['Normal']))
 
             elements.append(Spacer(1, 20))
-            footer_elements = self._create_footer(recipe_data)
+            footer_elements = self._create_footer(recipe_data, post_url)
             elements.extend(footer_elements)
 
             doc.build(elements)
@@ -144,8 +144,8 @@ class PDFGenerator:
         if recipe_data.get('servings'):
             info_items.append(('Servings', recipe_data['servings']))
         
-        if recipe_data.get('difficulty'):
-            info_items.append(('Difficulty', recipe_data['difficulty'].capitalize()))
+        # if recipe_data.get('difficulty'):
+        #     info_items.append(('Difficulty', recipe_data['difficulty'].capitalize()))
         
         # Display dietary info if available
         dietary_info = recipe_data.get('dietary_info', [])
@@ -262,12 +262,13 @@ class PDFGenerator:
         
         return elements
     
-    def _create_footer(self, recipe_data):
+    def _create_footer(self, recipe_data, post_url=None):
         """
         Create footer section with source information
         
         Args:
             recipe_data (dict): Recipe data
+            post_url (str): Optional post URL fallback
             
         Returns:
             list: Elements for footer section
@@ -276,11 +277,12 @@ class PDFGenerator:
         
         # Get source information
         source = recipe_data.get('source', {})
-        platform = source.get('platform', 'Unknown')
-        url = source.get('url', '')
+        platform = source.get('platform', 'Instagram')
+        url = source.get('url') or post_url or ''
+        url = url.split('?')[0]
         
         if platform and url:
-            source_text = f"Source: {platform} - {url}"
+            source_text = f'Source: {platform} - <a href="{url}">{url}</a>'
         elif platform:
             source_text = f"Source: {platform}"
         else:

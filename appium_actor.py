@@ -1,6 +1,5 @@
 from src.agents.pdf_cache import PDFCache, get_post_hash
-# from dm_post_parser import extract_caption, is_potential_recipe, find_pinned_recipe_comment, open_comments_section as dm_open_comments_section
-from comment_detection_tester import open_comments_section, find_comment_elements
+from comment_detection_tester import open_comments_section, find_comment_elements, is_potential_recipe
 import os
 import json
 import time
@@ -22,6 +21,9 @@ from PIL import Image
 from PIL import ImageDraw
 from appium.webdriver.common.appiumby import AppiumBy
 from pytesseract import image_to_string
+
+# --- QR code URL extractor ---
+from src.utils.qr_code_url_extractor import extract_url_from_qr_image
 
 # -----------------------------------------------------------
 # Global set to keep track of processed post hashes
@@ -689,37 +691,227 @@ def process_unread_threads(driver, user_memory):
                         continue
                 sleep(3)
                 
+                # Variable to store the extracted URL from QR code
+                extracted_post_url = None
+                
                 logger.info("Checking if caption needs expansion...")
                 try:
-                    more_button_selectors = [
-                        "-ios predicate string", "name CONTAINS 'More' AND visible==true",
-                        "-ios class chain", "**/XCUIElementTypeButton[`name CONTAINS \"More\"`]",
-                        "-ios class chain", "**/XCUIElementTypeStaticText[`name CONTAINS \"... more\"`]",
-                        "xpath", "//XCUIElementTypeStaticText[contains(@name, '... more')]"
-                    ]
-                    more_button = None
-                    for i in range(0, len(more_button_selectors), 2):
-                        try:
-                            finder_method = more_button_selectors[i]
-                            selector = more_button_selectors[i+1]
-                            elements = driver.find_elements(finder_method, selector)
-                            if elements:
-                                more_button = elements[0]
-                                logger.info(f"Found caption expansion element using: {finder_method} -> {selector}")
-                                break
-                        except Exception as selector_err:
-                            continue
+                    # Use robust selector for the more-options button as per latest UI structure
+                    more_button = driver.find_element(
+                        "-ios class chain",
+                        "**/XCUIElementTypeButton[`name == 'more-options-button'`]"
+                    )
                     if more_button:
-                        logger.info("Tapping on 'More' to expand caption...")
-                        rect = more_button.rect
-                        x = rect['x'] + rect['width'] // 2
-                        y = rect['y'] + rect['height'] // 2
-                        driver.execute_script('mobile: tap', {'x': x, 'y': y, 'duration': 0.1})
-                        logger.info("Caption expanded successfully")
+                        logger.info("Tapping on 'More options' to expand caption or open QR modal...")
+                        more_button.click()
+                        # Dump UI hierarchy after More button is tapped
+                        try:
+                            source_xml = driver.page_source
+                            os.makedirs("debug_ui", exist_ok=True)
+                            with open("debug_ui/after_more_button.xml", "w") as f:
+                                f.write(source_xml)
+                            logger.info("Saved UI hierarchy after tapping more-options-button")
+                        except Exception as hierarchy_err:
+                            logger.error(f"Failed to capture UI hierarchy: {hierarchy_err}")
+                        # --- DEBUG: Log all visible buttons to identify QR code selector ---
+                        # (Removed verbose button attribute logging)
                         sleep(2)
+                        
+                        # --- QR Code Flow ---
+                        try:
+                            logger.info("============== QR CODE FLOW: START ==============")
+                            # We've already clicked more-options-button and enumerated buttons, now proceed with QR code cell search
+
+                            # Confirm menu is visible by checking if multiple cells are present
+                            try:
+                                menu_cells = driver.find_elements("class name", "XCUIElementTypeCell")
+                                logger.debug(f"[QR DEBUG] Found {len(menu_cells)} menu cells in total")
+                                # (Removed verbose per-cell logging)
+                            except Exception as menu_err:
+                                logger.debug(f"[QR DEBUG] Could not verify menu cells: {menu_err}")
+
+                            # Step 2: Attempt to tap the QR Code menu cell with simplified logging and fallback
+                            logger.info("[QR DEBUG] Searching for QR code cell...")
+
+                            # Strategy 1: Try iOS class chain for better reliability
+                            qr_code_cell = None
+                            tries = 0
+                            max_tries = 3
+
+                            while tries < max_tries and not qr_code_cell:
+                                tries += 1
+                                try:
+                                    qr_code_cell = driver.find_element(
+                                        "-ios class chain",
+                                        "**/XCUIElementTypeCell[`name == \"show-qr-code\" OR label == \"QR code\"`]"
+                                    )
+                                    logger.info("[QR DEBUG] Found QR code cell using iOS class chain selector!")
+                                except Exception:
+                                    try:
+                                        qr_code_cell = driver.find_element(
+                                            "xpath",
+                                            "//XCUIElementTypeCell[@name='show-qr-code' or @label='QR code']"
+                                        )
+                                        logger.info("[QR DEBUG] Found QR code cell using XPath fallback!")
+                                    except Exception:
+                                        try:
+                                            qr_code_cell = driver.find_element(
+                                                "-ios predicate string",
+                                                "type == 'XCUIElementTypeCell' AND (name == 'show-qr-code' OR label == 'QR code')"
+                                            )
+                                            logger.info("[QR DEBUG] Found QR code cell using predicate string fallback!")
+                                        except Exception:
+                                            # If all strategies fail, pause briefly and try again
+                                            if tries < max_tries:
+                                                sleep(1)  # Short pause before retry
+
+                            # Final check after all attempts
+                            if not qr_code_cell:
+                                logger.error("[QR DEBUG] QR code cell NOT found after multiple attempts")
+                                # Desperate direct index approach
+                                try:
+                                    menu_cells = driver.find_elements("class name", "XCUIElementTypeCell")
+                                    # Assumption: QR code cell is often the 6th or 7th menu item
+                                    for likely_index in [6, 5, 7, 4]:
+                                        if len(menu_cells) > likely_index:
+                                            potential_cell = menu_cells[likely_index]
+                                            try:
+                                                name = potential_cell.get_attribute("name")
+                                                label = potential_cell.get_attribute("label")
+                                                if "qr" in (name or "").lower() or "qr" in (label or "").lower() or "code" in (label or "").lower():
+                                                    logger.info(f"[QR DEBUG] Found likely QR cell by name/label at index {likely_index}")
+                                                    qr_code_cell = potential_cell
+                                                    break
+                                            except Exception:
+                                                pass
+                                    if not qr_code_cell and len(menu_cells) > 6:
+                                        qr_code_cell = menu_cells[6]  # QR is often the 6th item (index 5 or 6)
+                                except Exception:
+                                    pass
+
+                            # Only proceed if we successfully found the element
+                            if qr_code_cell:
+                                try:
+                                    rect = qr_code_cell.rect
+                                    # (Removed verbose attribute logging)
+                                    # Take screenshot before clicking (demoted to debug)
+                                    screenshot_path = "screenshots/before_qr_click.png"
+                                    driver.get_screenshot_as_file(screenshot_path)
+                                    logger.debug(f"[QR DEBUG] Pre-QR-click screenshot: {screenshot_path}")
+
+                                    # Try to click the QR code cell
+                                    try:
+                                        logger.info("[QR DEBUG] Attempting direct .click() method")
+                                        qr_code_cell.click()
+                                        logger.info("[QR DEBUG] QR code cell clicked successfully via .click()")
+                                    except Exception as click_err:
+                                        logger.warning(f"[QR DEBUG] Direct click failed: {click_err}")
+                                        try:
+                                            logger.info("[QR DEBUG] Attempting coordinate tap fallback")
+                                            x = rect["x"] + rect["width"] // 2
+                                            y = rect["y"] + rect["height"] // 2
+                                            logger.info(f"[QR DEBUG] Tapping at coordinates: x={x}, y={y}")
+                                            driver.execute_script("mobile: tap", {"x": x, "y": y, "duration": 0.2})
+                                            logger.info("[QR DEBUG] Coordinate tap executed")
+                                        except Exception as tap_err:
+                                            logger.error(f"[QR DEBUG] Coordinate tap also failed: {tap_err}")
+                                    logger.info("[QR DEBUG] ======= QR CODE CELL CLICK COMPLETE =======")
+                                except Exception as attr_err:
+                                    logger.error(f"[QR DEBUG] Error processing QR code cell: {attr_err}")
+
+                            # Wait for QR code modal to appear (demoted to debug)
+                            logger.debug("[QR DEBUG] Waiting for QR code modal (3 seconds)...")
+                            sleep(3)
+
+                            # Step 3: Take screenshot of QR code modal (demoted to debug)
+                            try:
+                                logger.debug("[QR DEBUG] Taking QR code modal screenshot...")
+                                os.makedirs("images", exist_ok=True)
+                                qr_path = "images/qr_code_screenshot.png"
+                                driver.get_screenshot_as_file(qr_path)
+                                logger.debug(f"[QR DEBUG] QR code screenshot saved to {qr_path}")
+                                # Extract URL from QR code immediately while we're still in the modal
+                                try:
+                                    extracted_post_url = extract_url_from_qr_image(qr_path)
+                                    if extracted_post_url:
+                                        logger.info(f"[QR DEBUG] Successfully extracted URL from QR: {extracted_post_url}")
+                                    else:
+                                        logger.warning("[QR DEBUG] Failed to extract URL from QR code")
+                                except Exception as url_err:
+                                    logger.error(f"[QR DEBUG] Error extracting URL from QR: {url_err}")
+                            except Exception as ss_err:
+                                logger.error(f"[QR DEBUG] Failed to capture QR code screenshot: {ss_err}")
+
+                            # Step 4: Tap the 'Done' button to close modal
+                            try:
+                                logger.info("[QR DEBUG] Looking for 'Done' button...")
+                                done_button = driver.find_element("-ios predicate string", "name == 'Done'")
+                                logger.info("[QR DEBUG] Found 'Done' button, clicking...")
+                                done_button.click()
+                                logger.info("[QR DEBUG] Clicked 'Done' button")
+                                sleep(2)
+                            except Exception as done_err:
+                                logger.error(f"[QR DEBUG] Failed to find or click 'Done' button: {done_err}")
+                                # Fallback: try to dismiss modal with other methods
+                                try:
+                                    logger.debug("[QR DEBUG] Attempting fallback dismissal methods...")
+                                    # Try various dismiss buttons
+                                    dismiss_selectors = [
+                                        ("-ios predicate string", "label == 'Dismiss'"),
+                                        ("-ios predicate string", "name == 'Dismiss'"),
+                                        ("xpath", "//XCUIElementTypeButton[contains(@label, 'Done') or contains(@name, 'Done')]"),
+                                        ("-ios class chain", "**/XCUIElementTypeButton[`label == \"Back\" OR name == \"Back\"`]")
+                                    ]
+                                    for selector_type, selector in dismiss_selectors:
+                                        try:
+                                            logger.debug(f"[QR DEBUG] Trying dismiss selector: {selector_type} - {selector}")
+                                            dismiss_button = driver.find_element(selector_type, selector)
+                                            dismiss_button.click()
+                                            logger.debug(f"[QR DEBUG] Clicked dismiss button with selector: {selector}")
+                                            break
+                                        except Exception:
+                                            pass
+                                except Exception as fallback_err:
+                                    logger.error(f"[QR DEBUG] All dismissal fallbacks failed: {fallback_err}")
+
+                            logger.info("============== QR CODE FLOW: END ==============")
+
+                        except Exception as qr_flow_err:
+                            logger.error(f"[QR DEBUG] QR tap flow failed: {qr_flow_err}")
+                            logger.error(traceback.format_exc())  # Full traceback for debugging
+
+                        # UI stabilization after QR code modal
+                        logger.info("Waiting briefly to stabilize UI after QR modal...")
+                        sleep(1.5)
+                        # Click the caption expansion link to reveal the full caption
+                        try:
+                            logger.info("Attempting to click caption expansion link...")
+                            caption_more_link = driver.find_element(
+                                "-ios class chain", 
+                                "**/XCUIElementTypeLink[`name == \"…\"`]"
+                            )
+                            # Get location info for logging
+                            caption_more_rect = caption_more_link.rect
+                            logger.info(f"Found caption expansion link at position: {caption_more_rect}")
+                            
+                            # Click the link to expand caption
+                            caption_more_link.click()
+                            logger.info("Clicked caption expansion link successfully")
+                            sleep(2)  # Wait for caption to expand
+                        except Exception as caption_expansion_err:
+                            logger.warning(f"Could not click caption expansion link: {caption_expansion_err}")
+                            # Try alternative approach with text containing "More"
+                            try:
+                                more_text_elements = driver.find_elements("-ios class chain", "**/XCUIElementTypeStaticText[`name CONTAINS \"More\"`]")
+                                if more_text_elements:
+                                    more_text_elements[0].click()
+                                    logger.info("Clicked 'More' text element for caption expansion")
+                                    sleep(2)
+                            except Exception as alt_caption_err:
+                                logger.warning(f"Alternative caption expansion also failed: {alt_caption_err}")
                     else:
-                        logger.info("No caption expansion element found - caption may already be expanded")
-                        # Alternative: try tapping on the caption text
+                        logger.info("No 'more-options-button' found - menu may already be open or not required.")
+                        # Alternative: try tapping on the caption text (legacy fallback)
                         try:
                             caption_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
                             potential_captions = [elem for elem in caption_text_elements if elem.get_attribute("value") and len(elem.get_attribute("value")) > 30]
@@ -788,6 +980,12 @@ def process_unread_threads(driver, user_memory):
                     post = {
                         "caption": caption_text
                     }
+                    # If URL was extracted, store it in recipe data for later use
+                    if extracted_post_url:
+                        post["source"] = {
+                            "platform": "Instagram",
+                            "url": extracted_post_url
+                        }
 
                     # Unified caption and comment extraction and selection
                     logger.info("Extracting caption and comments using unified parser...")
@@ -879,8 +1077,21 @@ def process_unread_threads(driver, user_memory):
                         ensure_in_dm_list(driver)
                         return
 
+                    # --- Attach source URL to recipe if available from QR code ---
+                    if extracted_post_url:
+                        # Only set if not already present in recipe
+                        if "source" not in recipe:
+                            recipe["source"] = {
+                                "platform": "Instagram",
+                                "url": extracted_post_url
+                            }
+                        else:
+                            # If recipe["source"] is a dict, update/merge the url and platform
+                            if isinstance(recipe["source"], dict):
+                                recipe["source"].setdefault("platform", "Instagram")
+                                recipe["source"].setdefault("url", extracted_post_url)
                     # --- Hash-based deduplication and PDF cache logic ---
-                    layout_version = "v1"
+                    layout_version = os.getenv("LAYOUT_VERSION", "v1")
                     post_hash = get_post_hash(caption_text, user_id, layout_version)
                     
                     if pdf_cache.exists(post_hash):
@@ -893,10 +1104,15 @@ def process_unread_threads(driver, user_memory):
                             try:
                                 log_usage_event(
                                     user_id=user_id,
-                                    url="cached",
-                                    cuisine="cached",
-                                    meal_format="cached",
-                                    tags=list(post_hash_set)
+                                    url="unknown",
+                                    cuisine=recipe_details.get("cuisine", "unknown"),
+                                    meal_format=recipe_details.get("meal_format", "unknown"),
+                                    tags=list(post_hash_set),
+                                    input_char_count=input_char_count,
+                                    output_char_count=output_char_count,
+                                    delta_ratio=char_ratio,
+                                    delta_label=delta_label,
+                                    extraction_status="success"
                                 )
                                 logger.info(f"Usage event logged successfully for user={user_id} (cached)")
                             except Exception as e:
@@ -968,21 +1184,11 @@ def process_unread_threads(driver, user_memory):
                     logger.info("Proceeding with recipe extraction from Claude output...")
                     # Use the recipe dict returned by Claude
                     recipe_details = recipe
-                    if not recipe_details:
-                        logger.error("Recipe extraction failed: No details extracted.")
-                        try:
-                            if is_in_conversation_thread(driver):
-                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                fallback_message = "Oops — I couldn’t find a recipe in this post. If it’s in the comments or audio, I might have missed it. Try another one and I’ll do my best!"
-                                text_input.send_keys(fallback_message)
-                                sleep(1)
-                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
-                                send_button.click()
-                                sleep(2)
-                        except Exception as fallback_msg_err:
-                            logger.error(f"Failed to send fallback message: {fallback_msg_err}")
-                        ensure_in_dm_list(driver)
-                        continue
+                    
+                    # If we extracted a URL from the QR code earlier, add it to the recipe details
+                    if extracted_post_url:
+                        recipe_details["source_url"] = extracted_post_url
+                        logger.info(f"Added source URL to recipe details: {extracted_post_url}")
 
                     logger.info("Recipe extraction successful.")
 
@@ -1011,6 +1217,42 @@ def process_unread_threads(driver, user_memory):
                         pdf_cache.set(post_hash, user_id, caption_text, recipe_details, pdf_path)
                         pdf_cache.save()
                     
+                    # Measure content delta between input and Claude output
+                    try:
+                        input_text = post.get("comment_text") or post.get("caption", "")
+                        input_char_count = len(input_text)
+                        def extract_content_text(recipe_dict):
+                            parts = []
+                            if 'title' in recipe_dict: parts.append(recipe_dict['title'])
+                            if 'description' in recipe_dict: parts.append(recipe_dict['description'])
+                            if 'ingredients' in recipe_dict:
+                                parts.extend([
+                                    f"{i.get('quantity', '')} {i.get('unit', '')} {i.get('name', '')}".strip()
+                                    for i in recipe_dict['ingredients']
+                                    if isinstance(i, dict)
+                                ])
+                            if 'instructions' in recipe_dict:
+                                parts.extend(recipe_dict['instructions'])
+                            return " ".join(parts)
+
+                        output_text = extract_content_text(recipe_details)
+                        output_char_count = len(output_text)
+                        char_ratio = output_char_count / input_char_count if input_char_count else 0
+
+                        if 0.9 <= char_ratio <= 1.1:
+                            delta_label = "matched"
+                        elif char_ratio < 0.9:
+                            delta_label = "under-extracted"
+                        else:
+                            delta_label = "over-extracted"
+
+                        logger.info(f"[DELTA] Input chars: {input_char_count}, Output chars: {output_char_count}, Ratio: {char_ratio:.2f}, Label: {delta_label}")
+                    except Exception as delta_err:
+                        logger.warning(f"Failed to compute delta metrics: {delta_err}")
+                        input_char_count = 0
+                        output_char_count = 0
+                        delta_label = "unknown"
+
                     # Log usage event with info and error handling
                     logger.info(f"Logging usage event for user={user_id}")
                     try:
@@ -1019,7 +1261,10 @@ def process_unread_threads(driver, user_memory):
                             url="unknown",
                             cuisine=recipe_details.get("cuisine", "unknown"),
                             meal_format=recipe_details.get("meal_format", "unknown"),
-                            tags=list(post_hash_set)
+                            tags=list(post_hash_set),
+                            input_char_count=input_char_count,
+                            output_char_count=output_char_count,
+                            delta_label=delta_label
                         )
                         logger.info(f"Usage event logged successfully for user={user_id}")
                     except Exception as e:

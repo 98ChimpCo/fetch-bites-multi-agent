@@ -492,5 +492,65 @@
     "pdf_path": "./pdfs/Blueberry_Focaccia_1746575606.pdf",
     "layout_version": "v1",
     "cached_at": "2025-05-06T23:53:26.420669"
+  },
+  "e15b9d6c6ba8ba7b1d65b6e184663fff07d9d348aa3b74737e354ea4aebfcc0b": {
+    "user_id": "docteurzed",
+    "caption": "FINGERLICKING GARLIC HERB BUTTER TANDOORI LAMB CHOPS AND MINT SAUCE \ud83c\uddee\ud83c\uddf3\ud83e\udd24\ud83d\udca5\ud83e\udd2f\ud83d\udc83\ud83c\udffd\ud83d\udcb0\ud83d\udea6\ud83d\udcaf\ud83d\ude4f\ud83c\udffd\ud83d\ude0d\u26a1\ufe0f\ud83d\udca3\u2764\ufe0f\ud83d\udd25,\nSucculent Juicy an Explosion of flavours Garlic herb butter lamb chops, it is shockingly quick and easy to make as well. Lamb chops is bursting with bold, smoky, and as-spicy-as-you-want-it flavors, super juicy, with my delicious mint sauce. This is going straight to the \u201cfavourite\u201d file. It makes a fabulous easy weeknight meal that can go directly on the grill once marinated or is tasty enough for prep ahead entertaining. Used @walkerswood green seasoning \ud83d\udd25\ud83d\udd25\ud83d\udd25. Sells at @tescofood \n.\n.\nDM FOR MORE INFO TO GET MY DAILY RECIPES. Recipe comes with my delicious mint sauce recipe, \n.\n.\n#lambchops #food #goodfood #recipe #love #newyork #newjersey #texas #atlanta #florida #tandoorilambchops #indianfood",
+    "recipe": {
+      "title": "Garlic Herb Butter Tandoori Lamb Chops with Mint Sauce",
+      "description": "Succulent juicy lamb chops bursting with bold, smoky, and spicy flavors, topped with garlic herb butter and served with a delicious mint sauce. Shockingly quick and easy to make, perfect for an easy weeknight meal or entertaining.",
+      "ingredients": [
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "lamb chops"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "garlic"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "herb butter"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "tandoori spices"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "Walker's Wood green seasoning"
+        },
+        {
+          "quantity": null,
+          "unit": null,
+          "name": "ingredients for mint sauce (not specified)"
+        }
+      ],
+      "instructions": [
+        "Marinate the lamb chops with tandoori spices and Walker's Wood green seasoning",
+        "Grill the marinated lamb chops",
+        "Top with garlic herb butter",
+        "Serve with mint sauce"
+      ],
+      "prep_time": null,
+      "cook_time": null,
+      "total_time": null,
+      "servings": null,
+      "dietary_info": [],
+      "difficulty": "easy",
+      "source": {
+        "platform": "Instagram",
+        "url": "https://instagram.com/p/DGqG_AyounQ/?utm_source=qr"
+      },
+      "source_url": "https://instagram.com/p/DGqG_AyounQ/?utm_source=qr"
+    },
+    "pdf_path": "./pdfs/Garlic_Herb_Butter_Tandoori_Lamb_Chops_with_Mint_S_1746928304.pdf",
+    "layout_version": "v1",
+    "cached_at": "2025-05-11T01:51:44.329511"
   }
 }

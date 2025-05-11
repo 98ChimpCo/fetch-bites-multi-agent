@@ -18,7 +18,9 @@ GOOGLE_CREDS_PATH = os.getenv("GOOGLE_SHEETS_CREDS_PATH")
 GOOGLE_SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 
-def log_usage_event(user_id, url, cuisine=None, meal_format=None, tags=None):
+def log_usage_event(user_id, url, cuisine=None, meal_format=None, tags=None,
+                    input_char_count=0, output_char_count=0, delta_ratio=0.0,
+                    delta_label="", extraction_status=""):
     event = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "user_id": user_id,
@@ -26,7 +28,12 @@ def log_usage_event(user_id, url, cuisine=None, meal_format=None, tags=None):
         "url": url,
         "cuisine": cuisine or "unknown",
         "meal_format": meal_format or "unknown",
-        "tags": tags or []
+        "tags": tags or [],
+        "input_char_count": input_char_count,
+        "output_char_count": output_char_count,
+        "delta_ratio": delta_ratio,
+        "delta_label": delta_label,
+        "extraction_status": extraction_status
     }
     print(f"[Analytics] Logging event: {event}")
 
@@ -61,7 +68,12 @@ def log_usage_event(user_id, url, cuisine=None, meal_format=None, tags=None):
             event["url"],
             event["cuisine"],
             event["meal_format"],
-            ", ".join(event["tags"])
+            ", ".join(event["tags"]),
+            event["input_char_count"],
+            event["output_char_count"],
+            event["delta_ratio"],
+            event["delta_label"],
+            event["extraction_status"]
         ])
         print(f"[Analytics] Row appended successfully.")
     except Exception as e:
