@@ -22,55 +22,14 @@ The system now reliably extracts the Instagram post URL from the QR code modal a
 _Last Updated: May 10, 2025 — Bible Version 0.0.29_
 ## 🧠 Technical Highlights
 ### 1. URL Extraction and Processing
-The system now implements a more sophisticated approach to URL extraction and processing:
-```python
-def extract_recipe_from_content(content, recipe_agent):
-    """Process content to extract recipe using multiple strategies"""
-    
-    # Strategy 1: Extract from URLs if present
-    if 'caption' in content and content['caption']:
-        # Extract URLs with better pattern matching
-        import re
-        # This pattern captures complete URLs including paths
-        url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+(?:/[-\w./%]+)*'
-        urls = re.findall(url_pattern, content['caption'])
-        
-        if urls:
-            logger.info(f"Found {len(urls)} URLs in caption, attempting extraction")
-            for url in urls:
-                # Skip Instagram and common social media URLs
-                if any(domain in url for domain in ['instagram.com', 'facebook.com', 'twitter.com', 'tiktok.com']):
-                    continue
-                
-                try:
-                    # Try to extract recipe from URL
-                    logger.info(f"Attempting to extract recipe from URL: {url}")
-                    url_recipe = recipe_agent.extract_recipe_from_url(url)
-                    if url_recipe:
-                        logger.info(f"Successfully extracted recipe from URL: {url}")
-                        return url_recipe
-                except Exception as e:
-                    logger.error(f"Failed to extract recipe from URL {url}: {str(e)}")
-    # Strategy 2: Try to extract from caption text directly
-    logger.info("Trying to extract recipe from caption text...")
-        try:
-            return recipe_agent.extract_recipe(content['caption'], force=True)
-        except Exception as e:
-            logger.error(f"Failed to extract recipe from caption: {str(e)}")
-    return None
-```
-This implementation:
-- Uses a comprehensive regex pattern to capture complete URLs with paths
-- Prioritizes external URL extraction before falling back to caption-based extraction
-- Implements proper error handling and logging
-- Avoids hardcoded URL paths, making the system more adaptable
+<!--
+The detailed Python code example for caption and URL extraction has been removed as it relates to prior caption/comment URL logic.
+-->
+
+This milestone focuses on robust QR code decoding to extract Instagram post URLs, ensuring the URLs are canonical and free of tracking parameters before embedding them into PDFs. The system avoids hardcoded URL paths to maintain adaptability and prioritizes clean, clickable links in generated documents. Logging has been streamlined to reduce noise while preserving important debug information. UI context preservation after QR modal dismissal prevents regressions in user experience.
+
 ### 2. Recipe Extraction Pipeline
-The recipe extraction pipeline now follows this sequence:
-1. Extract and identify URLs in the caption
-2. Try to extract recipe from each eligible URL in sequence
-3. Fall back to caption-based extraction if URL extraction fails
-4. Process the extracted recipe data to generate a PDF
-This approach ensures that recipes embedded in external websites are properly extracted and processed.
+The recipe extraction pipeline now ensures that URLs extracted via QR codes are clean and canonical before recipe processing and PDF generation.
 
 ### 3. Reply Mode Suppression and Message Context Awareness
 To avoid unwanted reply thumbnails in the outgoing messages:
@@ -81,11 +40,10 @@ To avoid unwanted reply thumbnails in the outgoing messages:
 ## 🔨 System Improvements
 | Area | Improvements |
 |------|--------------|
-| URL Extraction | Enhanced regex pattern for more comprehensive URL capture |
-| Recipe Processing | Prioritized URL-based extraction for better recipe detail capture |
-| Error Handling | Added more detailed logging for URL extraction attempts |
-| Maintainability | Avoided hardcoded URLs for better adaptability to different recipes |
-| DM Message UX | Split outgoing messages into reply-mode and clean bubbles based on screen context |
+| QR Code Decoding | Switched from OCR to pyzbar for accurate QR code extraction |
+| PDF Formatting | Added clickable canonical Instagram URLs in PDF footer; stripped tracking params |
+| Logging | Reduced noise in QR code flow logs while retaining debug signals |
+| UI Regression Fixes | Preserved UI context after QR modal dismissal to prevent scrolling issues |
 
 ## 🛣 Next Up
 - [x] Scroll comment list to detect secondary comment blocks
@@ -102,10 +60,12 @@ To avoid unwanted reply thumbnails in the outgoing messages:
 - ✅ Generates well-formatted recipe PDFs with complete ingredient lists and instructions
 ## 📝 Technical Notes
 ### URL Extraction Strategy
-The URL extraction has been improved in several ways:
-1. **Better Pattern Matching**: The regex pattern `r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+(?:/[-\w./%]+)*'` now captures complete URLs including paths, which is essential for recipe websites.
-2. **Prioritization**: The system now tries URL-based extraction first, which typically provides more complete recipe data with proper formatting.
-3. **Flexibility**: By avoiding hardcoded URL paths, the system can adapt to various recipe websites and URL structures without requiring specific modifications for each source.
+The QR code URL extraction has been improved to:
+- Decode QR codes accurately using pyzbar instead of OCR
+- Embed clean, canonical Instagram URLs in PDFs with tracking parameters removed
+- Avoid hardcoded URL paths for better adaptability and maintainability
+- Maintain clear and concise logging focused on QR code processing
+
 ### Current Limitations
 While the system has been improved, some limitations remain:
 1. **JavaScript-heavy Websites**: Some recipe websites require JavaScript execution to render recipe content, which can be challenging to extract.
