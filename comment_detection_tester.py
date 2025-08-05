@@ -213,6 +213,34 @@ def find_comment_elements(driver):
         logger.error(f"Error finding comment elements: {e}")
     return best_candidate if best_candidate else None
 
+def extract_caption(driver):
+    """Extract caption and comments from the current Instagram post."""
+    try:
+        # Extract caption text
+        static_text_elements = driver.find_elements("class name", "XCUIElementTypeStaticText")
+        all_texts = []
+        for element in static_text_elements:
+            text = element.get_attribute("value") or element.get_attribute("name") or element.get_attribute("label") or ""
+            if len(text) > 10:
+                all_texts.append((len(text), text))
+        
+        caption_text = ""
+        if all_texts:
+            all_texts.sort(reverse=True)
+            if all_texts[0][0] > 50:  # Minimum caption length
+                caption_text = all_texts[0][1]
+        
+        # Extract comments using existing function
+        comments = []
+        comment_text = find_comment_elements(driver)
+        if comment_text and is_potential_recipe(comment_text):
+            comments.append(comment_text)
+            
+        return caption_text, comments
+    except Exception as e:
+        logger.error(f"Error extracting caption and comments: {e}")
+        return "", []
+
 def test_comment_detection():
     """Main function to test comment detection."""
     logger.info("Starting Instagram comment detection test")

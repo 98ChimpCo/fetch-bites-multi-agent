@@ -169,8 +169,8 @@ def init_driver():
     logger.info("Initializing Appium driver...")
     load_dotenv()
     options = XCUITestOptions()
-    options.device_name = "iPhone"
-    options.platform_version = "18.3"
+    options.device_name = "Fetch.Bites"
+    options.platform_version = "18.1.1"
     options.udid = "00008101-000A4D320A28001E"
     options.bundle_id = "com.burbn.instagram"
     options.xcode_org_id = "6X85PLZ26L"
@@ -178,7 +178,7 @@ def init_driver():
     options.set_capability("showXcodeLog", True)
     options.set_capability("usePrebuiltWDA", True)
     try:
-        driver_instance = webdriver.Remote("http://127.0.0.1:4723", options=options)
+        driver_instance = webdriver.Remote("http://127.0.0.1:4723/wd/hub", options=options)
         logger.info("Driver initialized successfully.")
         return driver_instance
     except Exception as e:

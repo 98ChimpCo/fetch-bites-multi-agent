@@ -16369,3 +16369,191 @@ Garnish with scallion greens thinly sliced
 2025-05-11 14:58:53,257 - INFO - Scanning for unread messages (every 5 seconds)...
 2025-05-11 14:58:53,579 - INFO - Found 0 thread(s) in total
 2025-05-11 14:58:53,579 - INFO - No unread messages found. Will scan again in 5 seconds...
+2025-08-04 21:03:58,555 - INFO - Starting Instagram Recipe Extractor
+2025-08-04 21:03:58,555 - INFO - Initializing Appium driver...
+2025-08-04 21:03:58,584 - ERROR - Failed to initialize driver: Message: The requested resource could not be found, or a request was received using an HTTP method that is not supported by the mapped resource
+
+2025-08-04 21:03:58,587 - ERROR - Traceback (most recent call last):
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 181, in init_driver
+    driver_instance = webdriver.Remote("http://127.0.0.1:4723", options=options)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 253, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        command_executor=command_executor,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        client_config=client_config,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 261, in __init__
+    self.start_session(capabilities)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 344, in start_session
+    response = self.execute(RemoteCommand.NEW_SESSION, w3c_caps)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 454, in execute
+    self.error_handler.check_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: The requested resource could not be found, or a request was received using an HTTP method that is not supported by the mapped resource
+
+
+2025-08-04 21:03:58,587 - CRITICAL - Critical error: Message: The requested resource could not be found, or a request was received using an HTTP method that is not supported by the mapped resource
+
+2025-08-04 21:03:58,587 - CRITICAL - Traceback (most recent call last):
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 1441, in <module>
+    driver = init_driver()
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 181, in init_driver
+    driver_instance = webdriver.Remote("http://127.0.0.1:4723", options=options)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 253, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        command_executor=command_executor,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        client_config=client_config,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 261, in __init__
+    self.start_session(capabilities)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 344, in start_session
+    response = self.execute(RemoteCommand.NEW_SESSION, w3c_caps)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 454, in execute
+    self.error_handler.check_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: The requested resource could not be found, or a request was received using an HTTP method that is not supported by the mapped resource
+
+
+2025-08-04 21:03:58,587 - INFO - Script execution complete
+2025-08-04 21:07:54,275 - INFO - Starting Instagram Recipe Extractor
+2025-08-04 21:07:54,276 - INFO - Initializing Appium driver...
+2025-08-04 21:07:55,435 - ERROR - Failed to initialize driver: Message: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+2025-08-04 21:07:55,437 - ERROR - Traceback (most recent call last):
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 181, in init_driver
+    driver_instance = webdriver.Remote("http://127.0.0.1:4723/wd/hub", options=options)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 253, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        command_executor=command_executor,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        client_config=client_config,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 261, in __init__
+    self.start_session(capabilities)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 344, in start_session
+    response = self.execute(RemoteCommand.NEW_SESSION, w3c_caps)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 454, in execute
+    self.error_handler.check_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+
+2025-08-04 21:07:55,438 - CRITICAL - Critical error: Message: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+2025-08-04 21:07:55,438 - CRITICAL - Traceback (most recent call last):
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 1441, in <module>
+    driver = init_driver()
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 181, in init_driver
+    driver_instance = webdriver.Remote("http://127.0.0.1:4723/wd/hub", options=options)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 253, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        command_executor=command_executor,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        client_config=client_config,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 261, in __init__
+    self.start_session(capabilities)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 344, in start_session
+    response = self.execute(RemoteCommand.NEW_SESSION, w3c_caps)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 454, in execute
+    self.error_handler.check_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+
+2025-08-04 21:07:55,438 - INFO - Script execution complete
+2025-08-04 21:07:55,438 - INFO - Initializing Appium driver...
+2025-08-04 21:07:55,566 - ERROR - Failed to initialize driver: Message: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+2025-08-04 21:07:55,566 - ERROR - Traceback (most recent call last):
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/appium_actor.py", line 181, in init_driver
+    driver_instance = webdriver.Remote("http://127.0.0.1:4723/wd/hub", options=options)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 253, in __init__
+    super().__init__(
+    ~~~~~~~~~~~~~~~~^
+        command_executor=command_executor,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+        client_config=client_config,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 261, in __init__
+    self.start_session(capabilities)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/appium/webdriver/webdriver.py", line 344, in start_session
+    response = self.execute(RemoteCommand.NEW_SESSION, w3c_caps)
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/webdriver.py", line 454, in execute
+    self.error_handler.check_response(response)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/Users/shahin/Developer/98Chimp/fetch-bites-multi-agent/fresh_venv/lib/python3.13/site-packages/selenium/webdriver/remote/errorhandler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+Stacktrace:
+UnknownError: An unknown server-side error occurred while processing the command. Original error: Unknown device or simulator UDID: '00008101-000A4D320A28001E'
+    at getResponseForW3CError (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/errors.js:1143:9)
+    at asyncHandler (/opt/homebrew/lib/node_modules/appium/node_modules/@appium/base-driver/lib/protocol/protocol.js:487:57)
+
+2025-08-04 21:09:27,322 - INFO - Starting Instagram Recipe Extractor
+2025-08-04 21:09:27,323 - INFO - Initializing Appium driver...
+2025-08-04 21:09:32,375 - INFO - Driver initialized successfully.
+2025-08-04 21:09:32,376 - INFO - Loaded memory for 4 users
+2025-08-04 21:09:32,376 - INFO - Waiting for Instagram app to load...
+2025-08-04 21:09:37,378 - INFO - Navigating to DMs...
+2025-08-04 21:09:42,148 - INFO - Waiting for DM inbox indicator, timeout: 10s
+2025-08-04 21:09:42,725 - INFO - DM inbox indicator found successfully
+2025-08-04 21:09:42,725 - INFO - DM inbox state verified.
+2025-08-04 21:09:42,725 - INFO - Starting message scanning loop
+2025-08-04 21:09:47,743 - INFO - Scanning for unread messages (every 5 seconds)...
+2025-08-04 21:09:48,409 - INFO - Found 1 unread thread(s) using XPath
+2025-08-04 21:09:48,409 - INFO - Found 1 thread(s) in total
+2025-08-04 21:09:48,411 - INFO - Processing thread 1 of 1
+2025-08-04 21:09:49,343 - INFO - Identified user: docteurzed
+2025-08-04 21:09:50,352 - INFO - Direct click on thread successful
+2025-08-04 21:09:55,968 - INFO - Using fixed screen scale factor: 3.00
+2025-08-04 21:09:55,968 - INFO - Screenshot taken at images/full_screenshot_docteurzed.png, preview element rect: {'y': 425, 'x': 246, 'width': 160, 'height': 288}
+2025-08-04 21:09:56,021 - INFO - Saved cropped post image for docteurzed
