@@ -57,6 +57,7 @@ def verify_shared_post_preview_element(driver):
     except Exception as e:
         logger.error(f"Failed to verify preview element: {e}")
 from analytics_logger_sheets import log_usage_event
+from src.utils.fetch_bites_messages import get_message, get_onboarding_messages, get_error_message
 print("[DEBUG] analytics_logger_sheets imported and log_usage_event available.")
 
 # Set up logging - reduced verbosity
@@ -533,13 +534,8 @@ def ensure_in_dm_list(driver):
         return False
 
 # -----------------------------------------------------------
-# Onboarding and Messaging Flow Constants
+# Messaging handled by centralized system in src/utils/fetch_bites_messages.py
 # -----------------------------------------------------------
-onboarding_messages = [
-    "Hey! I'm your recipe assistant. If you send me a shared recipe post, I'll extract the full recipe and send you back a clean PDF copy.",
-    "Just paste or forward any Instagram recipe post. I'll do the rest — no sign-up needed.",
-    "Want your recipes saved or emailed to you? Just say \"email me\" and I'll set that up."
-]
 
 # -----------------------------------------------------------
 # Main Processing Function: process_unread_threads
@@ -616,7 +612,11 @@ def process_unread_threads(driver, user_memory):
             user_record = user_memory.get(user_id, {})
             if user_record.get("state") not in ["onboarded", "email_captured", "completed"]:
                 logger.info(f"Onboarding user {user_id}...")
-                for msg in onboarding_messages:
+                
+                # Get personalized onboarding messages
+                onboarding_msgs = get_onboarding_messages(user_id)
+                
+                for msg in onboarding_msgs:
                     try:
                         text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
                         text_input.send_keys(msg)
@@ -626,6 +626,7 @@ def process_unread_threads(driver, user_memory):
                         sleep(2)
                     except Exception as msg_error:
                         logger.error(f"Error sending onboarding message: {msg_error}")
+                
                 # Defensive: reload user_record to preserve existing keys before updating state
                 user_record = user_memory.get(user_id, {})
                 user_record["state"] = "onboarded"
@@ -672,7 +673,7 @@ def process_unread_threads(driver, user_memory):
                     # Insert prepping message after tapping on post
                     try:
                         text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                        prepping_message = "Hey, I see you’ve shared a post! Let me check it out — if it’s a recipe, I’ll turn it into a card for you!"
+                        prepping_message = get_message("recipe_processing_start", user_id)
                         text_input.send_keys(prepping_message)
                         sleep(1)
                         send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -1064,7 +1065,7 @@ def process_unread_threads(driver, user_memory):
                         if is_in_conversation_thread(driver):
                             try:
                                 text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                fallback_message = "I looked through the caption, comments, and structure but couldn’t find a valid recipe. It might be in a language I’m still learning to read, buried in video or voice, or just not detailed enough. Feel free to try another post — I’m ready when you are!"
+                                fallback_message = get_error_message("extraction_failed", user_id)
                                 text_input.send_keys(fallback_message)
                                 sleep(1)
                                 send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -1148,7 +1149,7 @@ def process_unread_threads(driver, user_memory):
                                     logger.info("PDF sent via email successfully.")
                                     if is_in_conversation_thread(driver):
                                         text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                        confirmation_message = "Your recipe PDF has been emailed to you!"
+                                        confirmation_message = get_message("email_confirmation", user_id)
                                         text_input.send_keys(confirmation_message)
                                         sleep(1)
                                         send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -1279,7 +1280,7 @@ def process_unread_threads(driver, user_memory):
                         if not user_email:
                             logger.info("No email on record for this user. Prompting for email address...")
                             text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                            prompt_message = "Please share your email address to receive your recipe PDF."
+                            prompt_message = get_message("email_request", user_id)
                             text_input.send_keys(prompt_message)
                             sleep(1)
                             send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -1307,7 +1308,7 @@ def process_unread_threads(driver, user_memory):
                             logger.info("PDF sent via email successfully.")
                             try:
                                 text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                confirmation_message = "Your recipe PDF has been emailed to you!"
+                                confirmation_message = get_message("pdf_sent_success", user_id)
                                 text_input.send_keys(confirmation_message)
                                 sleep(1)
                                 send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
@@ -1326,7 +1327,7 @@ def process_unread_threads(driver, user_memory):
                         else:
                             try:
                                 text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
-                                fallback_message = "Your recipe PDF is ready! (Please provide your email for the PDF attachment)"
+                                fallback_message = get_message("recipe_ready_no_email", user_id)
                                 text_input.send_keys(fallback_message)
                                 sleep(1)
                                 send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
