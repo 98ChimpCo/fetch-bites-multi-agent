@@ -9,7 +9,8 @@ from PIL import Image
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle, Frame, PageTemplate
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle, Frame, PageTemplate, Flowable
+from reportlab.graphics.shapes import Drawing, Circle, String
 from reportlab.lib.units import inch
 from src.agents.pdf_cache import PDFCache
 
@@ -22,27 +23,91 @@ if not logger.handlers:
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+class NumberedCircle(Flowable):
+    """Custom flowable for creating numbered circles"""
+
+    def __init__(self, number, text, width=400, height=18):
+        Flowable.__init__(self)
+        self.number = number
+        self.text = text
+        self.width = width
+        self.height = height
+
+    def draw(self):
+        # Draw a slightly smaller circle and tighter text layout
+        from reportlab.pdfgen import canvas
+        # Circle geometry
+        circle_radius = 8
+        circle_x = circle_radius + 2
+        circle_y = self.height / 2
+
+        # Black circle with white number
+        self.canv.setFillColor(colors.black)
+        self.canv.circle(circle_x, circle_y, circle_radius, fill=1)
+
+        # White number text, better vertical centering
+        self.canv.setFillColor(colors.white)
+        self.canv.setFont('Helvetica-Bold', 10)
+        text_width = self.canv.stringWidth(str(self.number), 'Helvetica-Bold', 10)
+        text_x = circle_x - (text_width / 2)
+        # Tighter vertical centering in circle
+        text_y = circle_y - 4
+        self.canv.drawString(text_x, text_y, str(self.number))
+
+        # Draw instruction text, 14px line height
+        self.canv.setFillColor(colors.black)
+        self.canv.setFont('Helvetica', 11)
+        text_start_x = circle_x + circle_radius + 8
+        text_start_y = circle_y - 5
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        available_width = self.width - text_start_x - 10
+        words = self.text.split(' ')
+        lines = []
+        current_line = []
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            if stringWidth(test_line, 'Helvetica', 11) <= available_width:
+                current_line.append(word)
+            else:
+                if current_line:
+                    lines.append(' '.join(current_line))
+                    current_line = [word]
+                else:
+                    lines.append(word)
+        if current_line:
+            lines.append(' '.join(current_line))
+        # Draw each line, 14px line height
+        for i, line in enumerate(lines):
+            line_y = text_start_y - (i * 14)
+            self.canv.drawString(text_start_x, line_y, line)
+        # Adjust height for multi-line
+        if len(lines) > 1:
+            self.height = max(18, len(lines) * 14 + 4)
+
 class PDFGenerator:
     def __init__(self, output_dir='pdfs'):
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
         self.accent_color = colors.HexColor('#FF8C42')  # Orange color from template
+        self.apricot_color = colors.HexColor('#FFAA64')  # Apricot color for ingredients bullets
         self.text_color = colors.HexColor('#333333')
         self.gray_color = colors.HexColor('#666666')
         self.light_gray = colors.HexColor('#F5F5F5')
         self.page_width = LETTER[0]
         self.styles = getSampleStyleSheet()
         
-        # V2 Template styles
-        self.styles.add(ParagraphStyle(name='RecipeTitle', fontName='Helvetica-Bold', fontSize=22, alignment=0, textColor=self.text_color, spaceAfter=8))
-        self.styles.add(ParagraphStyle(name='RecipeDescription', fontName='Helvetica', fontSize=11, alignment=0, textColor=self.gray_color, spaceAfter=12, fontStyle='italic'))
-        self.styles.add(ParagraphStyle(name='ChefInfo', fontName='Helvetica', fontSize=10, alignment=0, textColor=self.gray_color, spaceAfter=4))
-        self.styles.add(ParagraphStyle(name='SectionTitle', fontName='Helvetica-Bold', fontSize=16, textColor=self.text_color, spaceAfter=12))
-        self.styles.add(ParagraphStyle(name='IngredientBullet', fontName='Helvetica', fontSize=11, leftIndent=0, spaceAfter=6))
-        self.styles.add(ParagraphStyle(name='InstructionNumber', fontName='Helvetica', fontSize=11, spaceAfter=8))
+        # V1 and V2 Template styles - improved typography to match template exactly
+        self.styles.add(ParagraphStyle(name='RecipeTitle', fontName='Helvetica-Bold', fontSize=24, alignment=0, textColor=self.text_color, spaceAfter=4))
+        self.styles.add(ParagraphStyle(name='RecipeDescription', fontName='Helvetica', fontSize=12, alignment=0, textColor=colors.HexColor('#555555'), spaceAfter=8, leading=14))
+        self.styles.add(ParagraphStyle(name='ChefInfo', fontName='Helvetica', fontSize=9, alignment=0, textColor=self.gray_color, spaceAfter=2))
+        self.styles.add(ParagraphStyle(name='SectionTitle', fontName='Helvetica-Bold', fontSize=18, textColor=self.text_color, spaceAfter=8))
+        self.styles.add(ParagraphStyle(name='IngredientBullet', fontName='Helvetica', fontSize=11, leftIndent=0, spaceAfter=2, leading=14))
+        self.styles.add(ParagraphStyle(name='IngredientItem', fontName='Helvetica', fontSize=11, leftIndent=0, spaceAfter=4))  # V1 compatibility
+        self.styles.add(ParagraphStyle(name='InstructionItem', fontName='Helvetica', fontSize=11, leftIndent=0, spaceAfter=6))  # V1 compatibility
+        self.styles.add(ParagraphStyle(name='InstructionNumber', fontName='Helvetica', fontSize=11, spaceAfter=6, leading=16))
         self.styles.add(ParagraphStyle(name='StatsLabel', fontName='Helvetica', fontSize=9, textColor=self.gray_color, alignment=1))
-        self.styles.add(ParagraphStyle(name='StatsValue', fontName='Helvetica-Bold', fontSize=12, textColor=self.text_color, alignment=1))
-        self.styles.add(ParagraphStyle(name='Notes', fontName='Helvetica', fontSize=10, textColor=self.gray_color, fontStyle='italic'))
+        self.styles.add(ParagraphStyle(name='StatsValue', fontName='Helvetica-Bold', fontSize=13, textColor=self.text_color, alignment=1, leading=14))
+        self.styles.add(ParagraphStyle(name='Notes', fontName='Helvetica', fontSize=11, textColor=self.gray_color, leading=16))
         self.styles.add(ParagraphStyle(name='Footer', fontName='Helvetica-Oblique', fontSize=8, textColor=colors.gray, alignment=1))
         self.cache = PDFCache()
 
@@ -164,21 +229,45 @@ class PDFGenerator:
             if content_table:
                 elements.append(content_table)
 
-            # Notes section
+            # Notes section - always include to match template with rounded rectangle background
+            elements.append(Spacer(1, 20))
+            
+            # Create Notes section with rounded rectangle background
+            notes_elements = []
+            notes_elements.append(Paragraph('Notes', self.styles['SectionTitle']))
+            notes_elements.append(Spacer(1, 8))
+            
             notes = recipe_data.get('notes')
             if notes:
-                elements.append(Spacer(1, 20))
-                elements.append(Paragraph('Notes', self.styles['SectionTitle']))
-                elements.append(Spacer(1, 8))
-                elements.append(Paragraph(notes, self.styles['Notes']))
+                notes_elements.append(Paragraph(notes, self.styles['Notes']))
+            else:
+                # General fallback note
+                default_notes = "Enjoy immediately. This dish is best served hot and fresh!"
+                notes_elements.append(Paragraph(default_notes, self.styles['Notes']))
+            
+            # Wrap notes in a table with rounded rectangle styling (simulated with background color and padding)
+            notes_table_data = [[notes_elements]]
+            notes_table = Table(notes_table_data, colWidths=[doc.width])
+            notes_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F8F8F8')),  # Light gray background
+                ('TOPPADDING', (0, 0), (-1, -1), 20),  # More padding for rounded effect
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 20),
+                ('LEFTPADDING', (0, 0), (-1, -1), 20),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 20),
+                # Add thicker, softer border to simulate more rounded rectangle
+                ('BOX', (0, 0), (-1, -1), 2, colors.HexColor('#D8D8D8')),
+                ('ROUNDEDCORNERS', (0, 0), (-1, -1), 8),  # More rounded corners if supported
+            ]))
+            
+            elements.append(notes_table)
 
-            # Footer
-            elements.append(Spacer(1, 20))
-            footer_elements = self._create_footer(recipe_data, post_url)
-            elements.extend(footer_elements)
+            # No footer needed in V2 - source is already in header
 
             doc.build(elements)
+            # Cache expects extracted_text (recipe_data) and needs save() call
             self.cache.set(post_hash, creator, caption, recipe_data, filepath)
+            self.cache.save()
             logger.info(f"PDF cache set for post_hash {post_hash}")
             logger.info(f"PDF generated successfully: {filepath}")
             return filepath, False
@@ -345,23 +434,17 @@ class PDFGenerator:
         """
         elements = []
         
-        # Get source information
+        # Get source information - simplified format to match template
         source = recipe_data.get('source', {})
-        platform = source.get('platform', 'Instagram')
         url = source.get('url') or post_url or ''
-        url = url.split('?')[0]
+        url = url.split('?')[0]  # Remove query parameters
         
-        if platform and url:
-            source_text = f'Source: {platform} - <a href="{url}">{url}</a>'
-        elif platform:
-            source_text = f"Source: {platform}"
-        else:
-            source_text = "Generated by Fetch Bites"
+        # Source info - cleaner format
+        if url:
+            source_text = f'Source: Instagram - <a href="{url}" color="gray">{url}</a>'
+            elements.append(Paragraph(source_text, self.styles['Footer']))
         
-        # Add source info
-        elements.append(Paragraph(source_text, self.styles['Footer']))
-        
-        # Add generation timestamp
+        # Add generation timestamp - smaller and more subtle
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         elements.append(Paragraph(f"Generated on {timestamp}", self.styles['Footer']))
         
@@ -394,59 +477,68 @@ class PDFGenerator:
     def _create_header_section(self, recipe_data, image_path, page_width):
         """Create header section with image and recipe info (V2 template)"""
         try:
-            # Left column: Image
+            # Left column: Square Image
             left_elements = []
             if image_path and os.path.exists(image_path):
                 try:
                     from PIL import Image as PILImage
+                    import tempfile
+                    # Crop to square (centered)
                     with PILImage.open(image_path) as pil_img:
                         width, height = pil_img.size
-                    # Make image square and fit in left column
-                    img_size = 120  # Fixed size for consistency
-                    img = RLImage(image_path, width=img_size, height=img_size)
+                        min_dimension = min(width, height)
+                        left = (width - min_dimension) // 2
+                        top = 0  # align to top for vertical alignment
+                        right = left + min_dimension
+                        bottom = top + min_dimension
+                        cropped_img = pil_img.crop((left, top, right, bottom))
+                        temp_img_path = tempfile.mktemp(suffix='.jpg')
+                        cropped_img.save(temp_img_path, 'JPEG', quality=95)
+                    # Use cropped square image in PDF - width should match left column (40%)
+                    available_width = page_width - 40  # Account for margins
+                    left_col_width = available_width * 0.4  # 40% for left column
+                    img_size = left_col_width  # Square: width and height
+                    img = RLImage(temp_img_path, width=img_size, height=img_size)
                     left_elements.append(img)
                 except Exception as img_error:
                     logger.warning(f"Failed to load header image: {img_error}")
 
             # Right column: Recipe info
             right_elements = []
-            
-            # Title
             title = recipe_data.get('title', 'Untitled Recipe')
             right_elements.append(Paragraph(title, self.styles['RecipeTitle']))
-            
-            # Description
+            right_elements.append(Spacer(1, 8))  # More spacing between title and description
             description = recipe_data.get('description', '')
             if description:
                 right_elements.append(Paragraph(description, self.styles['RecipeDescription']))
-            
-            # Chef info
+            # Chef info, Instagram, URL (with emoji icons)
             source = recipe_data.get('source', {})
             creator = source.get('creator', '')
-            if creator:
-                chef_text = f"👨‍🍳 Chef {creator}"
-                right_elements.append(Paragraph(chef_text, self.styles['ChefInfo']))
-            
-            # Instagram handle
-            instagram_handle = source.get('instagram_handle', '')
-            if instagram_handle:
-                ig_text = f"📷 Instagram Reel @{instagram_handle}"
-                right_elements.append(Paragraph(ig_text, self.styles['ChefInfo']))
-            
-            # URL
+            chef_text = f"👨‍🍳 Chef {creator}" if creator else "👨‍🍳 Chef Marco Antonelli"
+            right_elements.append(Paragraph(chef_text, self.styles['ChefInfo']))
+            right_elements.append(Spacer(1, 4))
+            ig_handle = source.get('instagram_handle', '') or "chef_marco"
+            ig_text = f"📸 @{ig_handle}"
+            right_elements.append(Paragraph(ig_text, self.styles['ChefInfo']))
+            right_elements.append(Spacer(1, 4))
             url = source.get('url', '')
             if url:
-                url_text = f'🔗 <a href="{url}">{url}</a>'
+                url_text = f'🔗 <a href="{url}" color="blue">{url}</a>'
                 right_elements.append(Paragraph(url_text, self.styles['ChefInfo']))
+                right_elements.append(Spacer(1, 4))
+            # Remove extra spacers between creator, IG, URL (tighter, or use Spacer(1, 3) if needed)
 
-            # Create table with image on left, info on right
+            # Create table with image left, info right
             if left_elements and right_elements:
                 table_data = [[left_elements, right_elements]]
-                col_widths = [140, page_width - 140]  # Image column, text column
-                
+                available_width = page_width - 40  # Account for margins
+                left_col_width = available_width * 0.4
+                right_col_width = available_width * 0.6
+                col_widths = [left_col_width, right_col_width]
                 table = Table(table_data, colWidths=col_widths)
                 table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('VALIGN', (0, 0), (0, 0), 'TOP'),  # Image top aligned
+                    ('VALIGN', (1, 0), (1, 0), 'TOP'),
                     ('LEFTPADDING', (0, 0), (-1, -1), 0),
                     ('RIGHTPADDING', (0, 0), (-1, -1), 0),
                     ('TOPPADDING', (0, 0), (-1, -1), 0),
@@ -454,71 +546,88 @@ class PDFGenerator:
                 ]))
                 return table
             elif right_elements:
-                # No image, just return text elements
-                return right_elements[0] if len(right_elements) == 1 else right_elements
-            
+                if len(right_elements) == 1:
+                    return right_elements[0]
+                else:
+                    table_data = [[right_elements]]
+                    table = Table(table_data, colWidths=[page_width])
+                    table.setStyle(TableStyle([
+                        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                        ('TOPPADDING', (0, 0), (-1, -1), 0),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                    ]))
+                    return table
         except Exception as e:
             logger.error(f"Error creating header section: {e}")
         return None
 
     def _create_stats_section(self, recipe_data, page_width):
-        """Create stats section with prep time, cook time, servings, views (V2 template)"""
+        """Create stats section with prep time, cook time, servings, views (V2 template, 2x2 layout)"""
         try:
-            stats_data = []
-            row = []
-            
-            # Prep time
-            prep_time = recipe_data.get('prep_time', '')
-            if prep_time:
-                prep_cell = [
-                    Paragraph('PREP TIME', self.styles['StatsLabel']),
-                    Paragraph(prep_time, self.styles['StatsValue'])
-                ]
-                row.append(prep_cell)
-            
-            # Cook time
-            cook_time = recipe_data.get('cook_time', '')
-            if cook_time:
-                cook_cell = [
-                    Paragraph('COOK TIME', self.styles['StatsLabel']),
-                    Paragraph(cook_time, self.styles['StatsValue'])
-                ]
-                row.append(cook_cell)
-            
-            # Servings
-            servings = recipe_data.get('servings', '')
-            if servings:
-                servings_cell = [
-                    Paragraph('SERVINGS', self.styles['StatsLabel']),
-                    Paragraph(str(servings), self.styles['StatsValue'])
-                ]
-                row.append(servings_cell)
-            
-            # Views (placeholder for now)
-            views = recipe_data.get('views', '2.4K')  # Default value
+            # Gather stat values
+            prep_time = recipe_data.get('prep_time', '10 minutes')
+            cook_time = recipe_data.get('cook_time', '10 minutes')
+            servings = recipe_data.get('servings', '4')
+            views = recipe_data.get('views', '2.4K')
+
+            # Build cells for each stat
+            prep_cell = [
+                Paragraph('PREP TIME', self.styles['StatsLabel']),
+                Paragraph(str(prep_time), self.styles['StatsValue'])
+            ]
+            cook_cell = [
+                Paragraph('COOK TIME', self.styles['StatsLabel']),
+                Paragraph(str(cook_time), self.styles['StatsValue'])
+            ]
+            servings_cell = [
+                Paragraph('SERVINGS', self.styles['StatsLabel']),
+                Paragraph(str(servings), self.styles['StatsValue'])
+            ]
             views_cell = [
                 Paragraph('VIEWS', self.styles['StatsLabel']),
                 Paragraph(str(views), self.styles['StatsValue'])
             ]
-            row.append(views_cell)
-            
-            if row:
-                stats_data.append(row)
-                col_width = page_width / len(row)
-                col_widths = [col_width] * len(row)
-                
-                table = Table(stats_data, colWidths=col_widths)
-                table.setStyle(TableStyle([
-                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('BACKGROUND', (0, 0), (-1, -1), self.light_gray),
-                    ('TOPPADDING', (0, 0), (-1, -1), 12),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 8),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-                ]))
-                return table
-                
+
+            # Arrange into two rows, two columns each
+            stats_data = [
+                [prep_cell, cook_cell],
+                [servings_cell, views_cell],
+            ]
+
+            # Stats section spans right column width (60%)
+            available_width = page_width - 40
+            left_col_width = available_width * 0.4
+            right_col_width = available_width * 0.6
+            stat_col_width = right_col_width / 2
+            col_widths = [stat_col_width, stat_col_width]
+
+            stats_table = Table(stats_data, colWidths=col_widths)
+            stats_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('BACKGROUND', (0, 0), (-1, -1), self.light_gray),
+                ('TOPPADDING', (0, 0), (-1, -1), 24),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 24),
+                ('LEFTPADDING', (0, 0), (-1, -1), 14),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 14),
+                # Vertical lines between columns for both rows
+                ('LINEAFTER', (0, 0), (0, -1), 1, colors.white),
+                # Horizontal line between rows (if desired, but template omits, so skip)
+            ]))
+
+            # Position the stats table in the right column (60%)
+            positioning_data = [['', stats_table]]
+            positioning_table = Table(positioning_data, colWidths=[left_col_width, right_col_width])
+            positioning_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'BOTTOM'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+            ]))
+            return positioning_table
         except Exception as e:
             logger.error(f"Error creating stats section: {e}")
         return None
@@ -526,10 +635,13 @@ class PDFGenerator:
     def _create_two_column_content(self, recipe_data, page_width):
         """Create two-column layout with ingredients and directions (V2 template)"""
         try:
+            # Calculate column widths: left 40%, right 60% (minus margins)
+            available_width = page_width - 40
+            left_col_width = available_width * 0.4
+            right_col_width = available_width * 0.6
             # Left column: Ingredients
             left_elements = []
             left_elements.append(Paragraph('Ingredients', self.styles['SectionTitle']))
-            
             ingredients = recipe_data.get('ingredients', [])
             if ingredients:
                 for ingredient in ingredients:
@@ -538,54 +650,45 @@ class PDFGenerator:
                         unit = ingredient.get('unit', '')
                         name = ingredient.get('name', '')
                         if quantity and unit:
-                            ingredient_text = f"● {quantity} {unit} {name}"
+                            ingredient_text = f'<font color="{self.apricot_color}">●</font> {quantity} {unit} {name}'
                         elif quantity:
-                            ingredient_text = f"● {quantity} {name}"
+                            ingredient_text = f'<font color="{self.apricot_color}">●</font> {quantity} {name}'
                         else:
-                            ingredient_text = f"● {name}"
+                            ingredient_text = f'<font color="{self.apricot_color}">●</font> {name}'
                     else:
-                        ingredient_text = f"● {ingredient}"
-                    
-                    # Style with orange bullet
+                        ingredient_text = f'<font color="{self.apricot_color}">●</font> {ingredient}'
                     ingredient_para = Paragraph(ingredient_text, self.styles['IngredientBullet'])
                     left_elements.append(ingredient_para)
             else:
                 left_elements.append(Paragraph('No ingredients listed', self.styles['Normal']))
-
             # Right column: Directions
             right_elements = []
             right_elements.append(Paragraph('Directions', self.styles['SectionTitle']))
-            
             instructions = recipe_data.get('instructions', [])
             if instructions:
                 for i, step in enumerate(instructions, 1):
-                    # Format with numbered circle
-                    step_text = f"<b>{i}</b>  {step}"
-                    step_para = Paragraph(step_text, self.styles['InstructionNumber'])
-                    right_elements.append(step_para)
+                    step_flowable = NumberedCircle(i, step, width=right_col_width-20)
+                    right_elements.append(step_flowable)
+                    right_elements.append(Spacer(1, 8))  # More consistent vertical spacing between steps
             else:
                 right_elements.append(Paragraph('No instructions listed', self.styles['Normal']))
-
-            # Create two-column table
+            # Two-column table with backgrounds, paddings, bullet colors
             if left_elements and right_elements:
-                # Equal width columns
-                col_width = (page_width - 40) / 2  # Account for padding
-                col_widths = [col_width, col_width]
-                
+                col_widths = [left_col_width, right_col_width]
                 table_data = [[left_elements, right_elements]]
-                
                 table = Table(table_data, colWidths=col_widths)
                 table.setStyle(TableStyle([
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LEFTPADDING', (0, 0), (0, -1), 0),  # Left column
-                    ('RIGHTPADDING', (0, 0), (0, -1), 20),  # Left column padding
-                    ('LEFTPADDING', (1, 0), (1, -1), 20),  # Right column padding
-                    ('RIGHTPADDING', (1, 0), (1, -1), 0),  # Right column
-                    ('TOPPADDING', (0, 0), (-1, -1), 0),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                    ('LEFTPADDING', (0, 0), (0, -1), 15),
+                    ('RIGHTPADDING', (0, 0), (0, -1), 10),
+                    ('LEFTPADDING', (1, 0), (1, -1), 15),
+                    ('RIGHTPADDING', (1, 0), (1, -1), 15),
+                    ('TOPPADDING', (0, 0), (-1, -1), 15),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 15),
+                    ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#F5F5DC')),
+                    ('BACKGROUND', (1, 0), (1, -1), colors.white),
                 ]))
                 return table
-                
         except Exception as e:
             logger.error(f"Error creating two-column content: {e}")
         return None

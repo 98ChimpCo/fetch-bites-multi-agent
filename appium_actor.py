@@ -117,7 +117,8 @@ def extract_post_image(driver, user_id):
     try:
         # Take full screenshot before any messages shift layout
         os.makedirs("images", exist_ok=True)
-        full_path = f"images/full_screenshot_{user_id}.png"
+        safe_user_id = sanitize_username_for_filename(user_id)
+        full_path = f"images/full_screenshot_{safe_user_id}.png"
         driver.get_screenshot_as_file(full_path)
         img = Image.open(full_path)
 
@@ -155,7 +156,7 @@ def extract_post_image(driver, user_id):
 
         # Crop and save using scaled coordinates
         cropped = img.crop((x, y, x + width, y + height))
-        cropped_path = f"images/post_image_{user_id}.png"
+        cropped_path = f"images/post_image_{safe_user_id}.png"
         cropped.save(cropped_path)
         logger.info(f"Saved cropped post image for {user_id}")
         return cropped_path
@@ -172,7 +173,7 @@ def init_driver():
     options = XCUITestOptions()
     options.device_name = "Fetch.Bites"
     options.platform_version = "18.1.1"
-    options.udid = "00008101-000A4D320A28001E"
+    options.udid = "00008020-0005490A0A78002E"  # Fetch.Bites device
     options.bundle_id = "com.burbn.instagram"
     options.xcode_org_id = "6X85PLZ26L"
     options.xcode_signing_id = "Apple Developer"
@@ -268,8 +269,18 @@ def take_screenshot(driver, name):
     driver.get_screenshot_as_file(filename)
     return filename
 
+def sanitize_username_for_filename(user_id):
+    """
+    Sanitize username for use in filenames while preserving readability.
+    Replaces @ with 'at_' to avoid potential filesystem issues.
+    """
+    if user_id.startswith("@"):
+        return "at_" + user_id[1:]
+    return user_id
+
 def save_caption(caption_text, user_id):
-    caption_filename = f"captions/caption_{user_id}_{int(time.time())}.txt"
+    safe_user_id = sanitize_username_for_filename(user_id)
+    caption_filename = f"captions/caption_{safe_user_id}_{int(time.time())}.txt"
     os.makedirs("captions", exist_ok=True)
     with open(caption_filename, "w") as f:
         f.write(caption_text)
@@ -355,13 +366,16 @@ def extract_email_from_conversation(driver):
 def extract_handle_from_thread(thread):
     """
     Extract the Instagram handle from the DM thread by parsing the avatar element's label.
-    For example, if the label is "chef.julia. Profile picture", it removes the trailing text.
+    For example, if the label is "thesoush. Profile picture", returns "@thesoush".
     """
     try:
         avatar = thread.find_element("-ios predicate string", "name == 'inbox_row_front_avatar' AND label CONTAINS 'Profile picture'")
         label_value = avatar.get_attribute("label")
         if label_value:
             handle = label_value.replace(". Profile picture", "").strip()
+            # Add @ symbol if not already present
+            if not handle.startswith("@"):
+                handle = "@" + handle
             return handle
         else:
             logger.warning("Avatar element found but label is empty.")
@@ -609,7 +623,19 @@ def process_unread_threads(driver, user_memory):
             verify_shared_post_preview_element(driver)
             
             # --- Process thread content ---
+            # Check both @username and username formats for backward compatibility
             user_record = user_memory.get(user_id, {})
+            if not user_record and user_id.startswith("@"):
+                # Try without @ symbol for backward compatibility
+                legacy_user_id = user_id[1:]
+                user_record = user_memory.get(legacy_user_id, {})
+                if user_record:
+                    # Migrate to new format
+                    user_memory[user_id] = user_record
+                    del user_memory[legacy_user_id]
+                    save_user_memory(user_memory)
+                    logger.info(f"Migrated user {legacy_user_id} to {user_id}")
+            
             if user_record.get("state") not in ["onboarded", "email_captured", "completed"]:
                 logger.info(f"Onboarding user {user_id}...")
                 
@@ -630,13 +656,11 @@ def process_unread_threads(driver, user_memory):
                 # Defensive: reload user_record to preserve existing keys before updating state
                 user_record = user_memory.get(user_id, {})
                 user_record["state"] = "onboarded"
-                user_record["last_updated"] = str(datetime.datetime.now())
+                user_record["last_updated"] = str(datetime.now())
                 user_memory[user_id] = user_record
                 save_user_memory(user_memory)
                 logger.info(f"User {user_id} has been onboarded")
-                # Return to DM list after onboarding
-                navigate_back_to_dm_list(driver)
-                continue
+                # Continue with recipe processing after onboarding
             else:
                 logger.info(f"User {user_id} is already onboarded")
             
@@ -1209,6 +1233,20 @@ def process_unread_threads(driver, user_memory):
                     # Immediately after generating the PDF, check validity
                     if not isinstance(pdf_path, str) or not os.path.isfile(pdf_path):
                         logger.error(f"PDF path is invalid: {pdf_path}")
+                        # Send empathetic error message to user
+                        try:
+                            if is_in_conversation_thread(driver):
+                                text_input = driver.find_element("-ios predicate string", "type == 'XCUIElementTypeTextView' AND visible == 1")
+                                error_message = get_error_message("pdf_generation_failed", user_id)
+                                text_input.send_keys(error_message)
+                                sleep(1)
+                                send_button = driver.find_element("-ios class chain", "**/XCUIElementTypeButton[`name == \"send button\"`]")
+                                send_button.click()
+                                sleep(2)
+                                logger.info("Sent PDF generation error message to user")
+                            navigate_back_to_dm_list(driver)
+                        except Exception as error_msg_err:
+                            logger.error(f"Failed to send PDF error message: {error_msg_err}")
                         continue
                     
                     logger.info(f"PDF generated at: {pdf_path}")

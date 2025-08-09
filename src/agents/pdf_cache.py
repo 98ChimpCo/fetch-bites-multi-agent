@@ -32,7 +32,7 @@ class PDFCache:
     def get(self, post_hash):
         entry = self.cache.get(post_hash)
         if entry and entry.get("layout_version") == LAYOUT_VERSION:
-            return entry["extracted_text"]
+            return entry["pdf_path"]  # Return the PDF path, not the recipe data
         return None
 
     def set(self, post_hash, user_id, caption, extracted_text, pdf_path):

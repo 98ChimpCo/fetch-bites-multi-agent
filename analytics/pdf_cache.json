@@ -1,744 +1,81 @@
 {
-  "1ce406d0f669631e32213a151071f1798409e3ce28d731254eb7d16390c676be": {
-    "user_id": "docteurzed",
-    "caption": "Steak Tacos with Avocado Salsa\u2026 easy, delicious and absolutely bursting with flavour. The tacos are loaded with juicy, marinated, cooked-to-perfection steak topped with a fresh, creamy, tangy and slightly spicy avocado salsa. I used flap steak here (highly underrated cut IMO) but you can sub skirt, flank or ribeye. The marinade is also amazing on chicken. For the salsa, if you like it spicy, add more jalape\u00f1o or serrano. If you want it mild, remove the seeds or just omit the chiles altogether. Serve on your favourite warmed tortillas, top with some fresh cilantro + onion and charred scallions on the side\n.\nComment the word \u201ctaco\u201d below to get the full recipe sent directly to your DMs. Or visit my blog www.cookprimalgourmet.com by clicking the link in my bio",
+  "fb04dcb6970e4c3d1873de51fd5a50d7bb46b3383113602665c350ec40b5f990": {
+    "user_id": "",
+    "caption": "",
     "recipe": {
-      "title": "Steak Tacos with Avocado Salsa",
-      "description": "Easy, delicious and absolutely bursting with flavour. The tacos are loaded with juicy, marinated, cooked-to-perfection steak topped with a fresh, creamy, tangy and slightly spicy avocado salsa.",
+      "title": "High-Protein Mediterranean Chicken Salad",
+      "description": "A super simple, ultra high-protein dinner idea that's fresh, light, and packed with nearly 95g of protein. Can be tossed together in minutes for a meal that hits your macros without the stress.",
       "ingredients": [
         {
-          "quantity": null,
-          "unit": null,
-          "name": "flap steak (can substitute skirt, flank or ribeye)"
+          "quantity": "230",
+          "unit": "g",
+          "name": "cooked chicken breast, shredded or chopped"
         },
         {
-          "quantity": null,
-          "unit": null,
-          "name": "marinade ingredients (not specified)"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "avocado"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "jalape\u00f1o or serrano chiles (optional, to taste)"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "tortillas"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "fresh cilantro"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "onion"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "scallions (for charring)"
-        }
-      ],
-      "instructions": [
-        "Marinate the steak (flap, skirt, flank, or ribeye).",
-        "Cook the steak to desired doneness.",
-        "Prepare the avocado salsa by combining avocado with jalape\u00f1o or serrano chiles (adjust amount for desired spiciness).",
-        "Warm the tortillas.",
-        "Slice the cooked steak.",
-        "Assemble tacos with steak on tortillas.",
-        "Top with avocado salsa.",
-        "Garnish with fresh cilantro and onion.",
-        "Serve with charred scallions on the side."
-      ],
-      "prep_time": null,
-      "cook_time": null,
-      "total_time": null,
-      "servings": null,
-      "dietary_info": [],
-      "difficulty": "easy"
-    },
-    "pdf_path": "./pdfs/Steak_Tacos_with_Avocado_Salsa_1746382658.pdf",
-    "layout_version": "v1",
-    "cached_at": "2025-05-04T18:17:38.408155"
-  },
-  "fe2be910d78a4609c9f4b99684a2da30c515da5218de3cb960c1523b9cd0650e": {
-    "user_id": "docteurzed",
-    "caption": "Chicken taco bowl recipes \u2b07\ufe0f\n\nMade this for dinner & meal preps last week and it was \ud83e\udd0c\ud83c\udffc\n\nCilantro lime rice\ud83c\udf5a\n1 C long-grain jasmine rice, rinsed and drained\n1\u00bd cups water\n1 tsp garlic, minced (or could use garlic powder)\n1 tsp lime zest\n1\u00bd Tbsp fresh lime juice\n\u00bd C finely chopped fresh cilantro\n1 tsp chicken bouillon\n\nAdd all ingredients to a pot or rice cooker & cook rice as normal. Fluff & enjoy! \n\nChicken marinade\ud83c\udf57\n*for 1-1.5 lbs chicken thighs\n4 Tbsp orange juice\n1\u00bd Tbsp fresh lime juice\n3 cloves garlic, minced\n1\u00bd Tbsp chili powder\n2 tsp dried oregano\n2 tsp paprika\n1 teaspoon salt\n1/2 tsp pepper\n\nMarinate boneless, skinless chicken thighs for 1 hour, up to overnight. Grill or smoke the chicken until cooked through. I love throwing them on the @traegergrills because they stay so moist! Let rest and then chop into bite sized pieces. \n\nCilantro lime crema\ud83c\udf3f\n1 C full fat greek yogurt\n2 Tbsp mayo\n1 Tbsp fresh lime juice\n\u00bc  tsp garlic powder\n\u00bd tsp salt\n\u00bc tsp onion powder\n\u00bd C fresh cilantro\nOptional: 1/4 jalape\u00f1o \n\nBlend, thin with milk or water as needed to reach your desired consistency. \n\nThe rest:\n\u2022pickled onions (thinly sliced red onion, covered in lime juice & a pinch of salt then refrigerated for a couple of hours)\n\u2022red bell pepper (thinly sliced, saut\u00e9ed with salt & pepper in a bit of avocado oil) \n\u2022black beans (rinsed & drained)\n\nWhat\u2019s your go to dinner at the moment? Please share in the comments! \ud83d\udcac\n\n\u2728Follow @nourishment.nutrition for simple & nourishing recipes & meal ideas! \n\n\u2705 Looking for guidance & accountability to hit your nutrition goals in 2025? Comment \u201cPROGRAM\u201d and I will send you the details for our 1:1 nutrition coaching program! \n\n#utahdietitian #dinnerrecipe #easydinner #healthymeals #healthgoals #dinnerideas #easydinner #highproteindinner #traegerrecipes #treagergrills #wieiad",
-    "recipe": {
-      "title": "Chicken Taco Bowl",
-      "description": "A flavorful chicken taco bowl with cilantro lime rice, marinated chicken thighs, cilantro lime crema, and fresh toppings.",
-      "ingredients": [
-        {
-          "section": "Cilantro Lime Rice",
-          "items": [
-            {
-              "quantity": "1",
-              "unit": "cup",
-              "name": "long-grain jasmine rice, rinsed and drained"
-            },
-            {
-              "quantity": "1.5",
-              "unit": "cups",
-              "name": "water"
-            },
-            {
-              "quantity": "1",
-              "unit": "tsp",
-              "name": "garlic, minced (or could use garlic powder)"
-            },
-            {
-              "quantity": "1",
-              "unit": "tsp",
-              "name": "lime zest"
-            },
-            {
-              "quantity": "1.5",
-              "unit": "Tbsp",
-              "name": "fresh lime juice"
-            },
-            {
-              "quantity": "0.5",
-              "unit": "cup",
-              "name": "finely chopped fresh cilantro"
-            },
-            {
-              "quantity": "1",
-              "unit": "tsp",
-              "name": "chicken bouillon"
-            }
-          ]
-        },
-        {
-          "section": "Chicken Marinade",
-          "items": [
-            {
-              "quantity": "1-1.5",
-              "unit": "lbs",
-              "name": "chicken thighs, boneless, skinless"
-            },
-            {
-              "quantity": "4",
-              "unit": "Tbsp",
-              "name": "orange juice"
-            },
-            {
-              "quantity": "1.5",
-              "unit": "Tbsp",
-              "name": "fresh lime juice"
-            },
-            {
-              "quantity": "3",
-              "unit": "cloves",
-              "name": "garlic, minced"
-            },
-            {
-              "quantity": "1.5",
-              "unit": "Tbsp",
-              "name": "chili powder"
-            },
-            {
-              "quantity": "2",
-              "unit": "tsp",
-              "name": "dried oregano"
-            },
-            {
-              "quantity": "2",
-              "unit": "tsp",
-              "name": "paprika"
-            },
-            {
-              "quantity": "1",
-              "unit": "tsp",
-              "name": "salt"
-            },
-            {
-              "quantity": "0.5",
-              "unit": "tsp",
-              "name": "pepper"
-            }
-          ]
-        },
-        {
-          "section": "Cilantro Lime Crema",
-          "items": [
-            {
-              "quantity": "1",
-              "unit": "cup",
-              "name": "full fat greek yogurt"
-            },
-            {
-              "quantity": "2",
-              "unit": "Tbsp",
-              "name": "mayo"
-            },
-            {
-              "quantity": "1",
-              "unit": "Tbsp",
-              "name": "fresh lime juice"
-            },
-            {
-              "quantity": "0.25",
-              "unit": "tsp",
-              "name": "garlic powder"
-            },
-            {
-              "quantity": "0.5",
-              "unit": "tsp",
-              "name": "salt"
-            },
-            {
-              "quantity": "0.25",
-              "unit": "tsp",
-              "name": "onion powder"
-            },
-            {
-              "quantity": "0.5",
-              "unit": "cup",
-              "name": "fresh cilantro"
-            },
-            {
-              "quantity": "0.25",
-              "unit": "",
-              "name": "jalape\u00f1o (optional)"
-            }
-          ]
-        },
-        {
-          "section": "Additional Toppings",
-          "items": [
-            {
-              "quantity": null,
-              "unit": null,
-              "name": "red onion, thinly sliced (for pickled onions)"
-            },
-            {
-              "quantity": null,
-              "unit": null,
-              "name": "lime juice (for pickled onions)"
-            },
-            {
-              "quantity": null,
-              "unit": null,
-              "name": "salt (for pickled onions)"
-            },
-            {
-              "quantity": null,
-              "unit": null,
-              "name": "red bell pepper, thinly sliced"
-            },
-            {
-              "quantity": null,
-              "unit": null,
-              "name": "avocado oil (for saut\u00e9ing)"
-            },
-            {
-              "quantity": null,
-              "unit": null,
-              "name": "black beans, rinsed & drained"
-            }
-          ]
-        }
-      ],
-      "instructions": [
-        "For the Cilantro Lime Rice: Add all rice ingredients to a pot or rice cooker and cook rice as normal. Fluff and enjoy when done.",
-        "For the Chicken Marinade: Combine all marinade ingredients and marinate boneless, skinless chicken thighs for 1 hour, up to overnight.",
-        "Grill or smoke the chicken until cooked through. Let rest and then chop into bite-sized pieces.",
-        "For the Cilantro Lime Crema: Blend all crema ingredients together. Thin with milk or water as needed to reach your desired consistency.",
-        "For the Pickled Onions: Cover thinly sliced red onion in lime juice with a pinch of salt, then refrigerate for a couple of hours.",
-        "For the Bell Peppers: Saut\u00e9 thinly sliced red bell pepper with salt and pepper in a bit of avocado oil.",
-        "Prepare black beans by rinsing and draining them.",
-        "Assemble the taco bowls with rice as the base, topped with chicken, black beans, saut\u00e9ed bell peppers, pickled onions, and cilantro lime crema."
-      ],
-      "prep_time": null,
-      "cook_time": null,
-      "total_time": null,
-      "servings": null,
-      "dietary_info": [],
-      "difficulty": "medium"
-    },
-    "pdf_path": "./pdfs/Chicken_Taco_Bowl_1746490561.pdf",
-    "layout_version": "v1",
-    "cached_at": "2025-05-04T21:57:08.297027"
-  },
-  "4daed0f96b7e876e05ca2ffa3efbc01bcdf98d60acabe8a0b03d32496e882138": {
-    "user_id": "docteurzed",
-    "caption": "This soy garlic chicken is one of my families all time favorite recipes. It\u2019s a simpler version  of my mom\u2019s soy garlic fried chicken.  The chicken is pan-fried until super crispy and then glazed with this 5 ingredient sauce. Make sure to double the glaze amount below if you want some extra sauce to put on your rice. Follow me for more simple recipes like this.\n\nPlease see recipe below:\nFor the chicken \n-4 boneless skin on chicken thighs lightly salted \n-1/4C cornstarch\n-2tbs neutral oil for pan-frying\n\nSauce:\n-3tbs butter\n-3tbs minced garlic\n-1tbs minced ginger\n-4tbs light brown sugar\n-4tbs kikoman light soy sauce \n\nGarnish with scallion greens thinly sliced",
-    "recipe": {
-      "title": "Soy Garlic Chicken",
-      "description": "A simpler version of soy garlic fried chicken. The chicken is pan-fried until super crispy and then glazed with a 5 ingredient sauce.",
-      "ingredients": [
-        {
-          "quantity": "4",
-          "unit": "",
-          "name": "boneless skin on chicken thighs, lightly salted"
-        },
-        {
-          "quantity": "1/4",
+          "quantity": "1/2",
           "unit": "cup",
-          "name": "cornstarch"
+          "name": "plain nonfat Greek yogurt"
+        },
+        {
+          "quantity": "10",
+          "unit": "",
+          "name": "cherry tomatoes, halved"
         },
         {
           "quantity": "2",
-          "unit": "tablespoons",
-          "name": "neutral oil for pan-frying"
+          "unit": "",
+          "name": "mini cucumbers, sliced"
         },
         {
-          "quantity": "3",
-          "unit": "tablespoons",
-          "name": "butter"
+          "quantity": "2",
+          "unit": "oz",
+          "name": "feta cheese"
         },
         {
-          "quantity": "3",
-          "unit": "tablespoons",
-          "name": "minced garlic"
+          "quantity": "",
+          "unit": "",
+          "name": "salt, to taste"
         },
         {
-          "quantity": "1",
-          "unit": "tablespoon",
-          "name": "minced ginger"
+          "quantity": "",
+          "unit": "",
+          "name": "pepper, to taste"
         },
         {
-          "quantity": "4",
-          "unit": "tablespoons",
-          "name": "light brown sugar"
+          "quantity": "",
+          "unit": "",
+          "name": "garlic powder, to taste"
         },
         {
-          "quantity": "4",
-          "unit": "tablespoons",
-          "name": "Kikkoman light soy sauce"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "scallion greens, thinly sliced (for garnish)"
+          "quantity": "",
+          "unit": "",
+          "name": "splash of lemon juice or red wine vinegar (optional)"
         }
       ],
       "instructions": [
-        "Lightly salt the boneless skin-on chicken thighs",
-        "Coat the chicken thighs with cornstarch",
-        "Heat neutral oil in a pan for frying",
-        "Pan-fry the chicken until super crispy",
-        "For the sauce, melt butter in a pan",
-        "Add minced garlic and ginger to the melted butter",
-        "Add light brown sugar and Kikkoman light soy sauce",
-        "Glaze the crispy chicken with the sauce",
-        "Garnish with thinly sliced scallion greens",
-        "Serve (double the glaze amount if you want extra sauce for rice)"
+        "Mix Greek yogurt, chicken, and seasonings in a bowl.",
+        "Add chopped tomatoes, cucumbers, and crumbled feta.",
+        "Toss everything together until coated.",
+        "Serve immediately or chill for later!"
       ],
       "prep_time": null,
       "cook_time": null,
       "total_time": null,
-      "servings": null,
-      "dietary_info": [],
-      "difficulty": "easy"
-    },
-    "pdf_path": "./pdfs/Soy_Garlic_Chicken_1746395896.pdf",
-    "layout_version": "v1",
-    "cached_at": "2025-05-04T21:58:16.458734"
-  },
-  "c47b397744c615bdd8aad0996c52a8eb685a5ae2fa538192af4970ab6f6fea0e": {
-    "user_id": "docteurzed",
-    "caption": "Lemon and Blueberry Focaccia!\ud83c\udf4b\ud83e\uded0 RECIPE pinned in the comments \ud83d\udc47 Sweet focaccia\u2019s are definitely having a moment right now and this might be my favorite! It has a delicious lemon glaze, a streusel crumble and a fresh blueberry compote!\n\n#blueberryfocaccia #sweetfocaccia #lemonblueberry #focaccia #desserts",
-    "recipe": {
-      "title": "Blueberry Focaccia",
-      "description": "A sweet focaccia bread with blueberry compote, crumble topping, and lemon icing",
-      "ingredients": [
-        {
-          "section": "Focaccia Dough",
-          "items": [
-            {
-              "quantity": "740",
-              "unit": "grams",
-              "name": "all purpose flour"
-            },
-            {
-              "quantity": "1",
-              "unit": "pinch",
-              "name": "salt"
-            },
-            {
-              "quantity": "12",
-              "unit": "grams",
-              "name": "sugar"
-            },
-            {
-              "quantity": "2",
-              "unit": "packets",
-              "name": "rapid rise instant yeast"
-            },
-            {
-              "quantity": "540",
-              "unit": "grams",
-              "name": "warm water"
-            }
-          ]
-        },
-        {
-          "section": "Blueberry Compote",
-          "items": [
-            {
-              "quantity": "3",
-              "unit": "cups",
-              "name": "blueberries"
-            },
-            {
-              "quantity": "1",
-              "unit": "",
-              "name": "lemon (juice)"
-            },
-            {
-              "quantity": "1",
-              "unit": "tbsp",
-              "name": "water"
-            },
-            {
-              "quantity": "3/4",
-              "unit": "cup",
-              "name": "white sugar"
-            },
-            {
-              "quantity": "1",
-              "unit": "tsp",
-              "name": "vanilla extract"
-            },
-            {
-              "quantity": "1",
-              "unit": "tbsp",
-              "name": "corn starch"
-            },
-            {
-              "quantity": "1 1/2",
-              "unit": "tbsp",
-              "name": "water (for cornstarch slurry)"
-            }
-          ]
-        },
-        {
-          "section": "Crumble",
-          "items": [
-            {
-              "quantity": "2/3",
-              "unit": "cup",
-              "name": "flour"
-            },
-            {
-              "quantity": "2/3",
-              "unit": "cup",
-              "name": "sugar"
-            },
-            {
-              "quantity": "1/4",
-              "unit": "cup",
-              "name": "melted butter"
-            }
-          ]
-        },
-        {
-          "section": "Icing",
-          "items": [
-            {
-              "quantity": "1",
-              "unit": "cup",
-              "name": "powdered sugar"
-            },
-            {
-              "quantity": "1",
-              "unit": "",
-              "name": "lemon (zest)"
-            },
-            {
-              "quantity": "1/2",
-              "unit": "",
-              "name": "lemon (juice)"
-            }
-          ]
-        },
-        {
-          "section": "Other",
-          "items": [
-            {
-              "quantity": "3",
-              "unit": "tbsp",
-              "name": "melted butter (for the pan)"
-            }
-          ]
-        }
+      "servings": "1",
+      "dietary_info": [
+        "high-protein",
+        "low-fat",
+        "low-calorie"
       ],
-      "instructions": [
-        "First make your blueberry compote by combining blueberries, lemon juice, water, vanilla, and sugar in a skillet and cook on medium for 5 minutes until the berries have released their juice and the mixture is bubbling.",
-        "Mix your corn starch and water then pour them into the blueberry mixture and cook for another couple minutes until thickened.",
-        "Remove the compote from the heat and allow it to cool.",
-        "For the dough, mix all the dough ingredients together in a stand mixer (or by hand in a bowl), and knead for about 5-10 minutes until dough comes together and is smooth.",
-        "If using instant yeast, you don't need to bloom it first. If using another kind of yeast, bloom it in the warm water until it becomes frothy (about 5 minutes) before mixing in the dry ingredients.",
-        "Melt 3 tbsp of butter and pour it onto the bottom of a sheet pan (half sheet pan or full size).",
-        "For the crumble, combine flour, sugar, and melted butter.",
-        "For the icing, mix powdered sugar, lemon zest, and lemon juice (adjust lemon juice for desired consistency)."
-      ],
-      "prep_time": null,
-      "cook_time": null,
-      "total_time": null,
-      "servings": null,
-      "dietary_info": [],
-      "difficulty": "medium"
-    },
-    "pdf_path": "./pdfs/Blueberry_Focaccia_1746575606.pdf",
-    "layout_version": "v1",
-    "cached_at": "2025-05-06T23:53:26.420669"
-  },
-  "e15b9d6c6ba8ba7b1d65b6e184663fff07d9d348aa3b74737e354ea4aebfcc0b": {
-    "user_id": "docteurzed",
-    "caption": "FINGERLICKING GARLIC HERB BUTTER TANDOORI LAMB CHOPS AND MINT SAUCE \ud83c\uddee\ud83c\uddf3\ud83e\udd24\ud83d\udca5\ud83e\udd2f\ud83d\udc83\ud83c\udffd\ud83d\udcb0\ud83d\udea6\ud83d\udcaf\ud83d\ude4f\ud83c\udffd\ud83d\ude0d\u26a1\ufe0f\ud83d\udca3\u2764\ufe0f\ud83d\udd25,\nSucculent Juicy an Explosion of flavours Garlic herb butter lamb chops, it is shockingly quick and easy to make as well. Lamb chops is bursting with bold, smoky, and as-spicy-as-you-want-it flavors, super juicy, with my delicious mint sauce. This is going straight to the \u201cfavourite\u201d file. It makes a fabulous easy weeknight meal that can go directly on the grill once marinated or is tasty enough for prep ahead entertaining. Used @walkerswood green seasoning \ud83d\udd25\ud83d\udd25\ud83d\udd25. Sells at @tescofood \n.\n.\nDM FOR MORE INFO TO GET MY DAILY RECIPES. Recipe comes with my delicious mint sauce recipe, \n.\n.\n#lambchops #food #goodfood #recipe #love #newyork #newjersey #texas #atlanta #florida #tandoorilambchops #indianfood",
-    "recipe": {
-      "title": "Garlic Herb Butter Tandoori Lamb Chops with Mint Sauce",
-      "description": "Succulent juicy lamb chops bursting with bold, smoky, and spicy flavors, topped with garlic herb butter and served with a delicious mint sauce. Shockingly quick and easy to make, perfect for an easy weeknight meal or entertaining.",
-      "ingredients": [
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "lamb chops"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "garlic"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "herb butter"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "tandoori spices"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "Walker's Wood green seasoning"
-        },
-        {
-          "quantity": null,
-          "unit": null,
-          "name": "ingredients for mint sauce (not specified)"
-        }
-      ],
-      "instructions": [
-        "Marinate the lamb chops with tandoori spices and Walker's Wood green seasoning",
-        "Grill the marinated lamb chops",
-        "Top with garlic herb butter",
-        "Serve with mint sauce"
-      ],
-      "prep_time": null,
-      "cook_time": null,
-      "total_time": null,
-      "servings": null,
-      "dietary_info": [],
       "difficulty": "easy",
       "source": {
         "platform": "Instagram",
-        "url": "https://instagram.com/p/DGqG_AyounQ/?utm_source=qr"
+        "url": "https://instagram.com/p/DIl6BzlxYfA/?utm_source=qr"
       },
-      "source_url": "https://instagram.com/p/DGqG_AyounQ/?utm_source=qr"
+      "source_url": "https://instagram.com/p/DIl6BzlxYfA/?utm_source=qr"
     },
-    "pdf_path": "./pdfs/Garlic_Herb_Butter_Tandoori_Lamb_Chops_with_Mint_S_1746928304.pdf",
+    "pdf_path": "pdfs/High_Protein_Mediterranean_Chicken_Salad_1754546147.pdf",
     "layout_version": "v1",
-    "cached_at": "2025-05-11T01:51:44.329511"
-  },
-  "f2cae5a03d590792250cb9351e46da0607ac5fa54ffb479ba27a55907384804b": {
-    "user_id": "docteurzed",
-    "caption": "Carne Asada Chimichurri Steak Bites w/ Mashed Potatoes \ud83e\udd69\ud83d\udd25 recipe \u2b07\ufe0f\n\nCarne Asada\n\n2 lbs skirt steak\n1/4 cup cilantro, chopped\nJuice of 1 lime\nJuice of 1 orange\n2 tsp cumin\n2 tsp oregano\n1 tbsp soy sauce or coco aminos\n3 garlic cloves, finely diced\n1/2 tbsp salt\n1/2 tsp black pepper\n1/4 cup olive oil\n\nMarinate for at least 30 min. Sear for 1-2 min on each side. Slice against the grain then with the grain into chunks.\n\nMashed Potatoes\n\n4-5 Yukon gold potatoes, peeled\n1/2 cup heavy cream\n1/2 cup milk\n3 garlic cloves, whole\n2 sprigs of rosemary\n2 tsp salt\n\nBoil your peeled potatoes for about 30-35 minutes with a pinch of salt. Drain and use ricer to mash for a smooth texture. In a small saucepan, melt butter and add cream, milk and aromatics. Bring to a boil, remove from the heat. Cover and let the aromatics infuse the cream/butter mixture for about 15-20 mins at least. Strain this mixture on to your potatoes. Mix and serve with chives or green onions.\n\nChimichurri \n\n1/2 cup olive oil\n2 tbsp red wine vinegar\n1/2 cup parsley, finely chopped\n3-4 cloves garlic finely minced\n1 tbsp dried red chili flakes\n3/4 tsp dried oregano\n1 tsp kosher salt\n1/4 tsp pepper to taste\n\n#steak #carneasada #steaklover #mashedpotatoes #chimichurri",
-    "recipe": {
-      "title": "Carne Asada Chimichurri Steak Bites with Mashed Potatoes",
-      "description": "Marinated steak bites served with creamy mashed potatoes and chimichurri sauce",
-      "ingredients": [
-        {
-          "section": "Carne Asada",
-          "items": [
-            {
-              "quantity": "2",
-              "unit": "lbs",
-              "name": "skirt steak"
-            },
-            {
-              "quantity": "1/4",
-              "unit": "cup",
-              "name": "cilantro, chopped"
-            },
-            {
-              "quantity": "1",
-              "unit": "",
-              "name": "lime, juiced"
-            },
-            {
-              "quantity": "1",
-              "unit": "",
-              "name": "orange, juiced"
-            },
-            {
-              "quantity": "2",
-              "unit": "tsp",
-              "name": "cumin"
-            },
-            {
-              "quantity": "2",
-              "unit": "tsp",
-              "name": "oregano"
-            },
-            {
-              "quantity": "1",
-              "unit": "tbsp",
-              "name": "soy sauce or coco aminos"
-            },
-            {
-              "quantity": "3",
-              "unit": "",
-              "name": "garlic cloves, finely diced"
-            },
-            {
-              "quantity": "1/2",
-              "unit": "tbsp",
-              "name": "salt"
-            },
-            {
-              "quantity": "1/2",
-              "unit": "tsp",
-              "name": "black pepper"
-            },
-            {
-              "quantity": "1/4",
-              "unit": "cup",
-              "name": "olive oil"
-            }
-          ]
-        },
-        {
-          "section": "Mashed Potatoes",
-          "items": [
-            {
-              "quantity": "4-5",
-              "unit": "",
-              "name": "Yukon gold potatoes, peeled"
-            },
-            {
-              "quantity": "1/2",
-              "unit": "cup",
-              "name": "heavy cream"
-            },
-            {
-              "quantity": "1/2",
-              "unit": "cup",
-              "name": "milk"
-            },
-            {
-              "quantity": "3",
-              "unit": "",
-              "name": "garlic cloves, whole"
-            },
-            {
-              "quantity": "2",
-              "unit": "sprigs",
-              "name": "rosemary"
-            },
-            {
-              "quantity": "2",
-              "unit": "tsp",
-              "name": "salt"
-            },
-            {
-              "quantity": null,
-              "unit": "",
-              "name": "butter (amount not specified)"
-            },
-            {
-              "quantity": null,
-              "unit": "",
-              "name": "chives or green onions for garnish"
-            }
-          ]
-        },
-        {
-          "section": "Chimichurri",
-          "items": [
-            {
-              "quantity": "1/2",
-              "unit": "cup",
-              "name": "olive oil"
-            },
-            {
-              "quantity": "2",
-              "unit": "tbsp",
-              "name": "red wine vinegar"
-            },
-            {
-              "quantity": "1/2",
-              "unit": "cup",
-              "name": "parsley, finely chopped"
-            },
-            {
-              "quantity": "3-4",
-              "unit": "",
-              "name": "garlic cloves, finely minced"
-            },
-            {
-              "quantity": "1",
-              "unit": "tbsp",
-              "name": "dried red chili flakes"
-            },
-            {
-              "quantity": "3/4",
-              "unit": "tsp",
-              "name": "dried oregano"
-            },
-            {
-              "quantity": "1",
-              "unit": "tsp",
-              "name": "kosher salt"
-            },
-            {
-              "quantity": "1/4",
-              "unit": "tsp",
-              "name": "pepper to taste"
-            }
-          ]
-        }
-      ],
-      "instructions": [
-        "For the Carne Asada: Combine all marinade ingredients with the skirt steak and marinate for at least 30 minutes.",
-        "Sear the marinated steak for 1-2 minutes on each side.",
-        "Slice against the grain then with the grain into chunks.",
-        "For the Mashed Potatoes: Boil peeled potatoes for about 30-35 minutes with a pinch of salt.",
-        "Drain potatoes and use a ricer to mash for a smooth texture.",
-        "In a small saucepan, melt butter and add cream, milk, garlic cloves, and rosemary sprigs.",
-        "Bring the mixture to a boil, then remove from heat.",
-        "Cover and let the aromatics infuse the cream/butter mixture for about 15-20 minutes at least.",
-        "Strain this mixture onto your potatoes.",
-        "Mix and serve with chives or green onions.",
-        "For the Chimichurri: Combine all chimichurri ingredients.",
-        "Serve the steak bites with mashed potatoes and chimichurri sauce."
-      ],
-      "prep_time": "30 minutes (minimum marinating time)",
-      "cook_time": "40 minutes",
-      "total_time": "1 hour 10 minutes",
-      "servings": null,
-      "dietary_info": [],
-      "difficulty": "medium",
-      "source": {
-        "platform": "Instagram",
-        "url": "https://instagram.com/p/DHRZSlGPtIO/?utm_source=qr"
-      },
-      "source_url": "https://instagram.com/p/DHRZSlGPtIO/?utm_source=qr"
-    },
-    "pdf_path": "./pdfs/Carne_Asada_Chimichurri_Steak_Bites_with_Mashed_Po_1746982638.pdf",
-    "layout_version": "v1",
-    "cached_at": "2025-05-11T16:57:18.819359"
+    "cached_at": "2025-08-07T05:55:47.848657"
   }
 }

@@ -33,6 +33,8 @@ class FetchBitesMessages:
             
             "language_extraction_issue": "Hey {name}! 😔\n\nI have some bad news. I took a thorough look through the post you shared and scanned the captions, comments, and anything written - but I couldn't extract a useful recipe.\n\nThe problem may be the language of the post or that the recipe was mostly shared as a voice over.\n\nWould you like to try sending a different post? I'm ready to try again whenever you are! 🍽️",
             
+            "pdf_generation_failed": "Hey {name}! 😊\n\nGreat news - I successfully extracted your recipe! However, I'm having some technical difficulties creating the PDF right now.\n\nI'm working on fixing this issue. Could you try sending the post again in a few minutes? I'll be ready to help! 🍽️✨",
+            
             # === EMAIL MANAGEMENT ===
             "email_request": "Please share your email address to receive your recipe PDF.",
             
@@ -105,32 +107,23 @@ class FetchBitesMessages:
     
     def _clean_user_name(self, user_name: str) -> str:
         """
-        Clean and format user name for personalization
+        Return user name exactly as provided without any transformations
         
         Args:
             user_name: Raw user name from Instagram
             
         Returns:
-            Cleaned user name suitable for messaging
+            User name exactly as provided
         """
         if not user_name:
             return "there"
         
-        # Remove common Instagram artifacts
-        clean_name = user_name.replace("@", "").replace("_", " ").replace(".", " ")
-        
-        # Handle special cases
-        if clean_name.lower() in ["user", "unknown", "direct", "audio-call", "video-call"]:
+        # Handle special cases only
+        if user_name.lower().replace("@", "") in ["user", "unknown", "direct", "audio-call", "video-call"]:
             return "there"
         
-        # Capitalize first letter of each word
-        clean_name = " ".join(word.capitalize() for word in clean_name.split())
-        
-        # Limit length
-        if len(clean_name) > 20:
-            clean_name = clean_name[:20].strip()
-        
-        return clean_name if clean_name else "there"
+        # Return username exactly as provided - no transformations
+        return user_name
     
     def get_onboarding_sequence(self, user_name: Optional[str] = None) -> list:
         """Get the complete onboarding message sequence"""
