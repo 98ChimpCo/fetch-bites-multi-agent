@@ -10,7 +10,7 @@ from PIL import Image
 from reportlab.lib.pagesizes import LETTER
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle, Frame, PageTemplate, Flowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle, Frame, PageTemplate, Flowable, KeepInFrame
 from reportlab.graphics.shapes import Drawing, Circle, String
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
@@ -368,10 +368,15 @@ class PDFGenerator:
                 elements.append(content_table)
 
             # Notes section with rounded rectangle background
-            elements.append(Spacer(1, 10))
+            trailing_spacer = Spacer(1, 10)
             notes_section = self._create_notes_section(recipe_data, doc.width)
             if notes_section:
+                elements.append(trailing_spacer)
                 elements.append(notes_section)
+
+            # Drop any tiny trailing spacers to reduce risk of a blank last page
+            while elements and isinstance(elements[-1], Spacer) and getattr(elements[-1], 'height', 0) <= 12:
+                elements.pop()
 
             doc.build(elements)
             # Cache if needed
@@ -582,6 +587,80 @@ class PDFGenerator:
             stats_para = self._create_inline_stats(recipe_data)
             right_elements.append(stats_para)
 
+            # Try to tuck Chef's Notes into the remaining vertical space under the stats (within the image's square height)
+            MIN_NOTES = 60  # minimum height to render a compact notes block here
+            try:
+                # Compute used height of right column so far
+                used_h = 0
+                # Right column width matches right_col_width below; compute it here
+                available_width = page_width
+                left_col_width = available_width * 0.4
+                right_col_width = available_width * 0.6
+                for f in right_elements:
+                    try:
+                        _, h = f.wrap(right_col_width, 10000)
+                    except Exception:
+                        # Some flowables (like Tables of mixed items) might need a second wrap; ignore failures
+                        h = 0
+                    used_h += h
+                # Image is a square with side = left_col_width
+                img_size = left_col_width
+                free_h = max(0, img_size - used_h)
+
+                if free_h >= MIN_NOTES and recipe_data.get('_tuck_notes_in_header'):
+                    # Build a compact notes block (description + notes) and shrink to fit if needed
+                    compact = []
+                    desc = recipe_data.get('description')
+                    notes_txt = recipe_data.get('notes')
+                    if desc or notes_txt:
+                        compact.append(Paragraph("Chef's Notes", self.styles['NotesTitle']))
+                        if desc:
+                            compact.append(Paragraph(' '.join(str(desc).split()), self.styles['RecipeDescription']))
+                            compact.append(Spacer(1, 4))
+                        if notes_txt:
+                            compact.append(Paragraph(notes_txt, self.styles['Notes']))
+                        # Use inner content width (minus rounded padding) to guarantee wrapping
+                        pad = 12
+                        kif = KeepInFrame(
+                            right_col_width - 2*pad,            # inner width
+                            max(0, free_h - 2*pad),             # inner height
+                            compact,
+                            mode='shrink'
+                        )
+                        # Wrap in rounded background to match template
+                        inner_tbl = Table([[kif]], colWidths=[right_col_width - 2*pad])
+                        inner_tbl.setStyle(TableStyle([
+                            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                            ('LEFTPADDING', (0,0), (-1,-1), 0),
+                            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                            ('TOPPADDING', (0,0), (-1,-1), 0),
+                            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+                        ]))
+                        rounded = RoundedTable(
+                            inner_tbl,
+                            width=right_col_width,
+                            padding=pad,
+                            radius=6,
+                            bg=self.notes_bg,
+                            stroke=colors.HexColor('#E0E0E0'),
+                            stroke_width=1
+                        )
+                        # Pre-wrap to know its height so we can bottom-align with the image square
+                        try:
+                            _, rounded_h = rounded.wrap(right_col_width, free_h)
+                        except Exception:
+                            rounded_h = min(free_h, img_size)
+                        # Spacer to push the notes block down so its bottom aligns with image bottom; subtract a few points to avoid rounding spillover
+                        push_down = max(0, img_size - (used_h + rounded_h) - 12)
+                        if push_down > 0:
+                            right_elements.append(Spacer(1, push_down))
+                        right_elements.append(rounded)
+
+                        # Mark so the bottom notes section doesn't duplicate
+                        recipe_data['_notes_placed_in_header'] = True
+            except Exception as _notes_err:
+                logger.warning(f"Header-notes placement skipped: {_notes_err}")
+
             # Create table with image left, info right
             if left_elements and right_elements:
                 table_data = [[left_elements, right_elements]]
@@ -663,13 +742,18 @@ class PDFGenerator:
             except Exception:
                 return Paragraph("", self.styles['StatsInline'])
 
-    def _number_badge(self, n: int, diameter: int = 16):
-        """Return a small circular number badge as a Drawing for table cell usage."""
+    def _number_badge(self, n: int, diameter: int = 14):
+        """Return a small circular number badge as a Drawing for table cell usage.
+        Default diameter reduced ~20% from 16 -> 13.
+        """
         d = Drawing(diameter, diameter)
         r = diameter / 2.0
         d.add(Circle(r, r, r, fillColor=colors.black, strokeColor=colors.black))
-        # Center the number; Helvetica-Bold 9 fits well in 16px circle
-        d.add(String(r, r - 3, str(n), fontName='Helvetica-Bold', fontSize=9, fillColor=colors.white, textAnchor='middle'))
+        # Font size relative to badge size for good fit
+        fs = max(7, int(round(diameter * 0.55)))
+        # Vertically center-ish the number
+        y = r - (fs * 0.35)
+        d.add(String(r, y, str(n), fontName='Helvetica-Bold', fontSize=fs, fillColor=colors.white, textAnchor='middle'))
         return d
 
     def _create_two_column_content_v2(self, recipe_data, page_width):
@@ -713,18 +797,23 @@ class PDFGenerator:
             instructions = recipe_data.get('instructions', [])
             if instructions:
                 rows = []
-                badge_w = 18  # fixed badge column width
+                # Badge a touch larger (14) with a slightly tighter gutter to the text
+                badge_w = 22  # includes circle + desired horizontal padding
                 for i, step in enumerate(instructions, 1):
-                    badge = self._number_badge(i, diameter=16)
+                    badge = self._number_badge(i, diameter=14)
                     para = Paragraph(step, self.styles['InstructionItem'])
                     rows.append([badge, para])
-                steps_table = Table(rows, colWidths=[badge_w, right_col_width - badge_w - 4])
+                steps_table = Table(rows, colWidths=[badge_w, right_col_width - badge_w])
                 steps_table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    # Top-align so multi-line text wraps under the badge
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    # No padding in badge col, add small left padding to text col for separation
+                    ('LEFTPADDING', (0, 0), (0, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (0, -1), 0),
+                    ('LEFTPADDING', (1, 0), (1, -1), 5),
+                    ('RIGHTPADDING', (1, 0), (1, -1), 0),
                     ('TOPPADDING', (0, 0), (-1, -1), 0),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 8),  # row gutter
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),  # row gutter
                 ]))
                 right_elements.append(steps_table)
             else:
@@ -754,6 +843,9 @@ class PDFGenerator:
     def _create_notes_section(self, recipe_data, page_width):
         """Create notes section with rounded rectangle background"""
         try:
+            # Skip if header already consumed the notes block
+            if recipe_data.get('_notes_placed_in_header'):
+                return None
             notes_elements = []
             has_any = False
             # Title will be added only if we end up with content
