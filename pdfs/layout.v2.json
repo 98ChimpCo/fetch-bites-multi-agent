@@ -1,0 +1,92 @@
+{
+  "source": "pdf-recipe-card-template - Lovable.pdf",
+  "page": {
+    "width": 612,
+    "height": 792,
+    "margins": {
+      "l": 36,
+      "t": 48,
+      "r": 36,
+      "b": 54
+    }
+  },
+  "columns": {
+    "left_pct": 0.5,
+    "right_pct": 0.5
+  },
+  "header": {
+    "title_size": 19.12,
+    "desc_size": 8.93,
+    "desc_leading": 26,
+    "row_gaps": {
+      "title_desc": 24,
+      "meta_rows": 24
+    }
+  },
+  "stats": {
+    "grid": "2x2",
+    "label_size": 9,
+    "value_size": 13,
+    "padding": {
+      "t": 36,
+      "b": 36,
+      "x": 28
+    }
+  },
+  "ingredients": {
+    "bg": "#F5F5DC",
+    "bullet_color": "#FFAA64",
+    "leading": 16,
+    "left_pad": 15,
+    "right_pad": 10
+  },
+  "directions": {
+    "circle_radius": 8,
+    "num_offset_y": 4,
+    "text_size": 11,
+    "line_height": 22,
+    "step_gap": 20,
+    "leading": 14
+  },
+  "notes": {
+    "bg": "#F8F8F8",
+    "inner_pad": 20,
+    "border": {
+      "color": "#D8D8D8",
+      "width": 2
+    },
+    "leading": 16
+  },
+  "detected_bboxes": {
+    "title_bbox": [
+      158.15,
+      77.41,
+      453.87,
+      97.53
+    ],
+    "desc_bbox": [
+      158.15,
+      101.53,
+      453.87,
+      118.41
+    ],
+    "ingredients_bbox": [
+      40.5,
+      260.36,
+      166.37,
+      273.54
+    ],
+    "directions_bbox": [
+      326.5,
+      260.36,
+      406.49,
+      273.54
+    ],
+    "notes_bbox": [
+      40.5,
+      715.58,
+      534.45,
+      732.12
+    ]
+  }
+}

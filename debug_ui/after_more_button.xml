@@ -43,13 +43,13 @@
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="368" y="469" width="31" height="26" index="1">
                                         <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="368" y="469" width="31" height="26" index="0">
-                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="166600 likes" label="166600 likes" enabled="true" visible="false" accessible="true" x="368" y="469" width="31" height="15" index="0"/>
+                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="166907 likes" label="166907 likes" enabled="true" visible="false" accessible="true" x="368" y="469" width="31" height="15" index="0"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" name="ufi-comment-button" enabled="true" visible="false" accessible="false" x="361" y="495" width="45" height="70" index="2">
                                         <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="361" y="495" width="45" height="70" index="0">
                                           <XCUIElementTypeButton type="XCUIElementTypeButton" name="comment-button" label="Comment" enabled="true" visible="false" accessible="true" x="361" y="495" width="45" height="44" index="0"/>
-                                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="549 comments" name="549 comments" label="549 comments" enabled="true" visible="false" accessible="true" x="371" y="539" width="25" height="15" index="1"/>
+                                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="551 comments" name="551 comments" label="551 comments" enabled="true" visible="false" accessible="true" x="372" y="539" width="23" height="15" index="1"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="361" y="568" width="45" height="44" index="3">
@@ -59,7 +59,7 @@
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="369" y="616" width="29" height="26" index="4">
                                         <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="369" y="616" width="29" height="26" index="0">
-                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="23 likes" label="23 likes" enabled="true" visible="false" accessible="true" x="375" y="616" width="17" height="15" index="0"/>
+                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="24 likes" label="24 likes" enabled="true" visible="false" accessible="true" x="375" y="616" width="17" height="15" index="0"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" name="ufi-send-button" enabled="true" visible="false" accessible="false" x="361" y="642" width="45" height="70" index="5">
@@ -75,23 +75,17 @@
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" name="Go to audio page for Somebody (2024) (feat. Kimbra, Sante Sansone) by Gotye, FISHER, Chris Lake" label="Go to audio page for Somebody (2024) (feat. Kimbra, Sante Sansone) by Gotye, FISHER, Chris Lake" enabled="true" visible="false" accessible="true" x="368" y="762" width="31" height="30" index="7"/>
                                     </XCUIElementTypeOther>
-                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="643" width="414" height="170" index="1">
-                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="643" width="414" height="170" index="0"/>
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="658" width="414" height="155" index="1">
+                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="658" width="414" height="155" index="0"/>
                                     </XCUIElementTypeOther>
-                                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="profile-button" enabled="true" visible="false" accessible="false" x="16" y="719" width="286" height="44" index="2">
-                                      <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="16" y="719" width="174" height="44" index="0">
-                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="Post by vinniecookclub" label="Post by vinniecookclub" enabled="true" visible="false" accessible="true" x="16" y="719" width="174" height="44" index="0"/>
-                                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="16" y="719" width="44" height="44" index="1">
-                                          <XCUIElementTypeOther type="XCUIElementTypeOther" name="story-ring" enabled="true" visible="false" accessible="false" x="16" y="719" width="44" height="44" index="0"/>
-                                          <XCUIElementTypeButton type="XCUIElementTypeButton" value="Watch story" name="vinniecookclub's profile picture" label="vinniecookclub's profile picture" enabled="true" visible="false" accessible="true" x="19" y="722" width="37" height="37" index="1">
-                                            <XCUIElementTypeImage type="XCUIElementTypeImage" name="image-view" enabled="true" visible="false" accessible="false" x="19" y="722" width="37" height="37" index="0"/>
-                                          </XCUIElementTypeButton>
-                                        </XCUIElementTypeOther>
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="profile-button" enabled="true" visible="false" accessible="false" x="16" y="727" width="278" height="36" index="2">
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="16" y="727" width="166" height="36" index="0">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="Post by vinniecookclub" label="Post by vinniecookclub" enabled="true" visible="false" accessible="true" x="16" y="727" width="166" height="36" index="0"/>
                                       </XCUIElementTypeButton>
-                                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="follow-button" label="Follow vinniecookclub" enabled="true" visible="false" accessible="true" x="242" y="728" width="60" height="26" index="1"/>
-                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="66" y="741" width="164" height="15" index="2">
-                                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="66" y="741" width="164" height="15" index="0">
-                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="sundial-viewer-audio-attribution-view" label="Gotye, FISHER, Chris Lake · Somebody (2024) (feat. Kimbra, Sante Sansone)" enabled="true" visible="false" accessible="true" x="66" y="741" width="165" height="15" index="0"/>
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="follow-button" label="Follow vinniecookclub" enabled="true" visible="false" accessible="true" x="234" y="732" width="60" height="26" index="1"/>
+                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="58" y="746" width="164" height="15" index="2">
+                                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="58" y="746" width="164" height="15" index="0">
+                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="sundial-viewer-audio-attribution-view" label="Gotye, FISHER, Chris Lake · Somebody (2024) (feat. Kimbra, Sante Sansone)" enabled="true" visible="false" accessible="true" x="58" y="746" width="165" height="15" index="0"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeOther>
                                     </XCUIElementTypeOther>
@@ -102,7 +96,7 @@
                                       </XCUIElementTypeOther>
                                     </XCUIElementTypeOther>
                                     <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="793" width="414" height="29" index="4">
-                                      <XCUIElementTypeOther type="XCUIElementTypeOther" name="Video progress: 32 percent" label="Video progress: 32 percent" enabled="true" visible="false" accessible="true" x="0" y="811" width="414" height="2" index="0"/>
+                                      <XCUIElementTypeOther type="XCUIElementTypeOther" name="Video progress: 34 percent" label="Video progress: 34 percent" enabled="true" visible="false" accessible="true" x="0" y="811" width="414" height="2" index="0"/>
                                     </XCUIElementTypeOther>
                                   </XCUIElementTypeOther>
                                 </XCUIElementTypeOther>

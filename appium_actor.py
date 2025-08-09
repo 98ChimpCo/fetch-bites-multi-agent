@@ -31,6 +31,14 @@ post_hash_set = set()
 # Utility: Verify shared post preview element with screenshot and bounding box
 # -----------------------------------------------------------
 
+# Cache bypass helper: honors CLI flag and .env
+def force_regen_enabled():
+    # DISABLE_PDF_CACHE=true in .env OR passing --force-regen on CLI
+    env_val = os.getenv('DISABLE_PDF_CACHE', '')
+    env_force = isinstance(env_val, str) and env_val.lower() in ('1', 'true', 'yes', 'on')
+    cli_force = '--force-regen' in sys.argv
+    return env_force or cli_force
+
 def verify_shared_post_preview_element(driver):
     """
     Verifies if the shared recipe preview element is reliably returned using XPath.
@@ -361,6 +369,291 @@ def extract_email_from_conversation(driver):
     return None
 
 # -----------------------------------------------------------
+# Reel/profile scraping helpers (handle, likes, display name) - no Meta APIs
+# -----------------------------------------------------------
+import unicodedata
+
+def _strip_emoji(text: str) -> str:
+    if not isinstance(text, str):
+        return ''
+    return ''.join(ch for ch in text if unicodedata.category(ch) not in ('So','Sk'))
+
+def _looks_like_name(text: str) -> bool:
+    import re
+    if not text:
+        return False
+    s = text.strip()
+    if s.startswith('@'):
+        return False
+    if re.search(r"\b(posts?|followers?|following)\b", s, re.I):
+        return False
+    if re.match(r'^[0-9,\.KkMm\s]+$', s):
+        return False
+    s2 = _strip_emoji(s)
+    return bool(re.search(r'[A-Za-zÀ-ÖØ-öø-ÿ]', s2))
+
+def normalize_count_to_compact(raw: str) -> str:
+    """Normalize strings like '22195 likes' -> '22.2K' and '1,203,000 likes' -> '1.2M'."""
+    try:
+        import re
+        s = (raw or '').lower().replace(',', '').strip()
+        m = re.search(r'([0-9]+(?:\.[0-9]+)?)(k|m)?\s*likes?', s)
+        if not m:
+            # sometimes label is just a number
+            m = re.search(r'([0-9]+(?:\.[0-9]+)?)', s)
+            if not m:
+                return '—'
+        num, suf = m.group(1), (m.group(2) if len(m.groups()) > 1 else None)
+        if suf in ('k', 'm'):
+            return f"{num}{suf.upper()}"
+        n = float(num)
+        if n >= 1_000_000:
+            return (f"{n/1_000_000:.1f}M").rstrip('0').rstrip('.')
+        if n >= 1_000:
+            return (f"{n/1_000:.1f}K").rstrip('0').rstrip('.')
+        return str(int(n))
+    except Exception:
+        return '—'
+
+def scrape_reel_likes(driver):
+    """Return a dict with raw and compact likes from the Reel UI."""
+    try:
+        el = driver.find_element(
+            by='-ios predicate string',
+            value="type == 'XCUIElementTypeButton' AND (label ENDSWITH 'likes' OR name ENDSWITH 'likes')"
+        )
+        raw = (el.get_attribute('label') or el.get_attribute('name') or '').strip()
+        return {"raw": raw, "compact": normalize_count_to_compact(raw)}
+    except Exception:
+        try:
+            el = driver.find_element(
+                by='-ios class chain',
+                value="**/XCUIElementTypeButton[`label ENDSWITH 'likes' OR name ENDSWITH 'likes'`]"
+            )
+            raw = (el.get_attribute('label') or el.get_attribute('name') or '').strip()
+            return {"raw": raw, "compact": normalize_count_to_compact(raw)}
+        except Exception:
+            return {"raw": None, "compact": '—'}
+
+def scrape_reel_handle(driver):
+    """Scrape the poster handle from the Reel view (e.g., 'Post by leahscohen'). Returns 'leahscohen' or None."""
+    try:
+        el = driver.find_element(
+            by='-ios predicate string',
+            value="type == 'XCUIElementTypeButton' AND (label BEGINSWITH 'Post by ' OR name BEGINSWITH 'Post by ')"
+        )
+        raw = (el.get_attribute('label') or el.get_attribute('name') or '').strip()
+        return raw.split('Post by ', 1)[1].strip()
+    except Exception:
+        try:
+            el = driver.find_element(
+                by='-ios class chain',
+                value="**/XCUIElementTypeButton[`label BEGINSWITH 'Post by ' OR name BEGINSWITH 'Post by '`]"
+            )
+            raw = (el.get_attribute('label') or el.get_attribute('name') or '').strip()
+            return raw.split('Post by ', 1)[1].strip()
+        except Exception:
+            return None
+
+def scrape_display_name_from_profile(driver, expected_handle: str) -> str | None:
+    """Heuristic: collect static texts above the handle and choose the closest name-like text."""
+    try:
+        # find the handle text on profile first
+        handle_el = None
+        try:
+            handle_el = driver.find_element(
+                by='-ios predicate string',
+                value=f"type == 'XCUIElementTypeStaticText' AND (label == '{expected_handle}' OR name == '{expected_handle}')"
+            )
+        except Exception:
+            # sometimes handle has an @ prefix visually hidden; try contains
+            try:
+                handle_el = driver.find_element(
+                    by='-ios predicate string',
+                    value=f"type == 'XCUIElementTypeStaticText' AND (label CONTAINS '{expected_handle}' OR name CONTAINS '{expected_handle}')"
+                )
+            except Exception:
+                handle_el = None
+        if not handle_el:
+            return None
+        hy = handle_el.rect.get('y', 0)
+        texts = driver.find_elements(by='-ios class chain', value="**/XCUIElementTypeStaticText")
+        candidates = []
+        for el in texts:
+            try:
+                r = el.rect
+                if 50 < r['y'] < hy - 5:  # header band above handle
+                    txt = (el.get_attribute('label') or el.get_attribute('name') or '').strip()
+                    if _looks_like_name(txt):
+                        dy = abs(hy - r['y'])
+                        candidates.append((dy, len(txt), txt))
+            except Exception:
+                pass
+        if not candidates:
+            return None
+        candidates.sort(key=lambda t: (t[0], -t[1]))
+        return candidates[0][2]
+    except Exception:
+        return None
+
+# -----------------------------------------------------------
+# Inference helpers: derive prep_time, cook_time, servings
+# -----------------------------------------------------------
+import re as _re
+
+def _norm_time_to_pretty(_s: str | None) -> str | None:
+    if not _s:
+        return None
+    s = _s.lower().strip()
+    s = s.replace('minutes','min').replace('minute','min')
+    s = s.replace('hrs','hr').replace('hours','hr').replace('hour','hr')
+    mins = 0
+    m = _re.search(r'([0-9]+(?:\.[0-9]+)?)\s*hr', s)
+    if m:
+        mins += int(round(float(m.group(1))*60))
+    m = _re.search(r'([0-9]+)\s*min', s)
+    if m:
+        mins += int(m.group(1))
+    if mins <= 0:
+        m = _re.search(r'^\s*([0-9]+)\s*$', s)
+        if m:
+            mins = int(m.group(1))
+    if mins <= 0:
+        return None
+    h, r = divmod(mins, 60)
+    if h and r:  return f"{h} hr {r} min"
+    if h:       return f"{h} hr"
+    return f"{r} min"
+
+def infer_stats_from_text(caption_text: str, ingredients: list | None = None, instructions: list | None = None) -> dict:
+    """Infer prep_time, cook_time, servings using rules → fallbacks."""
+    text = caption_text or ""
+
+    def grab(pat: str) -> str | None:
+        m = _re.search(pat, text, _re.I)
+        return m.group(2).strip() if m else None
+
+    prep = grab(r'\b(prep(?:aration)?(?:\s*time)?)\b[\s:–-]*([0-9\.]+\s*(?:min|minutes?|hr|hours?))')
+    cook = grab(r'\b(cook(?:ing)?(?:\s*time)?)\b[\s:–-]*([0-9\.]+\s*(?:min|minutes?|hr|hours?))')
+    serv = grab(r'\b(serves?|yield|feeds)\b[\s:–-]*([0-9]+(?:\s*[-–]\s*[0-9]+)?)')
+
+    # hashtags / shorthand
+    if not prep:
+        m = _re.search(r'#?prep[:\-]?\s*([0-9]+)\s*m', text, _re.I) or _re.search(r'#prep([0-9]+)', text, _re.I)
+        if m: prep = f"{m.group(1)} min"
+    if not cook:
+        m = _re.search(r'#?cook[:\-]?\s*([0-9]+)\s*m', text, _re.I) or _re.search(r'#cook([0-9]+)', text, _re.I)
+        if m: cook = f"{m.group(1)} min"
+    if not serv:
+        m = _re.search(r'#?(serves?|feeds|yield)[:\-]?\s*([0-9]+)', text, _re.I)
+        if m: serv = m.group(2)
+
+    def _sum_minutes(seq):
+        if not seq: return 0
+        total = 0
+        for s in seq:
+            for n,u in _re.findall(r'([0-9]+)\s*(min|minutes?|hr|hours?)', s, _re.I):
+                n = int(n)
+                total += (n*60) if u.lower().startswith('hr') else n
+        return total
+
+    if (not cook) and instructions:
+        heat_words = ('bake','roast','fry','air','sauté','saute','boil','simmer','grill','broil','sear')
+        heat_steps = [s for s in instructions if any(w in s.lower() for w in heat_words)]
+        m = _sum_minutes(heat_steps)
+        if m: cook = f"{m} min"
+
+    if (not prep) and instructions:
+        total = _sum_minutes(instructions)
+        if total and cook:
+            cm = _re.search(r'([0-9]+)', cook)
+            cmin = int(cm.group(1)) if cm else 0
+            pm = max(total - cmin, 0)
+            if pm: prep = f"{pm} min"
+
+    # Quantity heuristics for servings
+    if (not serv) and ingredients:
+        thighs = 0
+        grams = 0
+        for ing in ingredients:
+            try:
+                line = " ".join(str(ing.get(k,'')) for k in ('quantity','unit','name')).lower()
+            except Exception:
+                line = str(ing).lower()
+            # count thighs
+            if 'thigh' in line:
+                nums = _re.findall(r'\b([0-9]+)\b', line)
+                if nums:
+                    try: thighs += int(nums[0])
+                    except: pass
+            # grams
+            g = _re.findall(r'([0-9]+)\s*(g|gram)', line)
+            if g:
+                try: grams += int(g[0][0])
+                except: pass
+        if thighs:
+            serv = str(max(1, min(thighs, 12)))
+        elif grams:
+            serv = str(max(1, min(round(grams/90), 12)))
+
+    # --- Heuristic estimation if still missing (verb-based) ---
+    prep_est, cook_est = False, False
+    instr_list = instructions or []
+    ilines = [str(s).lower() for s in instr_list]
+
+    HEAT_MAP = {
+        'pan-fry': 8, 'pan fry': 8, 'fry': 8, 'deep-fry': 10, 'deep fry': 10,
+        'sauté': 3, 'saute': 3, 'sear': 2, 'boil': 10, 'simmer': 12,
+        'bake': 20, 'roast': 25, 'grill': 10, 'broil': 8, 'air-fry': 12, 'air fry': 12,
+        'glaze': 2, 'reduce': 5
+    }
+    PREP_MAP = {
+        'slice': 4, 'chop': 4, 'dice': 4, 'mince': 3, 'cut': 3, 'peel': 2,
+        'whisk': 2, 'mix': 2, 'stir': 1, 'coat': 2, 'toss': 2, 'marinate': 15, 'knead': 8
+    }
+
+    def _sum_map(lines, mapping):
+        total = 0
+        for line in lines:
+            for key, mins in mapping.items():
+                if key in line:
+                    total += mins
+        return total
+
+    # Cook time estimation from heat verbs
+    if not cook:
+        heat_total = _sum_map(ilines, HEAT_MAP)
+        if heat_total > 0:
+            cook = f"{heat_total} min"
+            cook_est = True
+
+    # Prep time estimation from prep verbs / ingredients count
+    if not prep:
+        prep_total = _sum_map(ilines, PREP_MAP)
+        if prep_total == 0 and ingredients:
+            try:
+                prep_total = max(5, min(20, len(ingredients) * 2))
+            except Exception:
+                prep_total = 8
+        if prep_total > 0:
+            prep = f"{prep_total} min"
+            prep_est = True
+
+    # Normalize and mark estimates with '~'
+    prep_str = _norm_time_to_pretty(prep) if prep else None
+    cook_str = _norm_time_to_pretty(cook) if cook else None
+    if prep_est and prep_str:
+        prep_str = f"~ {prep_str}"
+    if cook_est and cook_str:
+        cook_str = f"~ {cook_str}"
+
+    return {
+        "prep_time": prep_str,
+        "cook_time": cook_str,
+        "servings": serv
+    }
+
+# -----------------------------------------------------------
 # DM Handling Helpers: Extracting User Handle, Recipe Extraction, and Clicking Threads
 # -----------------------------------------------------------
 def extract_handle_from_thread(thread):
@@ -561,6 +854,10 @@ def process_unread_threads(driver, user_memory):
     """
     logger.info("Scanning for unread messages (every 5 seconds)...")
     
+    logger.info(
+    f"Cache bypass is {'ON' if force_regen_enabled() else 'OFF'} "
+    f"(DISABLE_PDF_CACHE={os.getenv('DISABLE_PDF_CACHE')}, argv_has_force={'--force-regen' in sys.argv})"
+)
     unread_threads = []
     
     # Strategy 1: XPath with Unseen attribute
@@ -715,7 +1012,16 @@ def process_unread_threads(driver, user_memory):
                         navigate_back_to_dm_list(driver)
                         continue
                 sleep(3)
-                
+
+                # --- Gather header data from Reel view (poster handle and likes) ---
+                try:
+                    poster_handle = scrape_reel_handle(driver)
+                except Exception:
+                    poster_handle = None
+                try:
+                    likes_info = scrape_reel_likes(driver)
+                except Exception:
+                    likes_info = {"raw": None, "compact": '—'}
                 # Variable to store the extracted URL from QR code
                 extracted_post_url = None
                 
@@ -1118,8 +1424,8 @@ def process_unread_threads(driver, user_memory):
                     # --- Hash-based deduplication and PDF cache logic ---
                     layout_version = os.getenv("LAYOUT_VERSION", "v1")
                     post_hash = get_post_hash(caption_text, user_id, layout_version)
-                    
-                    if pdf_cache.exists(post_hash):
+
+                    if pdf_cache.exists(post_hash) and not force_regen_enabled():
                         logger.info(f"Post hash {post_hash} already processed. Skipping extraction.")
                         cached_pdf_path = pdf_cache.load_pdf_path(post_hash)
                         if cached_pdf_path:
@@ -1132,7 +1438,7 @@ def process_unread_threads(driver, user_memory):
                                     url="unknown",
                                     cuisine=recipe_details.get("cuisine", "unknown"),
                                     meal_format=recipe_details.get("meal_format", "unknown"),
-                                    tags=list(post_hash_set),
+                                    tags=list(post_hash_set | set(filter(None, [recipe_details.get('likes')]))) ,
                                     input_char_count=input_char_count,
                                     output_char_count=output_char_count,
                                     delta_ratio=char_ratio,
@@ -1188,6 +1494,11 @@ def process_unread_threads(driver, user_memory):
                             navigate_back_to_dm_list(driver)
                             continue
 
+                    else:
+                        if pdf_cache.exists(post_hash):
+                            logger.info(f"Bypassing cache for post {post_hash} (force_regen={force_regen_enabled()}). Regenerating PDF...")
+                        # Intentionally fall through to normal extraction + PDF generation path (do not return/continue here)
+
                     logger.info("Exiting expanded post view after caption extraction...")
                     try:
                         reel_back_button = driver.find_element(
@@ -1209,7 +1520,37 @@ def process_unread_threads(driver, user_memory):
                     logger.info("Proceeding with recipe extraction from Claude output...")
                     # Use the recipe dict returned by Claude
                     recipe_details = recipe
-                    
+
+                    # --- Infer missing prep/cook/servings from caption + steps ---
+                    try:
+                        stats_inferred = infer_stats_from_text(
+                            caption_text or post.get('comment_text') or post.get('caption', ''),
+                            recipe_details.get('ingredients'),
+                            recipe_details.get('instructions')
+                        )
+                        for _k in ('prep_time', 'cook_time', 'servings'):
+                            if not recipe_details.get(_k) and stats_inferred.get(_k):
+                                recipe_details[_k] = stats_inferred[_k]
+                        logger.info(f"[INFER] prep={recipe_details.get('prep_time')} cook={recipe_details.get('cook_time')} servings={recipe_details.get('servings')}")
+                    except Exception as infer_err:
+                        logger.warning(f"Failed to infer time/servings: {infer_err}")
+
+                    # --- Enrich recipe details with scraped header data (handle, likes, identity) ---
+                    try:
+                        # Prefer the poster handle from the Reel; fallback to DM thread handle (strip leading @)
+                        dm_handle = (user_id or '').lstrip('@')
+                        poster = poster_handle or dm_handle or ''
+                        if 'source' not in recipe_details or not isinstance(recipe_details['source'], dict):
+                            recipe_details['source'] = {}
+                        recipe_details['source'].setdefault('platform', 'Instagram')
+                        recipe_details['source']['instagram_handle'] = poster
+                        # display name may be scraped later from profile; fallback to capitalized handle
+                        recipe_details['source'].setdefault('creator', poster.replace('_', ' ').title())
+                        # likes goes into stats block (PDF generator will render it if present)
+                        recipe_details['likes'] = likes_info.get('compact') if isinstance(likes_info, dict) else '—'
+                    except Exception as enrich_err:
+                        logger.warning(f"Failed to enrich recipe with header data: {enrich_err}")
+
                     # If we extracted a URL from the QR code earlier, add it to the recipe details
                     if extracted_post_url:
                         recipe_details["source_url"] = extracted_post_url
@@ -1219,17 +1560,17 @@ def process_unread_threads(driver, user_memory):
 
                     logger.info("Generating PDF from extracted recipe details...")
                     pdf_gen = PDFGenerator(output_dir="./pdfs")
-                    
+
                     # Handle the return value from generate_pdf correctly
                     pdf_path_result = pdf_gen.generate_pdf(recipe_details, image_path=preview_image_path)
-                    
+
                     # Check if result is a tuple (path, is_cached) or just a string path
                     if isinstance(pdf_path_result, tuple):
                         pdf_path, is_cached = pdf_path_result
                     else:
                         pdf_path = pdf_path_result
                         is_cached = False
-                    
+
                     # Immediately after generating the PDF, check validity
                     if not isinstance(pdf_path, str) or not os.path.isfile(pdf_path):
                         logger.error(f"PDF path is invalid: {pdf_path}")
@@ -1248,14 +1589,14 @@ def process_unread_threads(driver, user_memory):
                         except Exception as error_msg_err:
                             logger.error(f"Failed to send PDF error message: {error_msg_err}")
                         continue
-                    
+
                     logger.info(f"PDF generated at: {pdf_path}")
-                    
+
                     # Store in cache if not already cached
                     if not is_cached and not pdf_cache.exists(post_hash):
                         pdf_cache.set(post_hash, user_id, caption_text, recipe_details, pdf_path)
                         pdf_cache.save()
-                    
+
                     # Measure content delta between input and Claude output
                     try:
                         input_text = post.get("comment_text") or post.get("caption", "")
@@ -1300,7 +1641,7 @@ def process_unread_threads(driver, user_memory):
                             url="unknown",
                             cuisine=recipe_details.get("cuisine", "unknown"),
                             meal_format=recipe_details.get("meal_format", "unknown"),
-                            tags=list(post_hash_set),
+                            tags=list(post_hash_set | set(filter(None, [recipe_details.get('likes')]))) ,
                             input_char_count=input_char_count,
                             output_char_count=output_char_count,
                             delta_label=delta_label
