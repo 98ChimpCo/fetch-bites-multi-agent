@@ -14,7 +14,11 @@
                         <XCUIElementTypeOther type="XCUIElementTypeOther" name="reels-viewer" enabled="true" visible="false" accessible="false" x="0" y="0" width="414" height="896" index="0">
                           <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="0" width="414" height="92" index="0">
                             <XCUIElementTypeButton type="XCUIElementTypeButton" name="back-button" label="Back" enabled="true" visible="false" accessible="true" x="18" y="59" width="11" height="18" index="0"/>
-                            <XCUIElementTypeButton type="XCUIElementTypeButton" name="camera-entry-point-button" label="Open camera" enabled="true" visible="false" accessible="true" x="363" y="46" width="44" height="44" index="1"/>
+                            <XCUIElementTypeButton type="XCUIElementTypeButton" name="camera-entry-point-button" label="Open camera" enabled="true" visible="false" accessible="false" x="363" y="46" width="44" height="44" index="1">
+                              <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="363" y="46" width="44" height="44" index="0">
+                                <XCUIElementTypeImage type="XCUIElementTypeImage" name="ig_icon_camera_outline_44" enabled="true" visible="false" accessible="false" x="363" y="46" width="44" height="44" index="0"/>
+                              </XCUIElementTypeOther>
+                            </XCUIElementTypeButton>
                             <XCUIElementTypeButton type="XCUIElementTypeButton" name="Reels" label="Reels" enabled="true" visible="false" accessible="false" x="185" y="57" width="44" height="22" index="2">
                               <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="185" y="57" width="44" height="22" index="0">
                                 <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Reels" name="Reels" label="Reels" enabled="true" visible="false" accessible="true" x="185" y="57" width="44" height="22" index="0"/>
@@ -39,7 +43,7 @@
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="367" y="469" width="33" height="26" index="1">
                                         <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="367" y="469" width="33" height="26" index="0">
-                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="22195 likes" label="22195 likes" enabled="true" visible="false" accessible="true" x="367" y="469" width="33" height="15" index="0"/>
+                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="22198 likes" label="22198 likes" enabled="true" visible="false" accessible="true" x="367" y="469" width="33" height="15" index="0"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" name="ufi-comment-button" enabled="true" visible="false" accessible="false" x="361" y="495" width="45" height="70" index="2">
@@ -61,7 +65,7 @@
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" name="ufi-send-button" enabled="true" visible="false" accessible="false" x="361" y="642" width="45" height="70" index="5">
                                         <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="361" y="642" width="45" height="70" index="0">
                                           <XCUIElementTypeButton type="XCUIElementTypeButton" name="send-button" label="Send" enabled="true" visible="false" accessible="true" x="361" y="642" width="45" height="44" index="0"/>
-                                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="15597 shares" name="15597 shares" label="15597 shares" enabled="true" visible="false" accessible="true" x="367" y="686" width="33" height="15" index="1"/>
+                                          <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="15623 shares" name="15623 shares" label="15623 shares" enabled="true" visible="false" accessible="true" x="367" y="686" width="33" height="15" index="1"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="361" y="710" width="45" height="44" index="6">
@@ -71,17 +75,23 @@
                                       </XCUIElementTypeButton>
                                       <XCUIElementTypeButton type="XCUIElementTypeButton" name="Go to audio page for I Ain't Worried (Instrumental) by Alhanii" label="Go to audio page for I Ain't Worried (Instrumental) by Alhanii" enabled="true" visible="false" accessible="true" x="368" y="762" width="31" height="30" index="7"/>
                                     </XCUIElementTypeOther>
-                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="658" width="414" height="155" index="1">
-                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="658" width="414" height="155" index="0"/>
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="643" width="414" height="170" index="1">
+                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="643" width="414" height="170" index="0"/>
                                     </XCUIElementTypeOther>
-                                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="profile-button" enabled="true" visible="false" accessible="false" x="16" y="727" width="278" height="36" index="2">
-                                      <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="16" y="727" width="142" height="36" index="0">
-                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="Post by leahscohen" label="Post by leahscohen" enabled="true" visible="false" accessible="true" x="16" y="727" width="142" height="36" index="0"/>
+                                    <XCUIElementTypeOther type="XCUIElementTypeOther" name="profile-button" enabled="true" visible="false" accessible="false" x="16" y="719" width="286" height="44" index="2">
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" enabled="true" visible="false" accessible="false" x="16" y="719" width="150" height="44" index="0">
+                                        <XCUIElementTypeButton type="XCUIElementTypeButton" name="Post by leahscohen" label="Post by leahscohen" enabled="true" visible="false" accessible="true" x="16" y="719" width="150" height="44" index="0"/>
+                                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="16" y="719" width="44" height="44" index="1">
+                                          <XCUIElementTypeOther type="XCUIElementTypeOther" name="story-ring" enabled="true" visible="false" accessible="false" x="16" y="719" width="44" height="44" index="0"/>
+                                          <XCUIElementTypeButton type="XCUIElementTypeButton" value="Watch story" name="leahscohen's profile picture" label="leahscohen's profile picture" enabled="true" visible="false" accessible="true" x="19" y="722" width="37" height="37" index="1">
+                                            <XCUIElementTypeImage type="XCUIElementTypeImage" name="image-view" enabled="true" visible="false" accessible="false" x="19" y="722" width="37" height="37" index="0"/>
+                                          </XCUIElementTypeButton>
+                                        </XCUIElementTypeOther>
                                       </XCUIElementTypeButton>
-                                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="follow-button" label="Follow leahscohen" enabled="true" visible="false" accessible="true" x="234" y="732" width="60" height="26" index="1"/>
-                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="58" y="746" width="164" height="15" index="2">
-                                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="58" y="746" width="164" height="15" index="0">
-                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="sundial-viewer-audio-attribution-view" label="Trending, Alhanii · I Ain't Worried (Instrumental)" enabled="true" visible="false" accessible="true" x="58" y="746" width="165" height="15" index="0"/>
+                                      <XCUIElementTypeButton type="XCUIElementTypeButton" name="follow-button" label="Follow leahscohen" enabled="true" visible="false" accessible="true" x="242" y="728" width="60" height="26" index="1"/>
+                                      <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="66" y="741" width="164" height="15" index="2">
+                                        <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="66" y="741" width="164" height="15" index="0">
+                                          <XCUIElementTypeButton type="XCUIElementTypeButton" name="sundial-viewer-audio-attribution-view" label="Trending, Alhanii · I Ain't Worried (Instrumental)" enabled="true" visible="false" accessible="true" x="66" y="741" width="165" height="15" index="0"/>
                                         </XCUIElementTypeOther>
                                       </XCUIElementTypeOther>
                                     </XCUIElementTypeOther>
@@ -92,7 +102,7 @@
                                       </XCUIElementTypeOther>
                                     </XCUIElementTypeOther>
                                     <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="0" y="793" width="414" height="29" index="4">
-                                      <XCUIElementTypeOther type="XCUIElementTypeOther" name="Video progress: 49 percent" label="Video progress: 49 percent" enabled="true" visible="false" accessible="true" x="0" y="811" width="414" height="2" index="0"/>
+                                      <XCUIElementTypeOther type="XCUIElementTypeOther" name="Video progress: 48 percent" label="Video progress: 48 percent" enabled="true" visible="false" accessible="true" x="0" y="811" width="414" height="2" index="0"/>
                                     </XCUIElementTypeOther>
                                   </XCUIElementTypeOther>
                                 </XCUIElementTypeOther>
@@ -130,9 +140,7 @@
                                     <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="35" y="849" width="196" height="3" index="0"/>
                                   </XCUIElementTypeOther>
                                 </XCUIElementTypeTextView>
-                                <XCUIElementTypeOther type="XCUIElementTypeOther" enabled="true" visible="false" accessible="false" x="37" y="835" width="192" height="20" index="6">
-                                  <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Reply to Shahin Zangenehpour..." name="Reply to Shahin Zangenehpour..." label="Reply to Shahin Zangenehpour..." enabled="true" visible="false" accessible="false" x="37" y="835" width="192" height="20" index="0"/>
-                                </XCUIElementTypeOther>
+                                <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" value="Reply to Shahin Zangenehpour..." name="Reply to Shahin Zangenehpour..." label="Reply to Shahin Zangenehpour..." enabled="true" visible="false" accessible="false" x="37" y="835" width="192" height="20" index="6"/>
                                 <XCUIElementTypeButton type="XCUIElementTypeButton" name="Note-Quick-Reply-Emoji-Plus-Selection-Button" label="Select an emoji" enabled="true" visible="false" accessible="true" x="359" y="836" width="20" height="18" index="7">
                                   <XCUIElementTypeStaticText type="XCUIElementTypeStaticText" enabled="true" visible="false" accessible="false" x="359" y="836" width="0" height="0" index="0"/>
                                 </XCUIElementTypeButton>

@@ -1,5 +1,6 @@
 # src/agents/pdf_generator.py
 import os
+import pathlib
 import logging
 import time
 import json
@@ -7,7 +8,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from io import BytesIO
 from PIL import Image
-from reportlab.lib.pagesizes import LETTER
+from reportlab.lib.pagesizes import LETTER, A4, LEGAL, TABLOID
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Image as RLImage, TableStyle, Frame, PageTemplate, Flowable, KeepInFrame
@@ -15,6 +16,7 @@ from reportlab.graphics.shapes import Drawing, Circle, String
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from urllib.parse import urlparse, urlunparse
 from src.agents.pdf_cache import PDFCache
 
 logger = logging.getLogger(__name__)
@@ -42,6 +44,12 @@ class NumberedCircle(Flowable):
         self.line_height = line_height
 
     def draw(self):
+        # Font selection for badge and text
+        try:
+            _badge_font = 'Poppins-Bold'
+            pdfmetrics.getFont(_badge_font)
+        except Exception:
+            _badge_font = 'Helvetica-Bold'
         # Draw a slightly smaller circle and tighter text layout
         from reportlab.pdfgen import canvas
         # Circle geometry
@@ -55,8 +63,8 @@ class NumberedCircle(Flowable):
 
         # White number text, better vertical centering
         self.canv.setFillColor(colors.white)
-        self.canv.setFont('Helvetica-Bold', 10)
-        text_width = self.canv.stringWidth(str(self.number), 'Helvetica-Bold', 10)
+        self.canv.setFont(_badge_font, 10)
+        text_width = self.canv.stringWidth(str(self.number), _badge_font, 10)
         text_x = circle_x - (text_width / 2)
         # Tighter vertical centering in circle
         text_y = circle_y - 4
@@ -64,7 +72,7 @@ class NumberedCircle(Flowable):
 
         # Draw instruction text, line height from layout
         self.canv.setFillColor(colors.black)
-        self.canv.setFont('Helvetica', self.text_size)
+        self.canv.setFont('Poppins-Regular' if _badge_font.startswith('Poppins') else 'Helvetica', self.text_size)
         text_start_x = circle_x + circle_radius + 8
         text_start_y = circle_y + self.num_offset_y + 1
         from reportlab.pdfbase.pdfmetrics import stringWidth
@@ -74,7 +82,7 @@ class NumberedCircle(Flowable):
         current_line = []
         for word in words:
             test_line = ' '.join(current_line + [word])
-            if stringWidth(test_line, 'Helvetica', self.text_size) <= available_width:
+            if stringWidth(test_line, 'Poppins-Regular' if _badge_font.startswith('Poppins') else 'Helvetica', self.text_size) <= available_width:
                 current_line.append(word)
             else:
                 if current_line:
@@ -92,10 +100,11 @@ class NumberedCircle(Flowable):
         if len(lines) > 1:
             self.height = max(18, len(lines) * self.line_height + 4)
 
+
 # --- RoundedTable Flowable for notes background ---
 class RoundedTable(Flowable):
     """A wrapper that draws a rounded rectangle behind a Table/Flowable."""
-    def __init__(self, inner_table, width, padding=16, radius=6, bg=colors.HexColor('#F8F8F8'), stroke=colors.HexColor('#E0E0E0'), stroke_width=1):
+    def __init__(self, inner_table, width, padding=16, radius=10, bg=colors.HexColor('#F8F8F8'), stroke=colors.HexColor('#E0E0E0'), stroke_width=1):
         super().__init__()
         self.inner = inner_table
         self.width = width
@@ -135,17 +144,102 @@ class RoundedTable(Flowable):
         self.inner.drawOn(c, self.padding, self.padding)
         c.restoreState()
 
+# --- FooterBand Flowable for full-width footer band with centered child, natural height ---
+class FooterBand(Flowable):
+    """Full-width light-grey band that wraps a child (e.g., RoundedTable) with padding and centers it.
+    Natural height = child's wrapped height + vertical padding. This lets us anchor the band to the
+    bottom via a spacer in _generate_pdf_v2 without forcing a fixed band height.
+    """
+    def __init__(self, child: Flowable, width: float, *, band_bg=colors.HexColor('#F3F4F6'),
+                 band_pad_h=20, band_pad_v=14, child_width=None):
+        super().__init__()
+        self.child = child
+        self.width = width
+        self.band_bg = band_bg
+        self.band_pad_h = band_pad_h
+        self.band_pad_v = band_pad_v
+        self.child_width = child_width or (width - 2*band_pad_h)
+        self._child_w = 0
+        self._child_h = 0
+
+    def wrap(self, availWidth, availHeight):
+        cw, ch = self.child.wrap(self.child_width, max(0, availHeight - 2*self.band_pad_v))
+        self._child_w, self._child_h = cw, ch
+        total_w = self.width
+        total_h = self.band_pad_v*2 + ch
+        return total_w, total_h
+
+    def draw(self):
+        c = self.canv
+        c.saveState()
+        bw, bh = self.width, self.band_pad_v*2 + self._child_h
+        # Draw band background across full width with natural height
+        c.setFillColor(self.band_bg)
+        c.setStrokeColor(self.band_bg)
+        c.rect(0, 0, bw, bh, stroke=0, fill=1)
+        # Center child horizontally and vertically within the band
+        x = (bw - self._child_w) / 2.0
+        y = (bh - self._child_h) / 2.0
+        self.child.drawOn(c, x, y)
+        c.restoreState()
+
+class BottomAnchor(Flowable):
+    """Consumes remaining height so the next flowable (footer band) sits at the bottom of the page."""
+    def __init__(self, footer: Flowable, width: float):
+        super().__init__()
+        self.footer = footer
+        self.width = width
+        self._footer_h = 0
+
+    def wrap(self, availWidth, availHeight):
+        try:
+            _, fh = self.footer.wrap(self.width, availHeight)
+        except Exception:
+            fh = 0
+        self._footer_h = max(0, fh)
+        # occupy all remaining height except what the footer needs
+        h = max(0, availHeight - self._footer_h)
+        return self.width, h
+
+    def draw(self):
+        pass  # just takes up space
+
 class PDFGenerator:
+    def _resolve_icon_path(self, icon_filename: str) -> Optional[str]:
+        """Try multiple filename variants and extensions under assets/icons."""
+        from pathlib import Path
+        base = Path(icon_filename).stem.replace(' ', '_')
+        candidates = []
+        # try original
+        candidates.append(self.icons_dir / icon_filename)
+        # dash/underscore variants
+        variants = {base, base.replace('-', '_'), base.replace('_', '-')}
+        exts = ['.png', '.webp', '.jpg', '.jpeg']
+        for v in variants:
+            for ext in exts:
+                candidates.append(self.icons_dir / f"{v}{ext}")
+        for cand in candidates:
+            p = str(cand)
+            if os.path.exists(p):
+                return p
+        logger.debug("Icon not found for %s; tried: %s", icon_filename, ", ".join(str(c) for c in candidates))
+        return None
+    
+    def _icon_exists(self, icon_filename: str) -> bool:
+        path = self._resolve_icon_path(icon_filename)
+        return bool(path)
+
     def _icon_text_cell(self, icon_filename: str, text: str, *, style_name: str = 'StatsInline', icon_px: int = 12):
         """Return a small [icon + text] cell (Table) if icon exists, else a Paragraph(text).
         Looks for icons under assets/icons/; default style is 'StatsInline'. Use style_name='ChefInfo' for header rows.
         """
         try:
             from reportlab.platypus import Table, TableStyle, Paragraph, Image as RLImage
-            path = os.path.join('assets', 'icons', icon_filename)
-            if os.path.exists(path):
+            path = self._resolve_icon_path(icon_filename)
+            if path:
                 img = RLImage(path, width=icon_px, height=icon_px)
                 t = Table([[img, Paragraph(text, self.styles[style_name])]], colWidths=[icon_px + 2, None])
+                logger.debug(f"Loaded icon: {icon_filename} -> {path}")
                 t.setStyle(TableStyle([
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ('LEFTPADDING', (0, 0), (-1, -1), 0),
@@ -155,9 +249,10 @@ class PDFGenerator:
                 ]))
                 return t
         except Exception as e:
-            logger.warning(f"_icon_text_cell fallback to text: {e}")
+            logger.warning(f"_icon_text_cell fallback to text for {icon_filename} at {path if path else '<not-found>'}: {e}")
         # Fallback: text only
         return Paragraph(text, self.styles.get(style_name, self.styles['StatsInline']))
+    
     def __init__(self, output_dir='pdfs'):
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
@@ -169,10 +264,35 @@ class PDFGenerator:
         self.page_width = LETTER[0]
         self.styles = getSampleStyleSheet()
 
+        # Resolve absolute asset directories (override with ASSETS_DIR if provided)
+        start = pathlib.Path(__file__).resolve()
+        env_assets = os.getenv('ASSETS_DIR')
+        assets_dir = None
+        if env_assets and os.path.isdir(env_assets):
+            assets_dir = pathlib.Path(env_assets)
+        else:
+            # Walk up until we find an `assets` directory
+            for parent in [start] + list(start.parents):
+                candidate = parent / 'assets'
+                if candidate.exists() and candidate.is_dir():
+                    assets_dir = candidate
+                    break
+            # Fallback: try CWD/assets
+            if assets_dir is None:
+                cwd_candidate = pathlib.Path(os.getcwd()) / 'assets'
+                if cwd_candidate.exists() and cwd_candidate.is_dir():
+                    assets_dir = cwd_candidate
+        # Final fallback: create a local assets dir to avoid None paths
+        if assets_dir is None:
+            assets_dir = start.parent / 'assets'
+        self.assets_dir = assets_dir
+        self.icons_dir = self.assets_dir / 'icons'
+        self.fonts_dir = self.assets_dir / 'fonts'
+
         # --- Font registration: SF Pro (.otf) if available ---
         def _register_sf_font(alias, filenames):
             for fn in filenames:
-                path = os.path.join('assets', 'fonts', fn)
+                path = os.path.join(str(self.fonts_dir), fn)
                 if os.path.exists(path):
                     try:
                         pdfmetrics.registerFont(TTFont(alias, path))
@@ -193,6 +313,37 @@ class PDFGenerator:
             except Exception as e:
                 logger.warning(f"Could not register font family SFPro: {e}")
 
+        # --- Poppins font registration (preferred) ---
+        def _register_ttf(alias, filenames):
+            for fn in filenames:
+                path = os.path.join(str(self.fonts_dir), fn)
+                if os.path.exists(path):
+                    try:
+                        pdfmetrics.registerFont(TTFont(alias, path))
+                        logger.info(f"Registered font {alias} from {path}")
+                        return True
+                    except Exception as e:
+                        logger.warning(f"Failed to register {alias} from {path}: {e}")
+            return False
+
+        has_pop_light    = _register_ttf('Poppins-Light',   ['Poppins-Light.ttf'])
+        has_pop_regular  = _register_ttf('Poppins-Regular', ['Poppins-Regular.ttf'])
+        has_pop_semibold = _register_ttf('Poppins-SemiBold',['Poppins-SemiBold.ttf'])
+        has_pop_bold     = _register_ttf('Poppins-Bold',    ['Poppins-Bold.ttf'])
+        has_pop_italic   = _register_ttf('Poppins-Italic',  ['Poppins-Italic.ttf'])
+
+        if has_pop_regular or has_pop_bold:
+            try:
+                pdfmetrics.registerFontFamily(
+                    'Poppins',
+                    normal='Poppins-Regular' if has_pop_regular else ('Poppins-Light' if has_pop_light else 'Helvetica'),
+                    bold='Poppins-Bold' if has_pop_bold else ('Poppins-SemiBold' if has_pop_semibold else 'Helvetica-Bold'),
+                    italic='Poppins-Italic' if has_pop_italic else ('Poppins-Regular' if has_pop_regular else 'Helvetica-Oblique'),
+                    boldItalic='Poppins-Bold' if has_pop_bold else ('Poppins-SemiBold' if has_pop_semibold else 'Helvetica-Bold')
+                )
+            except Exception as e:
+                logger.warning(f"Could not register font family Poppins: {e}")
+
         # Load external layout config if provided
         self.layout = self._load_layout()
 
@@ -207,28 +358,60 @@ class PDFGenerator:
         self._lv = _lv
         logger.info(f"Layout config path: {os.getenv('LAYOUT_CONFIG', 'layout.v2.json')} | keys: {list(self.layout.keys()) if isinstance(self.layout, dict) else 'none'}")
 
-        # --- SF Pro font selection for styles ---
-        base_title_font = 'SFPro-Bold' if has_bold else 'Helvetica-Bold'
-        base_heading_font = 'SFPro-Semibold' if has_semibold else ('SFPro-Bold' if has_bold else 'Helvetica-Bold')
-        base_body_font = 'SFPro-Light' if has_light else ('SFPro-Regular' if has_regular else 'Helvetica')
-        base_meta_font = 'SFPro-Regular' if has_regular else 'Helvetica'
+        # Preferred font family: Poppins -> SF Pro -> Helvetica
+        if has_pop_regular or has_pop_bold or has_pop_light or has_pop_semibold:
+            base_title_font   = 'Poppins-Bold' if has_pop_bold or has_pop_semibold else 'Poppins-Regular'
+            base_heading_font = 'Poppins-SemiBold' if has_pop_semibold else ('Poppins-Bold' if has_pop_bold else 'Poppins-Regular')
+            base_body_font    = 'Poppins-Light' if has_pop_light else ('Poppins-Regular' if has_pop_regular else base_title_font)
+            base_meta_font    = 'Poppins-Regular' if has_pop_regular else (base_body_font)
+        else:
+            base_title_font   = 'SFPro-Bold' if has_bold else 'Helvetica-Bold'
+            base_heading_font = 'SFPro-Semibold' if has_semibold else ('SFPro-Bold' if has_bold else 'Helvetica-Bold')
+            base_body_font    = 'SFPro-Light' if has_light else ('SFPro-Regular' if has_regular else 'Helvetica')
+            base_meta_font    = 'SFPro-Regular' if has_regular else 'Helvetica'
 
-        # Typography tuned lighter, with more breathing room
+        # Expose a bold font name for badge glyphs
+        self.badge_bold_font = (
+            'Poppins-Bold' if (has_pop_bold or has_pop_semibold or has_pop_regular) else
+            ('SFPro-Bold' if has_bold else 'Helvetica-Bold')
+        )
+
+        # Choose italic face for Notes body when available
+        notes_font = 'Poppins-Italic' if has_pop_italic else (
+            'Poppins-Regular' if has_pop_regular else 'Helvetica-Oblique'
+        )
+        # Typography styles
         self.styles.add(ParagraphStyle(name='RecipeTitle', fontName=base_meta_font, fontSize=22, leading=24, alignment=0, textColor=self.text_color, spaceAfter=12))
         self.styles.add(ParagraphStyle(name='RecipeDescription', fontName=base_body_font, fontSize=10.5, leading=14, alignment=0, textColor=colors.HexColor('#555555'), spaceAfter=0))
-        self.styles.add(ParagraphStyle(name='ChefInfo', fontName=base_meta_font, fontSize=10, leading=12, alignment=0, textColor=self.gray_color, spaceAfter=2))
+        self.styles.add(ParagraphStyle(name='ChefInfo', fontName=base_meta_font, fontSize=9, leading=12, alignment=0, textColor=self.gray_color, spaceAfter=0))
         self.styles.add(ParagraphStyle(name='SectionTitle', fontName=base_heading_font, fontSize=15, leading=17, textColor=self.text_color, spaceAfter=8))
         self.styles.add(ParagraphStyle(name='SectionTitleCentered', fontName=base_heading_font, fontSize=15, leading=17, textColor=self.text_color, alignment=1, spaceAfter=8))
         self.styles.add(ParagraphStyle(name='NotesTitle', fontName=base_meta_font, fontSize=15, leading=17, textColor=self.text_color, spaceAfter=8))
         self.styles.add(ParagraphStyle(name='IngredientItem', fontName=base_body_font, fontSize=10.5, leading=15, leftIndent=0, spaceAfter=6))
         self.styles.add(ParagraphStyle(name='InstructionItem', fontName=base_body_font, fontSize=10.5, leading=16, leftIndent=0, spaceAfter=8))
         self.styles.add(ParagraphStyle(name='InstructionNumber', fontName=base_body_font, fontSize=10.5, leading=15, spaceAfter=4))
-        self.styles.add(ParagraphStyle(name='StatsInline', fontName=base_meta_font, fontSize=10.5, leading=14, textColor=self.gray_color, alignment=0, spaceAfter=6))
+        self.styles.add(ParagraphStyle(name='StatsInline', fontName=base_meta_font, fontSize=8.2, leading=10, textColor=self.gray_color, alignment=0, spaceAfter=0))
         self.styles.add(ParagraphStyle(name='StatsLabel', fontName=base_meta_font, fontSize=9, leading=12, textColor=self.gray_color, alignment=1))
         self.styles.add(ParagraphStyle(name='StatsValue', fontName=base_heading_font, fontSize=12.5, leading=14, textColor=self.text_color, alignment=1))
-        self.styles.add(ParagraphStyle(name='Notes', fontName=base_body_font, fontSize=10.5, leading=15, textColor=self.gray_color))
+        self.styles.add(ParagraphStyle(name='Notes', fontName=notes_font, fontSize=10.5, leading=15, textColor=self.gray_color))
         self.styles.add(ParagraphStyle(name='Footer', fontName=base_meta_font, fontSize=8.5, leading=10, textColor=colors.gray, alignment=1))
+
+        # Cache & URL settings
         self.cache = PDFCache()
+        self.enable_url_shortening = os.getenv('URL_SHORTENING', 'false').lower() in ('1','true','yes','on')
+        self.shorten_domains = [d.strip().lower() for d in os.getenv('SHORTEN_ONLY_DOMAINS', 'instagram.com').split(',') if d.strip()]
+
+    def _get_pagesize(self):
+        """Pick page size from env or recipe data; defaults to LETTER. Supports: LETTER, A4, LEGAL, TABLOID."""
+        name = os.getenv('PAGE_SIZE', '').strip().upper()
+        if name == 'A4':
+            return A4
+        if name == 'LEGAL':
+            return LEGAL
+        if name == 'TABLOID':
+            return TABLOID
+        # default
+        return LETTER
 
     def _load_layout(self):
         path = os.getenv('LAYOUT_CONFIG', 'layout.v2.json')
@@ -239,6 +422,90 @@ class PDFGenerator:
         except Exception as e:
             logger.info(f"Layout config not loaded ({path}): {e}")
         return {}
+
+    def _clean_url(self, url: str) -> str:
+        try:
+            if not url:
+                return ''
+            p = urlparse(url)
+            p = p._replace(query='', fragment='')
+            return urlunparse(p)
+        except Exception:
+            return url.split('?')[0]
+
+    def _shorten_url(self, url: str) -> Optional[str]:
+        if not url or not self.enable_url_shortening:
+            return None
+        # Only shorten for allowed domains
+        try:
+            from urllib.parse import urlparse
+            dom = urlparse(url).netloc.lower().split(':')[0]
+            if not any(dom == d or dom.endswith('.' + d) for d in getattr(self, 'shorten_domains', ['instagram.com'])):
+                return None
+        except Exception:
+            return None
+        try:
+            import requests
+            resp = requests.get('https://tinyurl.com/api-create.php', params={'url': url}, timeout=4)
+            if resp.status_code == 200:
+                s = resp.text.strip()
+                if s.startswith('http') and len(s) < len(url):
+                    return s
+        except Exception as e:
+            logger.info(f"URL shortening skipped: {e}")
+        return None
+
+    def _prepare_link(self, raw_url: str) -> Tuple[str, str]:
+        clean = self._clean_url(raw_url)
+        short = self._shorten_url(clean)
+        display = short or clean
+        return display, clean
+
+    def _truncate_to_two_lines(self, text: str, style: ParagraphStyle, width: float) -> str:
+        """Return a version of `text` that fits within two lines for the given style+width.
+        Uses a binary search over character count and appends an ellipsis if truncated."""
+        clean = ' '.join((text or '').split())
+        if not clean:
+            return ''
+        # Quick accept: if fits already, return
+        p = Paragraph(clean, style)
+        _, h = p.wrap(width, 1e6)
+        max_h = style.leading * 2 + 0.5
+        if h <= max_h:
+            return clean
+        # Binary search for max chars that fit in 2 lines
+        lo, hi = 0, len(clean)
+        best = ''
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            candidate = clean[:mid].rstrip()
+            # Always try with ellipsis when truncating
+            if mid < len(clean):
+                candidate = (candidate + '…').rstrip()
+            p = Paragraph(candidate, style)
+            _, ch = p.wrap(width, 1e6)
+            if ch <= max_h:
+                best = candidate
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        return best or ''
+
+    def _compact_notes(self, recipe_data: Dict, inner_width: float) -> str:
+        """Prefer pre-computed compact notes from the upstream LLM call; otherwise collapse
+        description+notes into a single string and truncate it to two lines for the footer notes box."""
+        # 1) Use compact field if provided by the single LLM call
+        compact = ''
+        src = recipe_data or {}
+        # Prefer explicit compact field if present
+        compact = (src.get('notes_compact') or '').strip()
+        if compact:
+            return self._truncate_to_two_lines(compact, self.styles['Notes'], inner_width)
+        # 2) Fall back to combining description + notes
+        desc = (src.get('description') or '').strip()
+        notes = (src.get('notes') or '').strip()
+        combined = ' '.join([s for s in [desc, notes] if s])
+        return self._truncate_to_two_lines(combined, self.styles['Notes'], inner_width)
 
     def generate_pdf(self, recipe_data: Dict, image_path: Optional[str] = None, post_url: Optional[str] = None) -> Tuple[str, bool]:
         try:
@@ -284,7 +551,7 @@ class PDFGenerator:
     def _generate_pdf_v1(self, recipe_data: Dict, image_path: Optional[str], post_url: Optional[str], filepath: str, post_hash: str, creator: str, caption: str) -> Tuple[str, bool]:
         """Generate PDF using V1 template (original format)"""
         try:
-            doc = SimpleDocTemplate(filepath, pagesize=LETTER, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+            doc = SimpleDocTemplate(filepath, pagesize=self._get_pagesize(), rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
             elements = []
 
             # Include image if present
@@ -349,101 +616,226 @@ class PDFGenerator:
         except Exception as e:
             logger.error(f"Failed to generate V1 PDF: {str(e)}")
             return None, False
-
+    
     def _generate_pdf_v2(self, recipe_data: Dict, image_path: Optional[str], post_url: Optional[str], filepath: str, post_hash: str, creator: str, caption: str) -> Tuple[str, bool]:
-        """Generate PDF using V2 template (new format matching template)"""
+        """Generate PDF using V2 template with footer at bottom"""
         try:
-            doc = SimpleDocTemplate(filepath, pagesize=LETTER, rightMargin=40, leftMargin=40, topMargin=35, bottomMargin=35)
+            # Store data for onPage callback - THIS IS CRITICAL
+            self._temp_recipe_data = recipe_data
+
+            # Standard document with normal margins
+            doc = SimpleDocTemplate(
+                filepath,
+                pagesize=self._get_pagesize(),
+                rightMargin=40,
+                leftMargin=40,
+                topMargin=35,
+                bottomMargin=90  # Reserve space for footer
+            )
+
             elements = []
 
-            # Header section with image and recipe info (including inline stats)
+            # Header section
             header_table = self._create_header_section_v2(recipe_data, image_path, doc.width)
             if header_table:
                 elements.append(header_table)
                 elements.append(Spacer(1, 20))
 
-            # Two-column layout for ingredients and directions
+            # Two-column content
             content_table = self._create_two_column_content_v2(recipe_data, doc.width)
             if content_table:
                 elements.append(content_table)
 
-            # Notes section with rounded rectangle background
-            trailing_spacer = Spacer(1, 10)
-            notes_section = self._create_notes_section(recipe_data, doc.width)
-            if notes_section:
-                elements.append(trailing_spacer)
-                elements.append(notes_section)
+            # Build the document with correct onPage callbacks for footer
+            doc.build(
+                elements,
+                onFirstPage=self._add_footer_on_page,
+                onLaterPages=self._add_footer_on_page,
+            )
 
-            # Drop any tiny trailing spacers to reduce risk of a blank last page
-            while elements and isinstance(elements[-1], Spacer) and getattr(elements[-1], 'height', 0) <= 12:
-                elements.pop()
+            # Clean up
+            self._temp_recipe_data = None
 
-            doc.build(elements)
             # Cache if needed
             if post_hash:
                 self.cache.set(post_hash, creator, caption, recipe_data, filepath)
                 self.cache.save()
                 logger.info(f"PDF cache set for post_hash {post_hash}")
+
             logger.info(f"PDF generated successfully: {filepath}")
             return filepath, False
+
         except Exception as e:
             logger.error(f"Failed to generate V2 PDF: {str(e)}")
             return None, False
-    
-    def _create_recipe_info_v1(self, recipe_data, page_width):
-        """Create recipe info section with prep time, cook time, etc."""
-        elements = []
-        
-        # Collect info items
-        info_items = []
-        
-        if recipe_data.get('prep_time'):
-            info_items.append(('Prep Time', recipe_data['prep_time']))
-        
-        if recipe_data.get('cook_time'):
-            info_items.append(('Cook Time', recipe_data['cook_time']))
-        
-        if recipe_data.get('total_time'):
-            info_items.append(('Total Time', recipe_data['total_time']))
-        
-        if recipe_data.get('servings'):
-            info_items.append(('Servings', recipe_data['servings']))
-        
-        # Display dietary info if available
-        dietary_info = recipe_data.get('dietary_info', [])
-        if dietary_info:
-            info_items.append(('Dietary', ', '.join(dietary_info)))
-        
-        if not info_items:
-            return elements
-        
-        # Create a table for the info section
-        table_data = []
-        row = []
-        
-        for i, (label, value) in enumerate(info_items):
-            cell = f"<b>{label}:</b> {value}"
-            row.append(Paragraph(cell, self.styles['Normal']))
-            
-            if i % 2 == 1 or i == len(info_items) - 1:
-                if i % 2 == 0:
-                    row.append(Paragraph("", self.styles['Normal']))
+
+    def _add_footer_on_page(self, canvas, doc):
+        """Draw footer directly on canvas at bottom of page"""
+        if not hasattr(self, '_temp_recipe_data') or not self._temp_recipe_data:
+            logger.warning("No recipe data for footer")
+            return
+
+        canvas.saveState()
+        try:
+            page_width = doc.pagesize[0]
+
+            # Compute white card geometry from content first
+            band_pad_v = 14  # vertical padding inside grey band
+            band_bg = colors.HexColor('#F3F4F6')
+
+            # Build compact notes text and measure paragraphs with inner width
+            card_margin_lr = doc.leftMargin + doc.rightMargin
+            box_width = page_width - card_margin_lr
+            inner_pad = 16
+            box_inner_width = box_width - 2 * inner_pad
+
+            compact = self._compact_notes(self._temp_recipe_data, box_inner_width)
+
+            if compact:
+                title_para = Paragraph("Chef's Notes", self.styles['NotesTitle'])
+                body_para  = Paragraph(compact,         self.styles['Notes'])
+
+                # Measure natural heights (use large height so wrap isn't constrained)
+                tw, th = title_para.wrap(box_inner_width, 1e6)
+                gap = 6
+                bw, bh = body_para.wrap(box_inner_width, 1e6)
+
+                # Card height fits title + gap + body + vertical padding
+                box_height = max(52, int(th + gap + bh + 2 * inner_pad))
+                # Grey band height = card height + band vertical padding top+bottom
+                band_height = box_height + 2 * band_pad_v
+
+                # Draw grey band full-bleed across the page bottom
+                canvas.setFillColor(band_bg)
+                canvas.rect(0, 0, page_width, band_height, stroke=0, fill=1)
+
+                # Position white card inside band (not centered; pinned to band padding)
+                box_x = doc.leftMargin
+                box_y = band_pad_v
+
+                canvas.setFillColor(colors.white)
+                canvas.setStrokeColor(colors.HexColor('#E0E0E0'))
+                canvas.setLineWidth(1)
+                canvas.roundRect(box_x, box_y, box_width, box_height, 8, stroke=1, fill=1)
+
+                # Draw paragraphs top-down with padding
+                content_left = box_x + inner_pad
+                content_top  = box_y + box_height - inner_pad
+
+                title_y = content_top - th
+                title_para.drawOn(canvas, content_left, title_y)
+
+                body_y = title_y - gap - bh
+                if body_y < (box_y + inner_pad):
+                    body_y = box_y + inner_pad
+                body_para.drawOn(canvas, content_left, body_y)
+
+            else:
+                # No notes content; draw a minimal grey band so layout remains consistent
+                band_height = max(50, int(doc.bottomMargin) - 10)
+                canvas.setFillColor(band_bg)
+                canvas.rect(0, 0, page_width, band_height, stroke=0, fill=1)
+        except Exception as e:
+            logger.error(f"Footer draw failed: {e}")
+        canvas.restoreState()
+
+    def _create_notes_section_raw(self, recipe_data, page_width):
+        """Create the grey band with notes - simplified for edge-to-edge rendering"""
+        try:
+            # Skip if already in header
+            if recipe_data.get('_notes_placed_in_header'):
+                return None
                 
-                table_data.append(row)
-                row = []
-        
-        if table_data:
-            col_width = (page_width - 60) / 2
-            table = Table(table_data, colWidths=[col_width, col_width])
-            table.setStyle(TableStyle([
+            from reportlab.platypus import Table, TableStyle
+            
+            # Create the notes content
+            card_width = page_width - 80  # White card width (with margins)
+            inner_width = card_width - 32  # Internal padding
+            
+            notes_elements = []
+            compact_text = self._compact_notes(recipe_data, inner_width)
+            
+            if compact_text:
+                notes_elements.append(Paragraph("Chef's Notes", self.styles['NotesTitle']))
+                notes_elements.append(Spacer(1, 6))
+                notes_elements.append(Paragraph(compact_text, self.styles['Notes']))
+            else:
+                return None
+            
+            # Create inner table for notes content
+            notes_table = Table([[notes_elements]], colWidths=[inner_width])
+            notes_table.setStyle(TableStyle([
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                ('TOPPADDING', (0, 0), (-1, -1), 2),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
             ]))
             
-            elements.append(table)
-        
-        return elements
+            # Use RoundedTable for the rounded corners (you already have this class!)
+            rounded = RoundedTable(
+                notes_table,
+                width=card_width,
+                padding=16,
+                radius=8,  # Rounded corners
+                bg=colors.white,
+                stroke=colors.HexColor('#E0E0E0'),
+                stroke_width=1
+            )
+
+            # Wrap in grey background table for edge-to-edge effect
+            outer_table = Table([[rounded]], colWidths=[page_width])
+            outer_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F3F4F6')),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 40),  # Match document margins
+                ('RIGHTPADDING', (0, 0), (-1, -1), 40),
+                ('TOPPADDING', (0, 0), (-1, -1), 14),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 14),
+            ]))
+            
+            return outer_table
+            
+        except Exception as e:
+            logger.error(f"Error creating notes section: {e}")
+            return None
+    
+    def _create_recipe_info_v1(self, recipe_data, page_width):
+        """Create compact single-row stats strip for V1 to match V2 style."""
+        try:
+            def _fmt(v, default='—'):
+                if v is None:
+                    return default
+                s = str(v).strip()
+                return s if s else default
+
+            prep_time = _fmt(recipe_data.get('prep_time', '—'))
+            cook_time = _fmt(recipe_data.get('cook_time', '—'))
+            servings  = _fmt(recipe_data.get('servings', '—'))
+            likes_val = recipe_data.get('likes')
+            views_val = recipe_data.get('views')
+            likes     = _fmt(likes_val if likes_val is not None else views_val, '—')
+
+            c1 = self._icon_text_cell('timer.png',  f"{prep_time} (Prep)")
+            c2 = self._icon_text_cell('flame.png',  f"{cook_time} (Cook)")
+            c3 = self._icon_text_cell('plate.png',  f"{servings} (Feeds)")
+            c4 = self._icon_text_cell('heart.png',  f"{likes} (Likes)")
+
+            tbl = Table([[c1, c2, c3, c4]], colWidths=[page_width/4.0]*4)
+            tbl.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LEFTPADDING', (0,0), (-1,-1), 0),
+                ('RIGHTPADDING', (0,0), (-1,-1), 0),
+                ('TOPPADDING', (0,0), (-1,-1), 6),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 6),
+                ('LINEABOVE', (0,0), (-1,0), 0.5, colors.HexColor('#E5E7EB')),
+                ('LINEBELOW', (0,0), (-1,0), 0.5, colors.HexColor('#E5E7EB')),
+            ]))
+            return [tbl]
+        except Exception as e:
+            logger.error(f"V1 stats strip failed: {e}")
+            return []
     
     def _create_ingredients_list_v1(self, ingredients):
         """Create a formatted list of ingredients without bullets"""
@@ -503,21 +895,13 @@ class PDFGenerator:
     def _create_footer(self, recipe_data, post_url=None):
         """Create footer section with source information"""
         elements = []
-        
-        # Get source information
-        source = recipe_data.get('source', {})
-        url = source.get('url') or post_url or ''
-        url = url.split('?')[0]  # Remove query parameters
-        
-        # Source info
-        if url:
-            source_text = f'Source: Instagram - <a href="{url}" color="gray">{url}</a>'
-            elements.append(Paragraph(source_text, self.styles['Footer']))
-        
-        # Add generation timestamp
+        src = recipe_data.get('source', {}) if isinstance(recipe_data, dict) else {}
+        url_raw = src.get('url') or post_url or ''
+        clean = self._clean_url(url_raw)
+        if clean:
+            elements.append(Paragraph(f'Source: Instagram - <a href="{clean}" color="gray">{clean}</a>', self.styles['Footer']))
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         elements.append(Paragraph(f"Generated on {timestamp}", self.styles['Footer']))
-        
         return elements
     
     def _get_filename(self, recipe_data):
@@ -576,10 +960,12 @@ class PDFGenerator:
             # Single meta line to match template: "Chef Marco Antonelli @chef_marco"
             meta_line = f"Chef {creator} @{ig_handle}" if creator else f"Chef Marco Antonelli @{ig_handle}"
             right_elements.append(self._icon_text_cell('chef-hat.png', meta_line, style_name='ChefInfo', icon_px=12))
+            right_elements.append(Spacer(1, 6))
 
             url = source.get('url', '')
             if url:
-                url_text = f'<a href="{url}" color="blue">{url}</a>'
+                clean = self._clean_url(url)
+                url_text = f'<a href="{clean}" color="blue">{clean}</a>'
                 right_elements.append(self._icon_text_cell('external-link.png', url_text, style_name='ChefInfo', icon_px=12))
 
             # Inline stats below meta/link with a small gap
@@ -663,15 +1049,25 @@ class PDFGenerator:
 
             # Create table with image left, info right
             if left_elements and right_elements:
-                table_data = [[left_elements, right_elements]]
                 available_width = page_width
                 left_col_width = available_width * 0.4
                 right_col_width = available_width * 0.6
+                # Wrap the right column elements in KeepInFrame for vertical centering to the image
+                kif_right = KeepInFrame(
+                    right_col_width,  # width available for right column
+                    img_size,         # match the image height for vertical alignment
+                    right_elements,   # list of flowables for the right column
+                    mode='shrink',    # shrink to fit if needed
+                    hAlign='LEFT',
+                    vAlign='MIDDLE'   # vertically center relative to image
+                )
+                table_data = [[left_elements, [kif_right]]]
                 col_widths = [left_col_width, right_col_width]
-                table = Table(table_data, colWidths=col_widths)
+                table = Table(table_data,
+                            colWidths=[left_col_width, right_col_width],
+                            rowHeights=[img_size])
                 table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (0, 0), 'TOP'),
-                    ('VALIGN', (1, 0), (1, 0), 'TOP'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     # Increase gutter between image (col 0) and text (col 1)
                     ('RIGHTPADDING', (0, 0), (0, 0), 12),
                     ('LEFTPADDING',  (1, 0), (1, 0), 12),  # match right-column body padding
@@ -700,7 +1096,7 @@ class PDFGenerator:
         return None
 
     def _create_inline_stats(self, recipe_data):
-        """Create two-row stats with small inline icons (PNG). Falls back to text when icons missing."""
+        """Create a compact single-row stats strip."""
         try:
             def _fmt(v, default='—'):
                 if v is None:
@@ -708,39 +1104,48 @@ class PDFGenerator:
                 s = str(v).strip()
                 return s if s else default
 
-            prep_time = _fmt(recipe_data.get('prep_time', '15 min'))
-            cook_time = _fmt(recipe_data.get('cook_time', '25 min'))
-            servings  = _fmt(recipe_data.get('servings', '4'))
+            # Remove tilde prefixes if they exist
+            prep_time = _fmt(recipe_data.get('prep_time', '15 min')).replace('~', '').strip()
+            cook_time = _fmt(recipe_data.get('cook_time', '25 min')).replace('~', '').strip()
+            servings  = _fmt(recipe_data.get('servings', '4')).replace('~', '').strip()
             likes_val = recipe_data.get('likes')
             views_val = recipe_data.get('views')
             likes     = _fmt(likes_val if likes_val is not None else views_val, '—')
+            likes_label = 'Likes' if (likes_val is not None) else ('Views' if (views_val is not None) else 'Likes')
 
-            # Build four cells: [timer + prep] [flame + cook] / [plate + feeds] [heart + likes]
-            c1 = self._icon_text_cell('timer.png',  f"{prep_time} (Prep)")
-            c2 = self._icon_text_cell('flame.png',  f"{cook_time} (Cook)")
-            c3 = self._icon_text_cell('plate.png',  f"{servings} (Feeds)")
-            c4 = self._icon_text_cell('heart.png',  f"{likes} (Likes)")
+            # Create icon cells
+            c1 = self._icon_text_cell('timer.png', f"{prep_time} (Prep)", style_name='StatsInline', icon_px=10)
+            c2 = self._icon_text_cell('flame.png', f"{cook_time} (Cook)", style_name='StatsInline', icon_px=10)
+            c3 = self._icon_text_cell('plate.png', f"{servings} (Feeds)", style_name='StatsInline', icon_px=10)
+            c4 = self._icon_text_cell('heart.png', f"{likes} ({likes_label})", style_name='StatsInline', icon_px=10)
 
-            outer = Table([[c1, c2], [c3, c4]])
+            # INCREASE column widths to prevent text cutoff
+            # Changed from [100, 100, 100, 100] to auto-sizing
+            outer = Table([[c1, c2, c3, c4]], colWidths=[None, None, None, None])  # Let it auto-size
             outer.setStyle(TableStyle([
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 10),
-                ('TOPPADDING', (0, 0), (-1, -1), 0),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('LEFTPADDING', (0, 0), (-1, -1), 2),  # Add small padding
+                ('RIGHTPADDING', (0, 0), (-1, -1), 8),  # Add padding between columns
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LINEABOVE', (0, 0), (-1, 0), 0.5, colors.HexColor('#E5E7EB')),
+                ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#E5E7EB')),
             ]))
             return outer
-        except Exception as e:
+        
+        except Exception as e:  # THIS EXCEPT BLOCK IS REQUIRED
             logger.error(f"Error creating inline stats: {e}")
-            # Graceful fallback
+            # Fallback without icons
             try:
-                line1 = f"{_fmt(recipe_data.get('prep_time', '15 min'))} (Prep)    {_fmt(recipe_data.get('cook_time', '25 min'))} (Cook)"
-                likes_fb = recipe_data.get('likes') or recipe_data.get('views')
-                line2 = f"{_fmt(recipe_data.get('servings', '4'))} (Feeds)    {_fmt(likes_fb, '—')} (Likes)"
-                html = f"<b>{line1}</b><br/><b>{line2}</b>"
-                return Paragraph(html, self.styles['StatsInline'])
+                prep = _fmt(recipe_data.get('prep_time', '15 min')).replace('~', '').strip()
+                cook = _fmt(recipe_data.get('cook_time', '25 min')).replace('~', '').strip()
+                serv = _fmt(recipe_data.get('servings', '4')).replace('~', '').strip()
+                like = _fmt(recipe_data.get('likes') or recipe_data.get('views'), '—')
+                line = f"{prep} (Prep) · {cook} (Cook) · {serv} (Feeds) · {like} (Views)"
+                return Paragraph(line, self.styles['StatsInline'])
             except Exception:
-                return Paragraph("", self.styles['StatsInline'])
+                return Paragraph('', self.styles['StatsInline'])
 
     def _number_badge(self, n: int, diameter: int = 14):
         """Return a small circular number badge as a Drawing for table cell usage.
@@ -753,7 +1158,7 @@ class PDFGenerator:
         fs = max(7, int(round(diameter * 0.55)))
         # Vertically center-ish the number
         y = r - (fs * 0.35)
-        d.add(String(r, y, str(n), fontName='Helvetica-Bold', fontSize=fs, fillColor=colors.white, textAnchor='middle'))
+        d.add(String(r, y, str(n), fontName=self.badge_bold_font, fontSize=fs, fillColor=colors.white, textAnchor='middle'))
         return d
 
     def _create_two_column_content_v2(self, recipe_data, page_width):
@@ -824,13 +1229,18 @@ class PDFGenerator:
                 col_widths = [left_col_width, right_col_width]
                 table_data = [[left_elements, right_elements]]
                 table = Table(table_data, colWidths=col_widths)
+                # Replace the padding block with the new alignment/padding rules:
                 table.setStyle(TableStyle([
                     ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    ('LEFTPADDING', (0, 0), (0, -1), 12),
-                    ('RIGHTPADDING', (0, 0), (0, -1), 8),
-                    # Increase left padding for directions column (col 1) by ~10 units (was 12, now 22)
-                    ('LEFTPADDING', (1, 0), (1, -1), 22),
-                    ('RIGHTPADDING', (1, 0), (1, -1), 12),
+                    # Ingredients column: align left edge with image (no extra left padding),
+                    # provide a 12pt gutter on its right to match header gutter
+                    ('LEFTPADDING',  (0, 0), (0, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (0, -1), 12),
+                    # Directions column: align left edge with title block (match header right-col left padding = 12),
+                    # no extra padding on the far right so right margin equals left margin
+                    ('LEFTPADDING',  (1, 0), (1, -1), 12),
+                    ('RIGHTPADDING', (1, 0), (1, -1), 0),
+                    # Vertical paddings
                     ('TOPPADDING', (0, 0), (-1, -1), 12),
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
                     ('BACKGROUND', (0, 0), (-1, -1), colors.white),
@@ -850,17 +1260,13 @@ class PDFGenerator:
             has_any = False
             # Title will be added only if we end up with content
 
-            # Move subtitle/description into notes top
-            desc = recipe_data.get('description')
-            if desc:
-                notes_elements.append(Paragraph(' '.join(str(desc).split()), self.styles['RecipeDescription']))
-                notes_elements.append(Spacer(1, 6))
+            # Build compact 2-line max content for notes box
+            card_width = page_width - 40
+            inner_width = card_width - 2*16  # must match RoundedTable padding
+            compact_text = self._compact_notes(recipe_data, inner_width)
+            if compact_text:
                 has_any = True
-
-            notes = recipe_data.get('notes')
-            if notes:
-                notes_elements.append(Paragraph(notes, self.styles['Notes']))
-                has_any = True
+                notes_elements.append(Paragraph(compact_text, self.styles['Notes']))
 
             if not has_any:
                 return None
@@ -870,25 +1276,31 @@ class PDFGenerator:
 
             # Wrap notes in a table with rounded rectangle styling
             notes_table_data = [[notes_elements]]
-            notes_table = Table(notes_table_data, colWidths=[page_width])
-            # Add left padding for notes table contents
+            notes_table = Table(notes_table_data, colWidths=[inner_width])
             notes_table.setStyle(TableStyle([
                 ('VALIGN', (0, 0), (-1, -1), 'TOP'),
                 ('TOPPADDING', (0, 0), (-1, -1), 0),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-                ('LEFTPADDING', (0, 0), (-1, -1), -8),
+                ('LEFTPADDING', (0, 0), (-1, -1), 0),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 0),
             ]))
             rounded = RoundedTable(
                 notes_table,
-                width=page_width,
+                width=card_width,  # white card width
                 padding=16,
-                radius=6,
-                bg=self.notes_bg,
+                bg=colors.white,
                 stroke=colors.HexColor('#E0E0E0'),
                 stroke_width=1
             )
-            return rounded
+            band = FooterBand(
+                rounded,
+                width=page_width,
+                band_bg=colors.HexColor('#F3F4F6'),
+                band_pad_h=20,
+                band_pad_v=14,
+                child_width=card_width,
+            )
+            return band
         except Exception as e:
             logger.error(f"Error creating notes section: {e}")
         return None

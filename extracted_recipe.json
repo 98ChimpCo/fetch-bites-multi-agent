@@ -1,0 +1,66 @@
+{
+  "title": "Soy Garlic Chicken",
+  "description": "A simpler version of soy garlic fried chicken. The chicken is pan-fried until super crispy and then glazed with a 5 ingredient sauce.",
+  "ingredients": [
+    {
+      "quantity": "4",
+      "unit": "",
+      "name": "boneless skin on chicken thighs, lightly salted"
+    },
+    {
+      "quantity": "1/4",
+      "unit": "cup",
+      "name": "cornstarch"
+    },
+    {
+      "quantity": "2",
+      "unit": "tablespoons",
+      "name": "neutral oil for pan-frying"
+    },
+    {
+      "quantity": "3",
+      "unit": "tablespoons",
+      "name": "butter"
+    },
+    {
+      "quantity": "3",
+      "unit": "tablespoons",
+      "name": "minced garlic"
+    },
+    {
+      "quantity": "1",
+      "unit": "tablespoon",
+      "name": "minced ginger"
+    },
+    {
+      "quantity": "4",
+      "unit": "tablespoons",
+      "name": "light brown sugar"
+    },
+    {
+      "quantity": "4",
+      "unit": "tablespoons",
+      "name": "Kikkoman light soy sauce"
+    },
+    {
+      "quantity": null,
+      "unit": null,
+      "name": "scallion greens, thinly sliced (for garnish)"
+    }
+  ],
+  "instructions": [
+    "Lightly salt the boneless skin on chicken thighs",
+    "Coat the chicken with cornstarch",
+    "Heat neutral oil in a pan and pan-fry the chicken until super crispy",
+    "For the sauce, combine butter, minced garlic, minced ginger, light brown sugar, and Kikkoman light soy sauce",
+    "Glaze the crispy chicken with the sauce",
+    "Garnish with thinly sliced scallion greens",
+    "Serve with rice (double the glaze amount if you want extra sauce for the rice)"
+  ],
+  "prep_time": null,
+  "cook_time": null,
+  "total_time": null,
+  "servings": null,
+  "dietary_info": [],
+  "difficulty": "easy"
+}
