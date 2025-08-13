@@ -390,7 +390,7 @@ class PDFGenerator:
         self.styles.add(ParagraphStyle(name='IngredientItem', fontName=base_body_font, fontSize=10.5, leading=15, leftIndent=0, spaceAfter=6))
         self.styles.add(ParagraphStyle(name='InstructionItem', fontName=base_body_font, fontSize=10.5, leading=16, leftIndent=0, spaceAfter=8))
         self.styles.add(ParagraphStyle(name='InstructionNumber', fontName=base_body_font, fontSize=10.5, leading=15, spaceAfter=4))
-        self.styles.add(ParagraphStyle(name='StatsInline', fontName=base_meta_font, fontSize=8.2, leading=10, textColor=self.gray_color, alignment=0, spaceAfter=0))
+        self.styles.add(ParagraphStyle(name='StatsInline', fontName=base_meta_font, fontSize=7.5, leading=10, textColor=self.gray_color, alignment=0, spaceAfter=0))
         self.styles.add(ParagraphStyle(name='StatsLabel', fontName=base_meta_font, fontSize=9, leading=12, textColor=self.gray_color, alignment=1))
         self.styles.add(ParagraphStyle(name='StatsValue', fontName=base_heading_font, fontSize=12.5, leading=14, textColor=self.text_color, alignment=1))
         self.styles.add(ParagraphStyle(name='Notes', fontName=notes_font, fontSize=10.5, leading=15, textColor=self.gray_color))
@@ -460,6 +460,116 @@ class PDFGenerator:
         short = self._shorten_url(clean)
         display = short or clean
         return display, clean
+
+    def _fmt_time_abbrev(self, s: Optional[str]) -> Optional[str]:
+        """Normalize time strings to abbreviated units and strip any extra notes.
+        Examples:
+          '4 hours (including marination)' -> '4 hr'
+          '2.5–3 hours' -> '2.5–3 hr'
+          '30 minutes' -> '30 min'
+        """
+        if not s:
+            return None
+        try:
+            txt = str(s).strip()
+            # remove approximation tildes and compress whitespace
+            txt = txt.replace('~', ' ').strip()
+            # drop parenthetical notes
+            import re as _re
+            txt = _re.sub(r"\s*\([^)]*\)", "", txt)
+            # normalize dashes
+            txt = txt.replace('—', '-').replace('–', '-')
+            # unify spacing
+            txt = ' '.join(txt.split())
+            # abbreviate hours/minutes (singular/plural)
+            txt = _re.sub(r"\b(hours?|hrs?)\b", "hr", txt, flags=_re.I)
+            txt = _re.sub(r"\b(minutes?|mins?)\b", "min", txt, flags=_re.I)
+            # ensure ranges keep unit only once when appropriate (e.g., '2-3 hr')
+            # If pattern like "(\d+(?:\.\d+)?)\s*[-]\s*(\d+(?:\.\d+)?)\s*(hr|min)"
+            m = _re.match(r"^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)(?:\s*(hr|min))$", txt, flags=_re.I)
+            if m:
+                a, b, u = m.groups()
+                return f"{a}-{b} {u.lower()}"
+            return txt
+        except Exception:
+            return s
+
+    def _infer_servings_from_ingredients(self, ingredients: Optional[List]) -> Optional[str]:
+        """Heuristic: infer servings from ingredient quantities.
+        - Piece counts (eggs, thighs, breasts, fillets, ribs, chops, drumsticks, tortillas, buns, rolls): use the integer count if 2..12
+        - Weight to servings: sum grams (g/kg) and estimate servings ≈ grams/200 (min 1, max 12)
+        Returns a string like '4' or None if unknown.
+        """
+        if not ingredients:
+            return None
+        import re as _re
+        piece_tokens = [
+            'egg', 'thigh', 'breast', 'fillet', 'rib', 'chop', 'drumstick',
+            'wing', 'tender', 'cutlet', 'steak', 'bao', 'tortilla', 'bun', 'roll', 'pita'
+        ]
+        piece_max = 0
+        grams_total = 0.0
+
+        def _parse_qty(q):
+            try:
+                # handle fractions like 1/2 or 1 1/2
+                q = str(q).strip()
+                if ' ' in q and '/' in q:
+                    whole, frac = q.split(' ', 1)
+                    num, den = frac.split('/', 1)
+                    return float(whole) + float(num)/float(den)
+                if '/' in q:
+                    num, den = q.split('/', 1)
+                    return float(num)/float(den)
+                return float(q)
+            except Exception:
+                try:
+                    return float(_re.sub(r"[^0-9\.]+", "", q))
+                except Exception:
+                    return None
+
+        def _consume_item(item):
+            nonlocal piece_max, grams_total
+            if isinstance(item, dict):
+                q = item.get('quantity')
+                unit = (item.get('unit') or '').lower()
+                name = (item.get('name') or '').lower()
+            else:
+                s = str(item)
+                # crude parse: leading quantity + optional unit + rest
+                m = _re.match(r"^\s*([0-9]+(?:\s+[0-9]/[0-9]|/[0-9])?)\s*([A-Za-z]+)?\s+(.*)$", s)
+                q = m.group(1) if m else None
+                unit = (m.group(2) or '').lower() if m else ''
+                name = (m.group(3) or s).lower()
+
+            val = _parse_qty(q) if q is not None else None
+
+            # piece-based heuristic
+            if val is not None and 2 <= val <= 12:
+                if any(tok in name for tok in piece_tokens):
+                    piece_max = max(piece_max, int(round(val)))
+
+            # weight-based heuristic
+            if val is not None:
+                if unit in ('g', 'gram', 'grams'):
+                    grams_total += float(val)
+                elif unit in ('kg', 'kilogram', 'kilograms'):
+                    grams_total += float(val) * 1000.0
+
+        try:
+            for it in ingredients:
+                _consume_item(it)
+        except Exception:
+            pass
+
+        # prefer piece count if reasonable
+        if piece_max >= 2:
+            return str(piece_max)
+        # else derive from grams
+        if grams_total > 0:
+            est = max(1, min(12, int(round(grams_total / 200.0))))
+            return str(est)
+        return None
 
     def _truncate_to_two_lines(self, text: str, style: ParagraphStyle, width: float) -> str:
         """Return a version of `text` that fits within two lines for the given style+width.
@@ -1096,7 +1206,7 @@ class PDFGenerator:
         return None
 
     def _create_inline_stats(self, recipe_data):
-        """Create a compact single-row stats strip."""
+        """Create a compact single-row stats strip with normalized units and inferred servings."""
         try:
             def _fmt(v, default='—'):
                 if v is None:
@@ -1104,43 +1214,56 @@ class PDFGenerator:
                 s = str(v).strip()
                 return s if s else default
 
-            # Remove tilde prefixes if they exist
-            prep_time = _fmt(recipe_data.get('prep_time', '15 min')).replace('~', '').strip()
-            cook_time = _fmt(recipe_data.get('cook_time', '25 min')).replace('~', '').strip()
-            servings  = _fmt(recipe_data.get('servings', '4')).replace('~', '').strip()
+            # Prep/Cook: abbreviate units and strip any extra parentheses
+            prep_time_raw = recipe_data.get('prep_time')
+            cook_time_raw = recipe_data.get('cook_time')
+            prep_time = self._fmt_time_abbrev(prep_time_raw) or '15 min'
+            cook_time = self._fmt_time_abbrev(cook_time_raw) or '25 min'
+
+            # Servings: use provided, else infer from ingredients
+            servings_raw = recipe_data.get('servings')
+            servings = None
+            if servings_raw:
+                servings = str(servings_raw).strip()
+            if not servings or servings == '—':
+                servings_inf = self._infer_servings_from_ingredients(recipe_data.get('ingredients', []))
+                if servings_inf:
+                    servings = servings_inf
+                    # persist into data so footer/header can reuse if needed
+                    recipe_data['servings'] = servings
+            servings = servings or '—'
+
+            # Likes/Views
             likes_val = recipe_data.get('likes')
             views_val = recipe_data.get('views')
-            likes     = _fmt(likes_val if likes_val is not None else views_val, '—')
+            likes = _fmt(likes_val if likes_val is not None else views_val, '—')
             likes_label = 'Likes' if (likes_val is not None) else ('Views' if (views_val is not None) else 'Likes')
 
-            # Create icon cells
+            # Create icon cells with strict labels '(Prep)' and '(Cook)'
             c1 = self._icon_text_cell('timer.png', f"{prep_time} (Prep)", style_name='StatsInline', icon_px=10)
             c2 = self._icon_text_cell('flame.png', f"{cook_time} (Cook)", style_name='StatsInline', icon_px=10)
             c3 = self._icon_text_cell('plate.png', f"{servings} (Feeds)", style_name='StatsInline', icon_px=10)
             c4 = self._icon_text_cell('heart.png', f"{likes} ({likes_label})", style_name='StatsInline', icon_px=10)
 
-            # INCREASE column widths to prevent text cutoff
-            # Changed from [100, 100, 100, 100] to auto-sizing
-            outer = Table([[c1, c2, c3, c4]], colWidths=[None, None, None, None])  # Let it auto-size
+            outer = Table([[c1, c2, c3, c4]], colWidths=[None, None, None, None])
             outer.setStyle(TableStyle([
                 ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('LEFTPADDING', (0, 0), (-1, -1), 2),  # Add small padding
-                ('RIGHTPADDING', (0, 0), (-1, -1), 8),  # Add padding between columns
+                ('LEFTPADDING', (0, 0), (-1, -1), 2),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
                 ('TOPPADDING', (0, 0), (-1, -1), 6),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
                 ('LINEABOVE', (0, 0), (-1, 0), 0.5, colors.HexColor('#E5E7EB')),
                 ('LINEBELOW', (0, 0), (-1, 0), 0.5, colors.HexColor('#E5E7EB')),
             ]))
             return outer
-        
-        except Exception as e:  # THIS EXCEPT BLOCK IS REQUIRED
+
+        except Exception as e:  # Fallback path preserved
             logger.error(f"Error creating inline stats: {e}")
-            # Fallback without icons
             try:
-                prep = _fmt(recipe_data.get('prep_time', '15 min')).replace('~', '').strip()
-                cook = _fmt(recipe_data.get('cook_time', '25 min')).replace('~', '').strip()
-                serv = _fmt(recipe_data.get('servings', '4')).replace('~', '').strip()
+                prep = self._fmt_time_abbrev(recipe_data.get('prep_time')) or '15 min'
+                cook = self._fmt_time_abbrev(recipe_data.get('cook_time')) or '25 min'
+                serv = recipe_data.get('servings') or self._infer_servings_from_ingredients(recipe_data.get('ingredients', [])) or '—'
                 like = _fmt(recipe_data.get('likes') or recipe_data.get('views'), '—')
                 line = f"{prep} (Prep) · {cook} (Cook) · {serv} (Feeds) · {like} (Views)"
                 return Paragraph(line, self.styles['StatsInline'])
@@ -1162,93 +1285,151 @@ class PDFGenerator:
         return d
 
     def _create_two_column_content_v2(self, recipe_data, page_width):
-        """Create two-column layout with ingredients (no bullets) and directions (V2 template)"""
+        """Create two-column layout with dynamic sizing to fit one page"""
         try:
+            from reportlab.platypus import KeepInFrame
+            
+            # Calculate available height for the middle section
+            # This is approximate - you'll need to adjust based on your header/footer heights
+            page_height = self._get_pagesize()[1]
+            header_height = 200  # Approximate height of header section
+            footer_height = 90   # Height reserved for footer
+            available_height = page_height - header_height - footer_height - 40  # Extra margin
+            
             # Calculate column widths
             available_width = page_width
             left_col_width = available_width * 0.4
             right_col_width = available_width * 0.6
-
-            # Left column: Ingredients (no bullets)
-            left_elements = []
-            left_elements.append(Paragraph('Ingredients', self.styles['SectionTitleCentered']))
-            left_elements.append(Spacer(1, 6))
-            ingredients = recipe_data.get('ingredients', [])
-            if ingredients:
-                for ingredient in ingredients:
-                    if isinstance(ingredient, dict):
-                        quantity = ingredient.get('quantity', '')
-                        unit = ingredient.get('unit', '')
-                        name = ingredient.get('name', '')
-                        # NO BULLETS - just clean text
-                        if quantity and unit:
-                            ingredient_text = f'{quantity} {unit} {name}'
-                        elif quantity:
-                            ingredient_text = f'{quantity} {name}'
-                        else:
-                            ingredient_text = name
-                    else:
-                        ingredient_text = ingredient
-
-                    ingredient_para = Paragraph(ingredient_text, self.styles['IngredientItem'])
-                    left_elements.append(ingredient_para)
-            else:
-                left_elements.append(Paragraph('No ingredients listed', self.styles['Normal']))
-
-            # Right column: Directions
-            right_elements = []
-            right_elements.append(Paragraph('Directions', self.styles['SectionTitleCentered']))
-            right_elements.append(Spacer(1, 6))
-            instructions = recipe_data.get('instructions', [])
-            if instructions:
-                rows = []
-                # Badge a touch larger (14) with a slightly tighter gutter to the text
-                badge_w = 22  # includes circle + desired horizontal padding
-                for i, step in enumerate(instructions, 1):
-                    badge = self._number_badge(i, diameter=14)
-                    para = Paragraph(step, self.styles['InstructionItem'])
-                    rows.append([badge, para])
-                steps_table = Table(rows, colWidths=[badge_w, right_col_width - badge_w])
-                steps_table.setStyle(TableStyle([
-                    # Top-align so multi-line text wraps under the badge
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    # No padding in badge col, add small left padding to text col for separation
-                    ('LEFTPADDING', (0, 0), (0, -1), 0),
-                    ('RIGHTPADDING', (0, 0), (0, -1), 0),
-                    ('LEFTPADDING', (1, 0), (1, -1), 5),
-                    ('RIGHTPADDING', (1, 0), (1, -1), 0),
-                    ('TOPPADDING', (0, 0), (-1, -1), 0),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 10),  # row gutter
-                ]))
-                right_elements.append(steps_table)
-            else:
-                right_elements.append(Paragraph('No instructions listed', self.styles['Normal']))
-
-            # Two-column table
-            if left_elements and right_elements:
-                col_widths = [left_col_width, right_col_width]
-                table_data = [[left_elements, right_elements]]
-                table = Table(table_data, colWidths=col_widths)
-                # Replace the padding block with the new alignment/padding rules:
-                table.setStyle(TableStyle([
-                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-                    # Ingredients column: align left edge with image (no extra left padding),
-                    # provide a 12pt gutter on its right to match header gutter
-                    ('LEFTPADDING',  (0, 0), (0, -1), 0),
-                    ('RIGHTPADDING', (0, 0), (0, -1), 12),
-                    # Directions column: align left edge with title block (match header right-col left padding = 12),
-                    # no extra padding on the far right so right margin equals left margin
-                    ('LEFTPADDING',  (1, 0), (1, -1), 12),
-                    ('RIGHTPADDING', (1, 0), (1, -1), 0),
-                    # Vertical paddings
-                    ('TOPPADDING', (0, 0), (-1, -1), 12),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
-                    ('BACKGROUND', (0, 0), (-1, -1), colors.white),
-                ]))
-                return table
+            
+            # Create content with normal sizing first
+            left_elements = self._create_ingredients_column(recipe_data, left_col_width)
+            right_elements = self._create_directions_column(recipe_data, right_col_width)
+            
+            # Wrap each column in KeepInFrame to force fit
+            left_kif = KeepInFrame(
+                left_col_width,
+                available_height,
+                left_elements,
+                mode='shrink',  # This will shrink content to fit
+                vAlign='TOP'
+            )
+            
+            right_kif = KeepInFrame(
+                right_col_width,
+                available_height,
+                right_elements,
+                mode='shrink',
+                vAlign='TOP'
+            )
+            
+            # Create the two-column table
+            table = Table([[left_kif, right_kif]], colWidths=[left_col_width, right_col_width])
+            table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LEFTPADDING', (0, 0), (0, -1), 0),
+                ('RIGHTPADDING', (0, 0), (0, -1), 12),
+                ('LEFTPADDING', (1, 0), (1, -1), 12),
+                ('RIGHTPADDING', (1, 0), (1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 12),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 12),
+                ('BACKGROUND', (0, 0), (-1, -1), colors.white),
+            ]))
+            return table
+            
         except Exception as e:
             logger.error(f"Error creating two-column content: {e}")
-        return None
+            return None
+
+    def _create_ingredients_column(self, recipe_data, col_width):
+        """Create ingredients column elements"""
+        elements = []
+        elements.append(Paragraph('Ingredients', self.styles['SectionTitleCentered']))
+        elements.append(Spacer(1, 6))
+        
+        ingredients = recipe_data.get('ingredients', [])
+        if ingredients:
+            # For very long lists, use tighter spacing
+            ingredient_count = len(ingredients)
+            if ingredient_count > 15:
+                # Create a custom style with smaller font and tighter leading
+                tight_style = ParagraphStyle(
+                    'TightIngredient',
+                    parent=self.styles['IngredientItem'],
+                    fontSize=9,  # Smaller font
+                    leading=11,  # Tighter line spacing
+                    spaceAfter=2  # Less space between items
+                )
+                style_to_use = tight_style
+            else:
+                style_to_use = self.styles['IngredientItem']
+                
+            for ingredient in ingredients:
+                if isinstance(ingredient, dict):
+                    quantity = ingredient.get('quantity', '')
+                    unit = ingredient.get('unit', '')
+                    name = ingredient.get('name', '')
+                    if quantity and unit:
+                        ingredient_text = f'{quantity} {unit} {name}'
+                    elif quantity:
+                        ingredient_text = f'{quantity} {name}'
+                    else:
+                        ingredient_text = name
+                else:
+                    ingredient_text = ingredient
+                    
+                elements.append(Paragraph(ingredient_text, style_to_use))
+        else:
+            elements.append(Paragraph('No ingredients listed', self.styles['Normal']))
+        
+        return elements
+
+    def _create_directions_column(self, recipe_data, col_width):
+        """Create directions column elements"""
+        elements = []
+        elements.append(Paragraph('Directions', self.styles['SectionTitleCentered']))
+        elements.append(Spacer(1, 6))
+        
+        instructions = recipe_data.get('instructions', [])
+        if instructions:
+            instruction_count = len(instructions)
+            
+            # For very long instruction lists, use tighter spacing
+            if instruction_count > 8:
+                tight_style = ParagraphStyle(
+                    'TightInstruction',
+                    parent=self.styles['InstructionItem'],
+                    fontSize=9,
+                    leading=11,
+                    spaceAfter=6
+                )
+                badge_w = 20  # Slightly smaller badge width
+                bottom_padding = 6  # Less space between rows
+            else:
+                tight_style = self.styles['InstructionItem']
+                badge_w = 22
+                bottom_padding = 10
+                
+            rows = []
+            for i, step in enumerate(instructions, 1):
+                badge = self._number_badge(i, diameter=13 if instruction_count > 8 else 14)
+                para = Paragraph(step, tight_style)
+                rows.append([badge, para])
+                
+            steps_table = Table(rows, colWidths=[badge_w, col_width - badge_w])
+            steps_table.setStyle(TableStyle([
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LEFTPADDING', (0, 0), (0, -1), 0),
+                ('RIGHTPADDING', (0, 0), (0, -1), 0),
+                ('LEFTPADDING', (1, 0), (1, -1), 5),
+                ('RIGHTPADDING', (1, 0), (1, -1), 0),
+                ('TOPPADDING', (0, 0), (-1, -1), 0),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), bottom_padding),
+            ]))
+            elements.append(steps_table)
+        else:
+            elements.append(Paragraph('No instructions listed', self.styles['Normal']))
+        
+        return elements
 
     def _create_notes_section(self, recipe_data, page_width):
         """Create notes section with rounded rectangle background"""
